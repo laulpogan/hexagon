@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hexagon Tile Placement Game - PixiJS</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: Arial, sans-serif; 
+            background: #1a1a1a; 
+            overflow: hidden;
+            color: white;
+        }
+        
+        #gameContainer {
+            display: flex;
+            height: 100vh;
+        }
+        
+        #gameBoard {
+            flex: 1;
+            position: relative;
+        }
+        
+        #sidebar {
+            width: 250px;
+            background: #2a2a2a;
+            padding: 20px;
+            border-left: 2px solid #444;
+        }
+        
+        #hand {
+            margin-top: 20px;
+        }
+        
+        .hand-tile {
+            width: 60px;
+            height: 60px;
+            margin: 5px;
+            border: 2px solid #666;
+            border-radius: 8px;
+            display: inline-block;
+            cursor: pointer;
+            background: #333;
+            color: white;
+            text-align: center;
+            line-height: 56px;
+            font-weight: bold;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+        
+        .hand-tile:hover {
+            border-color: #ffff00;
+            background: #444;
+            transform: scale(1.1);
+        }
+        
+        .hand-tile.selected {
+            border-color: #00ff00;
+            background: #004400;
+        }
+        
+        #score {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        #instructions {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #aaa;
+            line-height: 1.4;
+        }
+        
+        #debug {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="debug">
+        <div>Mouse: <span id="mouse">0, 0</span></div>
+        <div>Selected: <span id="selected">None</span></div>
+        <div>Hover: <span id="hover">-</span></div>
+    </div>
+    
+    <div id="gameContainer">
+        <div id="gameBoard"></div>
+        <div id="sidebar">
+            <h2>Hex Tile Game</h2>
+            <div>Current Player: <span id="currentPlayerValue">1</span></div>
+            <div>Phase: <span id="gamePhaseValue">Capital Placement</span></div>
+            <div id="score">Score: <span id="scoreValue">0</span></div>
+            <div>Turn: <span id="turnValue">1</span></div>
+            
+            <h3>Resources Available</h3>
+            <div id="resources">
+                <div>C: <span id="resourceC">0</span></div>
+                <div>M: <span id="resourceM">0</span></div>
+                <div>R: <span id="resourceR">0</span></div>
+                <div>F: <span id="resourceF">0</span></div>
+            </div>
+            
+            <button id="endTurnBtn" onclick="endPlayerTurn()" style="margin: 10px 0; padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">End Turn</button>
+            
+            <h3>Your Hand</h3>
+            <div id="hand">
+                <!-- Hand tiles will be generated here -->
+            </div>
+            
+            <div id="instructions">
+                <h4 id="instructionTitle">Capital Placement:</h4>
+                <div id="instructionText">
+                • Place your golden capital tile<br>
+                • Must be within 3 ranks of no-man's-land<br>
+                • Player 1: Above center, Player 2: Below center<br>
+                • Capital provides all 4 resource types<br>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.3.2/dist/pixi.min.js"></script>
+    <script>
+        // Firebase configuration (demo config - replace with your own)
+        const firebaseConfig = {
+            apiKey: "demo-key",
+            authDomain: "hexagon-game-demo.firebaseapp.com", 
+            databaseURL: "https://hexagon-game-demo-default-rtdb.firebaseio.com",
+            projectId: "hexagon-game-demo"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Multiplayer state
+        let roomCode = '';
+        let playerId = Math.random().toString(36).substr(2, 9);
+        let playerNumber = null; // 1 or 2
+        let gameRef = null;
+        let isHost = false;
+        let isMultiplayer = false;
+        
+        // Game constants
+        const HEX_SIZE = 25;
+        const HEX_WIDTH = HEX_SIZE * 2;
+        const HEX_HEIGHT = Math.sqrt(3) * HEX_SIZE;
+        const GRID_WIDTH = 15;
+        const GRID_HEIGHT = 10;
+        
+        // Tile class definition
+        class Tile {
+            constructor(type, baseInfluence, char, color, resourceTypes = [], cost = []) {
+                this.type = type;
+                this.baseInfluence = baseInfluence;
+                this.char = char;
+                this.color = color;
+                this.resourceTypes = resourceTypes; // Array of resource types this tile provides (C, M, R, F)
+                this.cost = cost; // Array of resource requirements to play this tile
+                this.col = null;
+                this.row = null;
+                this.owner = 'player'; // For now, all tiles belong to player
+                this.usedThisTurn = false; // Track if resources were used this turn
+            }
+            
+            // Calculate relative influence based on adjacent tiles (friendly add, enemy subtract)
+            getRelativeInfluence() {
+                if (this.col === null || this.row === null) {
+                    return this.baseInfluence; // Not placed yet, return base
+                }
+                
+                let totalInfluence = this.baseInfluence;
+                const neighbors = getNeighbors(this.col, this.row);
+                
+                neighbors.forEach(neighborHex => {
+                    if (!neighborHex.isEmpty && neighborHex.tile) {
+                        if (neighborHex.tile.owner === this.owner) {
+                            // Friendly tiles add their base influence
+                            totalInfluence += neighborHex.tile.baseInfluence;
+                        } else {
+                            // Enemy tiles (including neutral) subtract their base influence
+                            totalInfluence -= neighborHex.tile.baseInfluence;
+                        }
+                    }
+                });
+                
+                return Math.max(0, totalInfluence); // Never go below 0
+            }
+            
+            // Get display text for this tile
+            getDisplayText() {
+                if (this.col === null || this.row === null) {
+                    // In hand - show base influence and cost
+                    const costStr = this.getCostString();
+                    return `${this.char}\n${this.baseInfluence}${costStr ? '\n' + costStr : ''}`;
+                } else {
+                    // On board - show relative influence and resources
+                    const resourceStr = this.getResourceString();
+                    return `${this.char}\n${this.getRelativeInfluence()}${resourceStr ? '\n' + resourceStr : ''}`;
+                }
+            }
+            
+            // Get cost string for display
+            getCostString() {
+                if (this.cost.length === 0) return '';
+                return `(${this.cost.join('')})`;
+            }
+            
+            // Get resource string for display
+            getResourceString() {
+                if (this.resourceTypes.length === 0) return '';
+                return `[${this.resourceTypes.join('')}]`;
+            }
+            
+            // Check if this tile can provide a specific resource
+            canProvideResource(resource) {
+                return this.resourceTypes.includes(resource) && !this.usedThisTurn;
+            }
+        }
+        
+        // Tile deck definitions - balanced by cost vs influence
+        const TILE_DECK = [
+            // FREE TILES (0 cost) - Low influence
+            { type: 'VILLAGE', influence: 1, char: 'V', resources: ['C'], cost: [], count: 8 },
+            { type: 'CAMP', influence: 1, char: 'A', resources: ['R'], cost: [], count: 8 },
+            { type: 'FARM', influence: 1, char: 'F', resources: ['F'], cost: [], count: 8 },
+            { type: 'SHRINE', influence: 1, char: 'S', resources: ['M'], cost: [], count: 8 },
+            
+            // LOW COST TILES (1 resource) - Medium influence
+            { type: 'TOWN', influence: 2, char: 'T', resources: ['C'], cost: ['C'], count: 6 },
+            { type: 'ROAD', influence: 2, char: 'R', resources: ['R'], cost: ['R'], count: 6 },
+            { type: 'FIELD', influence: 2, char: 'D', resources: ['F'], cost: ['F'], count: 6 },
+            { type: 'TEMPLE', influence: 2, char: 'E', resources: ['M'], cost: ['M'], count: 6 },
+            
+            // MEDIUM COST TILES (2 resources) - High influence
+            { type: 'CITY', influence: 3, char: 'C', resources: ['C', 'C'], cost: ['C', 'C'], count: 4 },
+            { type: 'FORTRESS', influence: 3, char: 'X', resources: ['R', 'M'], cost: ['R', 'M'], count: 4 },
+            { type: 'GRANARY', influence: 3, char: 'G', resources: ['F', 'C'], cost: ['F', 'C'], count: 4 },
+            { type: 'CATHEDRAL', influence: 3, char: 'H', resources: ['M', 'C'], cost: ['M', 'C'], count: 4 },
+            
+            // HIGH COST TILES (3 resources) - Very high influence
+            { type: 'CAPITAL', influence: 4, char: 'K', resources: ['C', 'M', 'R'], cost: ['C', 'M', 'R'], count: 2 },
+            { type: 'STRONGHOLD', influence: 4, char: 'L', resources: ['R', 'M', 'F'], cost: ['R', 'M', 'F'], count: 2 },
+            
+            // LEGENDARY TILES (4 resources) - Extremely high influence
+            { type: 'METROPOLIS', influence: 5, char: 'P', resources: ['C', 'M', 'R', 'F'], cost: ['C', 'M', 'R', 'F'], count: 1 }
+        ];
+        
+        // Game state
+        let playerDecks = { 1: [], 2: [] };
+        let gameWon = false;
+        let winner = null;
+        
+        // Game state
+        let app;
+        let hexContainer;
+        let hexGrid = [];
+        let boardTiles = [];
+        let selectedTile = null;
+        let playerHand = [];
+        let score = 0;
+        let currentTurn = 1;
+        let currentPlayer = 1; // 1 or 2
+        let gamePhase = 'capital_placement'; // 'capital_placement' or 'normal_play'
+        let playersReady = { 1: false, 2: false };
+        let neutralTiles = [];
+        
+        // Initialize PixiJS
+        function initPixi() {
+            const gameBoard = document.getElementById('gameBoard');
+            
+            app = new PIXI.Application({
+                width: gameBoard.offsetWidth,
+                height: window.innerHeight,
+                backgroundColor: 0x1a1a1a,
+                antialias: true
+            });
+            
+            gameBoard.appendChild(app.view);
+            
+            // Container for all hexagons
+            hexContainer = new PIXI.Container();
+            app.stage.addChild(hexContainer);
+            
+            // Center the grid
+            hexContainer.x = app.screen.width / 2 - (GRID_WIDTH * HEX_WIDTH * 0.75) / 2;
+            hexContainer.y = app.screen.height / 2 - (GRID_HEIGHT * HEX_HEIGHT) / 2;
+        }
+        
+        // Create hexagon graphics
+        function createHexagon(color = 0x333333, strokeColor = 0x666666, strokeWidth = 2) {
+            const graphics = new PIXI.Graphics();
+            graphics.beginFill(color);
+            graphics.lineStyle(strokeWidth, strokeColor);
+            graphics.moveTo(HEX_SIZE, 0);
+            
+            for (let i = 1; i <= 6; i++) {
+                const angle = (i * Math.PI) / 3;
+                graphics.lineTo(HEX_SIZE * Math.cos(angle), HEX_SIZE * Math.sin(angle));
+            }
+            
+            graphics.endFill();
+            return graphics;
+        }
+        
+        // Get player-specific color for tiles
+        function getPlayerColor(tile) {
+            if (tile.type === 'CAPITAL') {
+                return 0xffd700; // Gold for capitals (both players)
+            } else if (tile.owner === 'player1') {
+                return 0x4488ff; // Blue for player 1
+            } else if (tile.owner === 'player2') {
+                return 0xff4444; // Red for player 2  
+            } else if (tile.owner === 'neutral') {
+                return 0x888888; // Gray for neutral
+            } else {
+                return tile.color; // Fallback to original color
+            }
+        }
+        
+        // Create tile graphics with resource types and influence
+        function createTileHex(tile, showRelativeInfluence = false) {
+            const playerColor = getPlayerColor(tile);
+            const hex = createHexagon(playerColor, 0xffffff, 3);
+            
+            // Show resource types as the main character(s), or special handling
+            let resourceChar;
+            if (tile.type === 'NEUTRAL') {
+                resourceChar = 'N';
+            } else if (tile.type === 'CAPITAL') {
+                resourceChar = 'K';
+            } else {
+                resourceChar = tile.resourceTypes.length > 0 ? tile.resourceTypes.join('') : '?';
+            }
+            
+            // Add resource types and influence text
+            const displayText = showRelativeInfluence ? 
+                `${resourceChar}\n${tile.getRelativeInfluence()}` : 
+                `${resourceChar}\n${tile.baseInfluence}`;
+                
+            const text = new PIXI.Text(displayText, {
+                fontFamily: 'Arial',
+                fontSize: 14,
+                fill: 0xffffff,
+                fontWeight: 'bold',
+                align: 'center'
+            });
+            text.anchor.set(0.5);
+            hex.addChild(text);
+            
+            return hex;
+        }
+        
+        // Grid coordinate conversion
+        function gridToPixel(col, row) {
+            const x = col * HEX_WIDTH * 0.75;
+            const y = row * HEX_HEIGHT + (col % 2) * (HEX_HEIGHT / 2);
+            return { x, y };
+        }
+        
+        // Initialize the hex grid
+        function initHexGrid() {
+            for (let col = 0; col < GRID_WIDTH; col++) {
+                hexGrid[col] = [];
+                for (let row = 0; row < GRID_HEIGHT; row++) {
+                    const hex = createHexagon();
+                    const pos = gridToPixel(col, row);
+                    
+                    hex.x = pos.x;
+                    hex.y = pos.y;
+                    hex.interactive = true;
+                    hex.buttonMode = true;
+                    
+                    hex.gridCol = col;
+                    hex.gridRow = row;
+                    hex.isEmpty = true;
+                    hex.tile = null;
+                    
+                    // Hover effects
+                    hex.on('pointerover', () => handleHexHover(col, row));
+                    
+                    hex.on('pointerout', () => {
+                        hex.tint = 0xffffff; // Reset tint
+                        document.getElementById('hover').textContent = '-';
+                    });
+                    
+                    // Click to place tile
+                    hex.on('pointerdown', () => handleHexClick(col, row));
+                    
+                    hexContainer.addChild(hex);
+                    hexGrid[col][row] = hex;
+                }
+            }
+        }
+        
+        // Check if a position is "in revolt" (0 influence and capturable)
+        function isInRevolt(col, row) {
+            const hex = hexGrid[col][row];
+            if (hex.isEmpty) return false;
+            if (!hex.tile) return false;
+            
+            const influence = hex.tile.getRelativeInfluence();
+            const isEnemyOrNeutral = hex.tile.owner !== `player${currentPlayer}`;
+            
+            console.log(`Checking revolt at ${col},${row}: owner='${hex.tile.owner}', influence=${influence}, currentPlayer=player${currentPlayer}, isEnemyOrNeutral=${isEnemyOrNeutral}`);
+            
+            return influence === 0 && isEnemyOrNeutral;
+        }
+        
+        // Check if a position is "secure" (has positive influence)
+        function isSecure(col, row) {
+            const hex = hexGrid[col][row];
+            if (hex.isEmpty) return false;
+            if (!hex.tile) return false;
+            
+            return hex.tile.getRelativeInfluence() > 0;
+        }
+        
+        // Check if tile can be placed at position (unified logic for empty and revolt)
+        function canPlaceTile(col, row) {
+            const hex = hexGrid[col][row];
+            
+            console.log(`Checking placement at ${col},${row}:`, {
+                isEmpty: hex.isEmpty,
+                hasTile: !!hex.tile,
+                currentPlayer: currentPlayer
+            });
+            
+            // Case 1: Empty space - must be adjacent to friendly tile
+            if (hex.isEmpty) {
+                const neighbors = getNeighbors(col, row);
+                const friendlyNeighbors = neighbors.filter(neighbor => 
+                    !neighbor.isEmpty && 
+                    neighbor.tile && 
+                    neighbor.tile.owner === `player${currentPlayer}`
+                );
+                
+                console.log(`Empty space at ${col},${row}:`, {
+                    totalNeighbors: neighbors.length,
+                    friendlyNeighbors: friendlyNeighbors.length,
+                    friendlyOwners: friendlyNeighbors.map(n => n.tile.owner)
+                });
+                
+                return friendlyNeighbors.length > 0;
+            }
+            
+            // Case 2: Occupied space - can only place if in revolt
+            if (!hex.isEmpty && hex.tile) {
+                const influence = hex.tile.getRelativeInfluence();
+                const isEnemyOrNeutral = hex.tile.owner !== `player${currentPlayer}`;
+                const inRevolt = influence === 0 && isEnemyOrNeutral;
+                
+                console.log(`Occupied space at ${col},${row}:`, {
+                    owner: hex.tile.owner,
+                    influence: influence,
+                    isEnemyOrNeutral: isEnemyOrNeutral,
+                    inRevolt: inRevolt
+                });
+                
+                return inRevolt;
+            }
+            
+            return false;
+        }
+        
+        // Get available resources from board tiles (only friendly tiles)
+        function getAvailableResources() {
+            const resources = { C: 0, M: 0, R: 0, F: 0 };
+            
+            boardTiles.forEach(boardTile => {
+                if (boardTile.tile.owner === `player${currentPlayer}` && !boardTile.tile.usedThisTurn) {
+                    boardTile.tile.resourceTypes.forEach(resource => {
+                        resources[resource]++;
+                    });
+                }
+            });
+            
+            return resources;
+        }
+        
+        // Check if player can afford a tile
+        function canAffordTile(tile) {
+            if (tile.cost.length === 0) return true; // Free tiles
+            
+            const available = getAvailableResources();
+            const required = {};
+            
+            // Count required resources
+            tile.cost.forEach(resource => {
+                required[resource] = (required[resource] || 0) + 1;
+            });
+            
+            // Check if we have enough of each resource
+            for (const [resource, amount] of Object.entries(required)) {
+                if (available[resource] < amount) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+        
+        // Pay for a tile by marking resources as used (only friendly tiles)
+        function payForTile(tile) {
+            if (tile.cost.length === 0) return; // Free tiles
+            
+            const costCopy = [...tile.cost];
+            
+            // Find friendly tiles to use for payment
+            boardTiles.forEach(boardTile => {
+                if (costCopy.length === 0) return;
+                
+                if (boardTile.tile.owner === `player${currentPlayer}` && !boardTile.tile.usedThisTurn) {
+                    boardTile.tile.resourceTypes.forEach(resource => {
+                        const costIndex = costCopy.indexOf(resource);
+                        if (costIndex !== -1) {
+                            costCopy.splice(costIndex, 1);
+                            boardTile.tile.usedThisTurn = true;
+                            
+                            // Visual feedback - dim the tile
+                            const hex = hexGrid[boardTile.col][boardTile.row];
+                            hex.alpha = 0.6;
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Reset all tiles for new turn
+        function startNewTurn() {
+            currentTurn++;
+            
+            // Reset all friendly tiles' used status
+            boardTiles.forEach(boardTile => {
+                if (boardTile.tile.owner === `player${currentPlayer}`) {
+                    boardTile.tile.usedThisTurn = false;
+                    const hex = hexGrid[boardTile.col][boardTile.row];
+                    hex.alpha = 1.0; // Restore full opacity
+                }
+            });
+            
+            // Update all tile displays (influence may have changed)
+            updateAllTileDisplays();
+            updateResourceDisplay();
+        }
+        
+        // Update all tile displays on the board
+        function updateAllTileDisplays() {
+            boardTiles.forEach(boardTile => {
+                const hex = hexGrid[boardTile.col][boardTile.row];
+                if (!hex.isEmpty && hex.tile) {
+                    // Remove old text and add updated text
+                    const oldText = hex.children.find(child => child instanceof PIXI.Text);
+                    if (oldText) {
+                        hex.removeChild(oldText);
+                    }
+                    
+                    let resourceChar;
+                    if (hex.tile.type === 'NEUTRAL') {
+                        resourceChar = 'N';
+                    } else if (hex.tile.type === 'CAPITAL') {
+                        resourceChar = 'K';
+                    } else {
+                        resourceChar = hex.tile.resourceTypes.length > 0 ? hex.tile.resourceTypes.join('') : '?';
+                    }
+                    
+                    const newText = new PIXI.Text(`${resourceChar}\n${hex.tile.getRelativeInfluence()}`, {
+                        fontFamily: 'Arial',
+                        fontSize: 14,
+                        fill: 0xffffff,
+                        fontWeight: 'bold',
+                        align: 'center'
+                    });
+                    newText.anchor.set(0.5);
+                    hex.addChild(newText);
+                    
+                    // Visual feedback for tile status
+                    const influence = hex.tile.getRelativeInfluence();
+                    const isEnemyOrNeutral = hex.tile.owner !== `player${currentPlayer}`;
+                    
+                    if (influence === 0 && isEnemyOrNeutral) {
+                        hex.tint = 0x00ff00; // GREEN for capturable tiles!
+                    } else if (influence === 0) {
+                        hex.tint = 0xffaaaa; // Light red for friendly tiles at 0 (shouldn't happen)
+                    } else {
+                        hex.tint = 0xffffff; // Normal color for secure tiles
+                    }
+                }
+            });
+        }
+        
+        // Get neighboring hexes
+        function getNeighbors(col, row) {
+            const neighbors = [];
+            const offsets = col % 2 === 0 ? 
+                [[-1, -1], [-1, 0], [0, -1], [0, 1], [1, -1], [1, 0]] :
+                [[-1, 0], [-1, 1], [0, -1], [0, 1], [1, 0], [1, 1]];
+            
+            offsets.forEach(([dc, dr]) => {
+                const newCol = col + dc;
+                const newRow = row + dr;
+                if (newCol >= 0 && newCol < GRID_WIDTH && newRow >= 0 && newRow < GRID_HEIGHT) {
+                    neighbors.push(hexGrid[newCol][newRow]);
+                }
+            });
+            
+            return neighbors;
+        }
+        
+        // Place capital tile during setup phase
+        function placeCapital(col, row, tile) {
+            tile.owner = `player${currentPlayer}`;
+            placeTileDirectly(col, row, tile);
+            
+            // Mark player as ready
+            playersReady[currentPlayer] = true;
+            
+            // Clear hand
+            playerHand = [];
+            selectedTile = null;
+            updateHand();
+            updateSelectedDisplay();
+            
+            // Switch to next player or start normal game
+            if (!playersReady[1] || !playersReady[2]) {
+                // Switch to other player for capital placement
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+                giveCapitalTile();
+                updateGamePhaseDisplay();
+            } else {
+                // Both capitals placed, start normal game
+                gamePhase = 'normal_play';
+                currentPlayer = 1; // Player 1 goes first
+                drawTiles();
+                updateGamePhaseDisplay();
+                console.log('Both capitals placed! Normal play begins.');
+            }
+        }
+        
+        // Place tile on board (handles both empty spaces and captures)
+        function placeTile(col, row, tile) {
+            const hex = hexGrid[col][row];
+            
+            console.log(`Placing ${tile.type} at ${col},${row} for player${currentPlayer}`);
+            
+            // Pay for the tile
+            payForTile(tile);
+            
+            // If capturing an existing tile, remove it from boardTiles
+            if (!hex.isEmpty && hex.tile) {
+                const capturedTile = hex.tile;
+                const existingTileIndex = boardTiles.findIndex(bt => bt.col === col && bt.row === row);
+                if (existingTileIndex !== -1) {
+                    boardTiles.splice(existingTileIndex, 1);
+                }
+                
+                // Check for capital capture (win condition)
+                if (capturedTile.type === 'CAPITAL') {
+                    gameWon = true;
+                    winner = currentPlayer;
+                    console.log(`🏆 GAME WON! Player ${currentPlayer} captured the enemy capital!`);
+                    alert(`🏆 VICTORY! Player ${currentPlayer} wins by capturing the enemy capital!`);
+                    return; // Don't continue with placement
+                }
+                
+                console.log(`Capturing tile at ${col},${row}! Was: ${capturedTile.type}, Now: ${tile.type}`);
+            }
+            
+            // Set tile position and owner
+            tile.col = col;
+            tile.row = row;
+            tile.owner = `player${currentPlayer}`;
+            
+            // Create visual representation
+            const tileHex = createTileHex(tile, true); // Show relative influence on board
+            
+            // Add event handlers to new tile
+            tileHex.interactive = true;
+            tileHex.buttonMode = true;
+            tileHex.on('pointerdown', () => handleHexClick(col, row));
+            tileHex.on('pointerover', () => handleHexHover(col, row));
+            tileHex.on('pointerout', () => handleHexOut());
+            
+            // Remove old hex and add tile
+            hexContainer.removeChild(hex);
+            tileHex.x = hex.x;
+            tileHex.y = hex.y;
+            tileHex.gridCol = col;
+            tileHex.gridRow = row;
+            tileHex.isEmpty = false;
+            tileHex.tile = tile;
+            
+            hexContainer.addChild(tileHex);
+            hexGrid[col][row] = tileHex;
+            
+            // Update game state
+            boardTiles.push({ col, row, tile: tile });
+            score += tile.baseInfluence; // Score based on base influence for now
+            updateScore();
+            
+            // Remove tile from hand
+            const handIndex = playerHand.indexOf(tile);
+            if (handIndex > -1) {
+                playerHand.splice(handIndex, 1);
+                updateHand();
+            }
+            
+            // Update all tile displays (influence may have changed globally)
+            updateAllTileDisplays();
+            
+            // Update resource display
+            updateResourceDisplay();
+            
+            // Deselect
+            selectedTile = null;
+            updateSelectedDisplay();
+            
+            console.log(`Successfully placed ${tile.type} at ${col},${row}`);
+            
+            // End turn automatically after placing one tile
+            endPlayerTurn();
+        }
+        
+        // Handle hex click (for placed tiles)
+        function handleHexClick(col, row) {
+            if (selectedTile) {
+                if (gamePhase === 'capital_placement') {
+                    if (hexGrid[col][row].isEmpty && isValidCapitalPlacement(col, row, currentPlayer)) {
+                        placeCapital(col, row, selectedTile);
+                    }
+                } else if (canPlaceTile(col, row) && canAffordTile(selectedTile)) {
+                    console.log(`Attempting to place ${selectedTile.type} at ${col},${row}`);
+                    placeTile(col, row, selectedTile);
+                } else {
+                    console.log(`Cannot place ${selectedTile.type} at ${col},${row}: canPlace=${canPlaceTile(col, row)}, canAfford=${canAffordTile(selectedTile)}`);
+                }
+            }
+        }
+        
+        // Handle hex hover
+        function handleHexHover(col, row) {
+            const hex = hexGrid[col][row];
+            if (selectedTile) {
+                if (gamePhase === 'capital_placement') {
+                    if (hex.isEmpty && isValidCapitalPlacement(col, row, currentPlayer)) {
+                        hex.tint = 0x00ff00; // Green for valid capital placement
+                        document.getElementById('hover').textContent = `${col},${row} (Capital Zone)`;
+                    } else {
+                        hex.tint = 0xff0000; // Red for invalid capital placement
+                        document.getElementById('hover').textContent = `${col},${row} (Invalid)`;
+                    }
+                } else {
+                    // Normal play - check if can place and afford
+                    const canPlace = canPlaceTile(col, row);
+                    const canAfford = canAffordTile(selectedTile);
+                    
+                    if (canPlace && canAfford) {
+                        if (isInRevolt(col, row)) {
+                            hex.tint = 0xff8800; // Orange for revolt/capture
+                            const tileType = hex.tile ? hex.tile.type : 'Unknown';
+                            document.getElementById('hover').textContent = `${col},${row} (Capture ${tileType}!)`;
+                        } else {
+                            hex.tint = 0x00ff00; // Green for normal placement
+                            document.getElementById('hover').textContent = `${col},${row} (Place)`;
+                        }
+                    } else {
+                        hex.tint = 0xff0000; // Red for invalid
+                        let reason = '';
+                        if (!canPlace) reason += 'No adjacency/secure';
+                        if (!canAfford) reason += (reason ? ', ' : '') + 'Cannot afford';
+                        document.getElementById('hover').textContent = `${col},${row} (${reason})`;
+                    }
+                }
+            } else {
+                // No tile selected - show status
+                if (hex.isEmpty) {
+                    hex.tint = 0xffff00; // Yellow for empty
+                    document.getElementById('hover').textContent = `${col},${row} (Empty)`;
+                } else if (isInRevolt(col, row)) {
+                    hex.tint = 0xffaaaa; // Light red for in revolt
+                    document.getElementById('hover').textContent = `${col},${row} (In Revolt!)`;
+                } else if (isSecure(col, row)) {
+                    hex.tint = 0xaaffaa; // Light green for secure
+                    document.getElementById('hover').textContent = `${col},${row} (Secure)`;
+                }
+            }
+        }
+        
+        // Handle hex out
+        function handleHexOut() {
+            updateAllTileDisplays(); // Reset colors
+        }
+        
+        // Update displays of adjacent tiles when a new tile is placed
+        function updateAdjacentTileDisplays(col, row) {
+            const neighbors = getNeighbors(col, row);
+            
+            neighbors.forEach(neighborHex => {
+                if (!neighborHex.isEmpty && neighborHex.tile) {
+                    // Remove old text and add updated text
+                    const oldText = neighborHex.children.find(child => child instanceof PIXI.Text);
+                    if (oldText) {
+                        neighborHex.removeChild(oldText);
+                    }
+                    
+                    const resourceChar = neighborHex.tile.resourceTypes.length > 0 ? neighborHex.tile.resourceTypes.join('') : '?';
+                    const newText = new PIXI.Text(`${resourceChar}\n${neighborHex.tile.getRelativeInfluence()}`, {
+                        fontFamily: 'Arial',
+                        fontSize: 16,
+                        fill: 0xffffff,
+                        fontWeight: 'bold',
+                        align: 'center'
+                    });
+                    newText.anchor.set(0.5);
+                    neighborHex.addChild(newText);
+                }
+            });
+        }
+        
+        // Create and shuffle a deck for a player
+        function createPlayerDeck() {
+            const deck = [];
+            
+            TILE_DECK.forEach(tileTemplate => {
+                for (let i = 0; i < tileTemplate.count; i++) {
+                    const tile = new Tile(
+                        tileTemplate.type,
+                        tileTemplate.influence,
+                        tileTemplate.char,
+                        0x000000, // Color will be set by getPlayerColor
+                        [...tileTemplate.resources],
+                        [...tileTemplate.cost]
+                    );
+                    deck.push(tile);
+                }
+            });
+            
+            // Shuffle the deck
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+            
+            console.log(`Created deck with ${deck.length} tiles`);
+            return deck;
+        }
+        
+        // Draw a tile from player's deck
+        function drawTileFromDeck(player) {
+            if (playerDecks[player].length === 0) {
+                console.log(`Player ${player} deck is empty!`);
+                return null;
+            }
+            
+            const tile = playerDecks[player].pop();
+            tile.owner = `player${player}`;
+            console.log(`Player ${player} drew ${tile.type}`);
+            return tile;
+        }
+        
+        // Draw tiles for hand
+        function drawTiles() {
+            playerHand = [];
+            for (let i = 0; i < 5; i++) {
+                const tile = drawTileFromDeck(currentPlayer);
+                if (tile) {
+                    playerHand.push(tile);
+                }
+            }
+            updateHand();
+        }
+        
+        // Update hand display
+        function updateHand() {
+            const handDiv = document.getElementById('hand');
+            handDiv.innerHTML = '';
+            
+            playerHand.forEach((tile, index) => {
+                const tileDiv = document.createElement('div');
+                tileDiv.className = 'hand-tile';
+                
+                const resourceChar = tile.resourceTypes.length > 0 ? tile.resourceTypes.join('') : '?';
+                const costStr = tile.cost.length > 0 ? `<br><small style="color:#ffaa00;">(${tile.cost.join('')})</small>` : '';
+                
+                tileDiv.innerHTML = `${resourceChar}<br><small>${tile.baseInfluence}</small>${costStr}`;
+                tileDiv.style.backgroundColor = `#${tile.color.toString(16).padStart(6, '0')}`;
+                
+                // Dim if can't afford
+                if (!canAffordTile(tile)) {
+                    tileDiv.style.opacity = '0.5';
+                    tileDiv.style.cursor = 'not-allowed';
+                } else {
+                    tileDiv.style.opacity = '1';
+                    tileDiv.style.cursor = 'pointer';
+                }
+                
+                tileDiv.onclick = () => {
+                    if (canAffordTile(tile)) {
+                        selectedTile = tile;
+                        updateSelectedDisplay();
+                        
+                        // Update visual selection
+                        document.querySelectorAll('.hand-tile').forEach(t => t.classList.remove('selected'));
+                        tileDiv.classList.add('selected');
+                    }
+                };
+                
+                handDiv.appendChild(tileDiv);
+            });
+        }
+        
+        // Update selected tile display
+        function updateSelectedDisplay() {
+            if (selectedTile) {
+                const resourceChar = selectedTile.resourceTypes.length > 0 ? selectedTile.resourceTypes.join('') : '?';
+                const display = `${resourceChar} (${selectedTile.baseInfluence})`;
+                document.getElementById('selected').textContent = display;
+                
+                // Highlight all valid placement positions
+                highlightValidPlacements();
+            } else {
+                document.getElementById('selected').textContent = 'None';
+                
+                // Reset all highlighting
+                updateAllTileDisplays();
+            }
+        }
+        
+        // Highlight all valid placement positions
+        function highlightValidPlacements() {
+            for (let col = 0; col < GRID_WIDTH; col++) {
+                for (let row = 0; row < GRID_HEIGHT; row++) {
+                    const hex = hexGrid[col][row];
+                    if (canPlaceTile(col, row) && canAffordTile(selectedTile)) {
+                        if (hex.isEmpty) {
+                            hex.tint = 0x88ff88; // Light green for empty valid spaces
+                        } else {
+                            hex.tint = 0x00ff00; // Bright green for capturable tiles
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Update score display
+        function updateScore() {
+            document.getElementById('scoreValue').textContent = score;
+        }
+        
+        // Update resource display
+        function updateResourceDisplay() {
+            const resources = getAvailableResources();
+            document.getElementById('resourceC').textContent = resources.C;
+            document.getElementById('resourceM').textContent = resources.M;
+            document.getElementById('resourceR').textContent = resources.R;
+            document.getElementById('resourceF').textContent = resources.F;
+            document.getElementById('turnValue').textContent = currentTurn;
+            document.getElementById('currentPlayerValue').textContent = currentPlayer;
+        }
+        
+        // Update game phase display
+        function updateGamePhaseDisplay() {
+            const phaseText = gamePhase === 'capital_placement' ? 'Capital Placement' : 'Normal Play';
+            document.getElementById('gamePhaseValue').textContent = phaseText;
+            
+            if (gamePhase === 'capital_placement') {
+                document.getElementById('instructionTitle').textContent = `Player ${currentPlayer} - Capital Placement:`;
+                document.getElementById('instructionText').innerHTML = 
+                    '• Place your golden capital tile<br>' +
+                    '• Can be placed anywhere on the board<br>' +
+                    '• Capital provides all 4 resource types<br>' +
+                    '• This will be your starting base<br>';
+            } else {
+                document.getElementById('instructionTitle').textContent = 'Normal Play:';
+                document.getElementById('instructionText').innerHTML = 
+                    '• Click tiles in your hand to select them<br>' +
+                    '• Click empty hexes on the board to place<br>' +
+                    '• Tiles must connect to existing tiles<br>' +
+                    '• Pay costs using tile resources<br>' +
+                    '• (Cost) = required resources<br>';
+            }
+        }
+        
+        // End player turn
+        function endPlayerTurn() {
+            if (gamePhase === 'normal_play') {
+                // Switch players and start new turn
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+                startNewTurn();
+                drawTiles(); // Give new player fresh tiles
+                updateGamePhaseDisplay();
+            }
+        }
+        
+        // Mouse tracking
+        function initMouseTracking() {
+            app.stage.interactive = true;
+            app.stage.on('pointermove', (event) => {
+                const pos = event.data.global;
+                document.getElementById('mouse').textContent = `${Math.round(pos.x)}, ${Math.round(pos.y)}`;
+            });
+        }
+        
+        // No longer using neutral no-man's-land
+        
+        // Place tile directly without game logic checks (for setup)
+        function placeTileDirectly(col, row, tile) {
+            const hex = hexGrid[col][row];
+            
+            // Set tile position
+            tile.col = col;
+            tile.row = row;
+            
+            // Create visual representation
+            const tileHex = createTileHex(tile, true);
+            
+            // Remove old hex and add tile
+            hexContainer.removeChild(hex);
+            tileHex.x = hex.x;
+            tileHex.y = hex.y;
+            tileHex.gridCol = col;
+            tileHex.gridRow = row;
+            tileHex.isEmpty = false;
+            tileHex.tile = tile;
+            
+            hexContainer.addChild(tileHex);
+            hexGrid[col][row] = tileHex;
+            
+            // Update game state
+            boardTiles.push({ col, row, tile: tile });
+        }
+        
+        // Check if position is valid for capital placement
+        function isValidCapitalPlacement(col, row, player) {
+            if (gamePhase !== 'capital_placement') return false;
+            if (playersReady[player]) return false; // Player already placed capital
+            
+            // Capitals can be placed anywhere on empty spaces
+            const hex = hexGrid[col][row];
+            return hex.isEmpty;
+        }
+        
+        // Give player their capital tile (special starting tile)
+        function giveCapitalTile() {
+            if (gamePhase === 'capital_placement') {
+                const capitalTile = new Tile(
+                    'CAPITAL', 
+                    8, // High influence for capital
+                    'K', 
+                    0xffd700, 
+                    ['C', 'M', 'R', 'F'], // Provides all resources
+                    [] // Free to place
+                );
+                capitalTile.owner = `player${currentPlayer}`;
+                playerHand = [capitalTile];
+                updateHand();
+            }
+        }
+        
+        // Initialize game
+        function initGame() {
+            initPixi();
+            initHexGrid();
+            initMouseTracking();
+            
+            // Create shuffled decks for both players
+            playerDecks[1] = createPlayerDeck();
+            playerDecks[2] = createPlayerDeck();
+            
+            // Give first player their capital
+            giveCapitalTile();
+            
+            updateScore();
+            updateResourceDisplay();
+            updateGamePhaseDisplay();
+            
+            console.log('PixiJS Hex Tile Game initialized! Place your capital anywhere on the board.');
+            console.log(`Player decks created: P1=${playerDecks[1].length} tiles, P2=${playerDecks[2].length} tiles`);
+        }
+        
+        // Start the game when page loads
+        window.addEventListener('load', initGame);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const gameBoard = document.getElementById('gameBoard');
+            app.renderer.resize(gameBoard.offsetWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

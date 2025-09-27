@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hex Tile Game - Multiplayer Demo</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 20px; 
+            font-family: Arial, sans-serif; 
+            background: #1a1a1a; 
+            color: white;
+        }
+        
+        #roomSetup {
+            max-width: 400px;
+            margin: 50px auto;
+            background: #333;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        #roomSetup input {
+            padding: 10px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            background: #555;
+            color: white;
+            font-size: 16px;
+            width: 200px;
+        }
+        
+        #roomSetup button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        #roomSetup button:hover {
+            background: #45a049;
+        }
+        
+        #gameArea {
+            display: none;
+            max-width: 800px;
+            margin: 20px auto;
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .connected { background: #4CAF50; }
+        .disconnected { background: #f44336; }
+        .waiting { background: #ff9800; }
+        
+        #gameBoard {
+            display: grid;
+            grid-template-columns: repeat(5, 80px);
+            gap: 5px;
+            margin: 20px auto;
+            justify-content: center;
+        }
+        
+        .hex-cell {
+            width: 80px;
+            height: 80px;
+            background: #555;
+            border: 2px solid #777;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .hex-cell:hover {
+            border-color: #fff;
+            transform: scale(1.05);
+        }
+        
+        .hex-cell.player1 {
+            background: #4488ff;
+        }
+        
+        .hex-cell.player2 {
+            background: #ff4444;
+        }
+        
+        .hex-cell.capturable {
+            border-color: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <div id="roomSetup">
+        <h2>🎯 Hex Tile Game - Multiplayer Demo</h2>
+        <p>Enter a room code to play with a friend!</p>
+        <input type="text" id="roomCode" placeholder="Room Code (e.g. DEMO)" maxlength="6">
+        <br>
+        <button onclick="createRoom()">Create Room</button>
+        <button onclick="joinRoom()">Join Room</button>
+        <br>
+        <div id="roomStatus"></div>
+    </div>
+    
+    <div id="gameArea">
+        <div id="gameStatus" class="status">Waiting for players...</div>
+        <div>
+            <strong>You are:</strong> <span id="playerRole">-</span> | 
+            <strong>Current Turn:</strong> <span id="currentTurn">Player 1</span> |
+            <strong>Room:</strong> <span id="currentRoom">-</span>
+        </div>
+        
+        <div id="gameBoard">
+            <!-- 5x5 grid of hexagon cells -->
+        </div>
+        
+        <div>
+            <button id="endTurnBtn" onclick="endTurn()" disabled>End Turn</button>
+            <button onclick="leaveRoom()">Leave Room</button>
+        </div>
+        
+        <div id="instructions">
+            <h4>How to Play:</h4>
+            <ul>
+                <li>Click empty cells to place your tile</li>
+                <li>Tiles with 0 influence can be captured (green border)</li>
+                <li>Friendly tiles add influence, enemy tiles subtract</li>
+                <li>First player to capture enemy's starting tile wins!</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <script>
+        // Firebase configuration (demo - you can use this for testing)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBkW8nLbIJOUlnGb7lZWc9p4JvYyXxXxXx",
+            authDomain: "hex-game-demo.firebaseapp.com",
+            databaseURL: "https://hex-game-demo-default-rtdb.firebaseio.com/",
+            projectId: "hex-game-demo"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Game state
+        let roomCode = '';
+        let playerId = Math.random().toString(36).substr(2, 9);
+        let playerNumber = null;
+        let gameRef = null;
+        let currentPlayer = 1;
+        let gameBoard = Array(25).fill(null); // 5x5 grid
+        let gameStarted = false;
+        
+        // Initialize game board
+        function initGameBoard() {
+            const boardElement = document.getElementById('gameBoard');
+            boardElement.innerHTML = '';
+            
+            for (let i = 0; i < 25; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'hex-cell';
+                cell.onclick = () => placeTile(i);
+                cell.id = `cell-${i}`;
+                boardElement.appendChild(cell);
+            }
+            
+            // Place starting tiles
+            gameBoard[2] = { player: 1, influence: 3 }; // Player 1 starting tile
+            gameBoard[22] = { player: 2, influence: 3 }; // Player 2 starting tile
+            updateBoardDisplay();
+        }
+        
+        // Update board display
+        function updateBoardDisplay() {
+            for (let i = 0; i < 25; i++) {
+                const cell = document.getElementById(`cell-${i}`);
+                const tile = gameBoard[i];
+                
+                cell.className = 'hex-cell';
+                cell.textContent = '';
+                
+                if (tile) {
+                    const influence = calculateInfluence(i, tile.player);
+                    cell.textContent = influence;
+                    cell.classList.add(`player${tile.player}`);
+                    
+                    // Highlight capturable tiles
+                    if (influence === 0 && tile.player !== playerNumber) {
+                        cell.classList.add('capturable');
+                    }
+                }
+            }
+        }
+        
+        // Calculate tile influence based on neighbors
+        function calculateInfluence(index, player) {
+            const tile = gameBoard[index];
+            if (!tile) return 0;
+            
+            let influence = tile.influence;
+            const neighbors = getNeighbors(index);
+            
+            neighbors.forEach(neighborIndex => {
+                const neighbor = gameBoard[neighborIndex];
+                if (neighbor) {
+                    if (neighbor.player === player) {
+                        influence += neighbor.influence; // Friendly adds
+                    } else {
+                        influence -= neighbor.influence; // Enemy subtracts
+                    }
+                }
+            });
+            
+            return Math.max(0, influence);
+        }
+        
+        // Get neighbor indices for 5x5 grid
+        function getNeighbors(index) {
+            const neighbors = [];
+            const row = Math.floor(index / 5);
+            const col = index % 5;
+            
+            // Add adjacent cells (up, down, left, right)
+            if (row > 0) neighbors.push(index - 5); // Up
+            if (row < 4) neighbors.push(index + 5); // Down
+            if (col > 0) neighbors.push(index - 1); // Left
+            if (col < 4) neighbors.push(index + 1); // Right
+            
+            return neighbors;
+        }
+        
+        // Place a tile
+        function placeTile(index) {
+            if (!gameStarted || currentPlayer !== playerNumber) return;
+            
+            const existingTile = gameBoard[index];
+            
+            // Can place on empty cells or capturable enemy tiles
+            if (!existingTile) {
+                // Empty cell - place new tile
+                gameBoard[index] = { player: playerNumber, influence: 2 };
+                syncGameState();
+                endTurn();
+            } else if (existingTile.player !== playerNumber) {
+                // Enemy tile - check if capturable
+                const influence = calculateInfluence(index, existingTile.player);
+                if (influence === 0) {
+                    // Capture the tile
+                    gameBoard[index] = { player: playerNumber, influence: 2 };
+                    
+                    // Check win condition (captured starting tile)
+                    if ((index === 2 && existingTile.player === 1) || (index === 22 && existingTile.player === 2)) {
+                        alert(`🏆 Player ${playerNumber} wins by capturing the enemy base!`);
+                        return;
+                    }
+                    
+                    syncGameState();
+                    endTurn();
+                }
+            }
+        }
+        
+        // End current player's turn
+        function endTurn() {
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            document.getElementById('currentTurn').textContent = `Player ${currentPlayer}`;
+            document.getElementById('endTurnBtn').disabled = (currentPlayer !== playerNumber);
+            
+            if (gameRef) {
+                gameRef.child('currentPlayer').set(currentPlayer);
+            }
+            
+            updateBoardDisplay();
+        }
+        
+        // Sync game state to Firebase
+        function syncGameState() {
+            if (gameRef) {
+                gameRef.child('gameBoard').set(gameBoard);
+            }
+        }
+        
+        // Create room
+        function createRoom() {
+            roomCode = document.getElementById('roomCode').value.toUpperCase() || 'DEMO' + Math.floor(Math.random() * 1000);
+            playerNumber = 1;
+            
+            gameRef = database.ref('games/' + roomCode);
+            gameRef.set({
+                players: {
+                    [playerId]: { playerNumber: 1, connected: true }
+                },
+                currentPlayer: 1,
+                gameBoard: gameBoard,
+                gameStarted: false,
+                created: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                document.getElementById('roomStatus').innerHTML = 
+                    `<div class="status waiting">Room ${roomCode} created! Share this code with your opponent.</div>`;
+                setupGameListeners();
+            }).catch(error => {
+                document.getElementById('roomStatus').innerHTML = 
+                    `<div class="status disconnected">Error: ${error.message}</div>`;
+            });
+        }
+        
+        // Join room
+        function joinRoom() {
+            roomCode = document.getElementById('roomCode').value.toUpperCase();
+            if (!roomCode) {
+                alert('Please enter a room code!');
+                return;
+            }
+            
+            gameRef = database.ref('games/' + roomCode);
+            gameRef.once('value').then(snapshot => {
+                const gameData = snapshot.val();
+                if (!gameData) {
+                    document.getElementById('roomStatus').innerHTML = 
+                        `<div class="status disconnected">Room ${roomCode} not found!</div>`;
+                    return;
+                }
+                
+                playerNumber = 2;
+                gameRef.child('players').child(playerId).set({
+                    playerNumber: 2,
+                    connected: true
+                }).then(() => {
+                    setupGameListeners();
+                    startGame();
+                });
+            });
+        }
+        
+        // Setup Firebase listeners
+        function setupGameListeners() {
+            gameRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    gameBoard = data.gameBoard || gameBoard;
+                    currentPlayer = data.currentPlayer || 1;
+                    
+                    document.getElementById('currentTurn').textContent = `Player ${currentPlayer}`;
+                    document.getElementById('endTurnBtn').disabled = (currentPlayer !== playerNumber);
+                    updateBoardDisplay();
+                }
+            });
+            
+            gameRef.child('players').on('value', (snapshot) => {
+                const players = snapshot.val() || {};
+                const playerCount = Object.keys(players).length;
+                
+                if (playerCount === 2 && !gameStarted) {
+                    startGame();
+                }
+            });
+        }
+        
+        // Start the game
+        function startGame() {
+            gameStarted = true;
+            document.getElementById('roomSetup').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            document.getElementById('playerRole').textContent = `Player ${playerNumber}`;
+            document.getElementById('currentRoom').textContent = roomCode;
+            document.getElementById('gameStatus').innerHTML = 
+                `<div class="status connected">Game started! Both players connected.</div>`;
+            
+            initGameBoard();
+            
+            if (gameRef) {
+                gameRef.child('gameStarted').set(true);
+            }
+        }
+        
+        // Leave room
+        function leaveRoom() {
+            if (gameRef) {
+                gameRef.child('players').child(playerId).remove();
+            }
+            location.reload();
+        }
+        
+        console.log('Multiplayer demo initialized!');
+    </script>
+</body>
+</html>
