@@ -20,6 +20,7 @@
         #gameBoard {
             flex: 1;
             position: relative;
+            overflow: auto;
         }
         
         #sidebar {
@@ -34,8 +35,8 @@
         }
         
         .hand-tile {
-            width: 60px;
-            height: 60px;
+            width: 80px;
+            height: 80px;
             margin: 5px;
             border: 2px solid #666;
             border-radius: 8px;
@@ -44,9 +45,9 @@
             background: #333;
             color: white;
             text-align: center;
-            line-height: 56px;
+            line-height: 76px;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 20px;
             transition: all 0.2s;
         }
         
@@ -84,6 +85,42 @@
             font-size: 12px;
             z-index: 1000;
         }
+        
+        #tileInfoCard {
+            position: fixed;
+            background: rgba(0,0,0,0.95);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #666;
+            font-size: 14px;
+            z-index: 2000;
+            max-width: 300px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            pointer-events: none;
+            display: none;
+        }
+        
+        #tileInfoCard h3 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+            font-size: 16px;
+        }
+        
+        #tileInfoCard .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        
+        #tileInfoCard .stat-label {
+            color: #aaa;
+        }
+        
+        #tileInfoCard .stat-value {
+            color: white;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -91,6 +128,38 @@
         <div>Mouse: <span id="mouse">0, 0</span></div>
         <div>Selected: <span id="selected">None</span></div>
         <div>Hover: <span id="hover">-</span></div>
+    </div>
+    
+    <div id="tileInfoCard">
+        <h3 id="infoTitle">Tile Info</h3>
+        <div class="stat-row">
+            <span class="stat-label">Type:</span>
+            <span class="stat-value" id="infoType">-</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Base Influence:</span>
+            <span class="stat-value" id="infoBaseInfluence">-</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Current Influence:</span>
+            <span class="stat-value" id="infoCurrentInfluence">-</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Resources:</span>
+            <span class="stat-value" id="infoResources">-</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Cost:</span>
+            <span class="stat-value" id="infoCost">-</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Effect:</span>
+            <span class="stat-value" id="infoEffect">-</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Owner:</span>
+            <span class="stat-value" id="infoOwner">-</span>
+        </div>
     </div>
     
     <div id="gameContainer">
@@ -132,7 +201,7 @@
     <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.3.2/dist/pixi.min.js"></script>
     <script>
         // Game constants
-        const HEX_SIZE = 25;
+        const HEX_SIZE = 40;
         const HEX_WIDTH = HEX_SIZE * 2;
         const HEX_HEIGHT = Math.sqrt(3) * HEX_SIZE;
         const GRID_WIDTH = 15;
@@ -140,13 +209,14 @@
         
         // Tile class definition
         class Tile {
-            constructor(type, baseInfluence, char, color, resourceTypes = [], cost = []) {
+            constructor(type, baseInfluence, char, color, resourceTypes = [], cost = [], effect = '') {
                 this.type = type;
                 this.baseInfluence = baseInfluence;
                 this.char = char;
                 this.color = color;
                 this.resourceTypes = resourceTypes; // Array of resource types this tile provides (C, M, R, F)
                 this.cost = cost; // Array of resource requirements to play this tile
+                this.effect = effect; // Effect text for the tile
                 this.col = null;
                 this.row = null;
                 this.owner = 'player'; // For now, all tiles belong to player
@@ -211,29 +281,29 @@
         // Tile deck definitions - balanced by cost vs influence
         const TILE_DECK = [
             // FREE TILES (0 cost) - Low influence
-            { type: 'VILLAGE', influence: 1, char: 'V', resources: ['C'], cost: [], count: 8 },
-            { type: 'CAMP', influence: 1, char: 'A', resources: ['R'], cost: [], count: 8 },
-            { type: 'FARM', influence: 1, char: 'F', resources: ['F'], cost: [], count: 8 },
-            { type: 'SHRINE', influence: 1, char: 'S', resources: ['M'], cost: [], count: 8 },
+            { type: 'VILLAGE', influence: 1, char: 'V', resources: ['C'], cost: [], count: 8, effect: 'Basic settlement' },
+            { type: 'CAMP', influence: 1, char: 'A', resources: ['R'], cost: [], count: 8, effect: 'Scout outpost' },
+            { type: 'FARM', influence: 1, char: 'F', resources: ['F'], cost: [], count: 8, effect: 'Food production' },
+            { type: 'SHRINE', influence: 1, char: 'S', resources: ['M'], cost: [], count: 8, effect: 'Spiritual center' },
             
             // LOW COST TILES (1 resource) - Medium influence
-            { type: 'TOWN', influence: 2, char: 'T', resources: ['C'], cost: ['C'], count: 6 },
-            { type: 'ROAD', influence: 2, char: 'R', resources: ['R'], cost: ['R'], count: 6 },
-            { type: 'FIELD', influence: 2, char: 'D', resources: ['F'], cost: ['F'], count: 6 },
-            { type: 'TEMPLE', influence: 2, char: 'E', resources: ['M'], cost: ['M'], count: 6 },
+            { type: 'TOWN', influence: 2, char: 'T', resources: ['C'], cost: ['C'], count: 6, effect: 'Trade hub' },
+            { type: 'ROAD', influence: 2, char: 'R', resources: ['R'], cost: ['R'], count: 6, effect: 'Connects regions' },
+            { type: 'FIELD', influence: 2, char: 'D', resources: ['F'], cost: ['F'], count: 6, effect: 'Rich harvest' },
+            { type: 'TEMPLE', influence: 2, char: 'E', resources: ['M'], cost: ['M'], count: 6, effect: 'Divine blessing' },
             
             // MEDIUM COST TILES (2 resources) - High influence
-            { type: 'CITY', influence: 3, char: 'C', resources: ['C', 'C'], cost: ['C', 'C'], count: 4 },
-            { type: 'FORTRESS', influence: 3, char: 'X', resources: ['R', 'M'], cost: ['R', 'M'], count: 4 },
-            { type: 'GRANARY', influence: 3, char: 'G', resources: ['F', 'C'], cost: ['F', 'C'], count: 4 },
-            { type: 'CATHEDRAL', influence: 3, char: 'H', resources: ['M', 'C'], cost: ['M', 'C'], count: 4 },
+            { type: 'CITY', influence: 3, char: 'C', resources: ['C', 'C'], cost: ['C', 'C'], count: 4, effect: 'Metropolitan center' },
+            { type: 'FORTRESS', influence: 3, char: 'X', resources: ['R', 'M'], cost: ['R', 'M'], count: 4, effect: 'Defensive stronghold' },
+            { type: 'GRANARY', influence: 3, char: 'G', resources: ['F', 'C'], cost: ['F', 'C'], count: 4, effect: 'Food storage' },
+            { type: 'CATHEDRAL', influence: 3, char: 'H', resources: ['M', 'C'], cost: ['M', 'C'], count: 4, effect: 'Holy sanctuary' },
             
             // HIGH COST TILES (3 resources) - Very high influence
-            { type: 'CAPITAL', influence: 4, char: 'K', resources: ['C', 'M', 'R'], cost: ['C', 'M', 'R'], count: 2 },
-            { type: 'STRONGHOLD', influence: 4, char: 'L', resources: ['R', 'M', 'F'], cost: ['R', 'M', 'F'], count: 2 },
+            { type: 'CAPITAL', influence: 4, char: 'K', resources: ['C', 'M', 'R'], cost: ['C', 'M', 'R'], count: 2, effect: 'Royal seat' },
+            { type: 'STRONGHOLD', influence: 4, char: 'L', resources: ['R', 'M', 'F'], cost: ['R', 'M', 'F'], count: 2, effect: 'Military base' },
             
             // LEGENDARY TILES (4 resources) - Extremely high influence
-            { type: 'METROPOLIS', influence: 5, char: 'P', resources: ['C', 'M', 'R', 'F'], cost: ['C', 'M', 'R', 'F'], count: 1 }
+            { type: 'METROPOLIS', influence: 5, char: 'P', resources: ['C', 'M', 'R', 'F'], cost: ['C', 'M', 'R', 'F'], count: 1, effect: 'Mega city' }
         ];
         
         // Game state
@@ -259,9 +329,13 @@
         function initPixi() {
             const gameBoard = document.getElementById('gameBoard');
             
+            // Calculate required size for the larger tiles
+            const boardWidth = GRID_WIDTH * HEX_WIDTH * 0.75 + 100; // Extra padding
+            const boardHeight = GRID_HEIGHT * HEX_HEIGHT + 100; // Extra padding
+            
             app = new PIXI.Application({
-                width: gameBoard.offsetWidth,
-                height: window.innerHeight,
+                width: Math.max(gameBoard.offsetWidth, boardWidth),
+                height: Math.max(window.innerHeight, boardHeight),
                 backgroundColor: 0x1a1a1a,
                 antialias: true
             });
@@ -323,20 +397,67 @@
                 resourceChar = tile.resourceTypes.length > 0 ? tile.resourceTypes.join('') : '?';
             }
             
-            // Add resource types and influence text
-            const displayText = showRelativeInfluence ? 
-                `${resourceChar}\n${tile.getRelativeInfluence()}` : 
-                `${resourceChar}\n${tile.baseInfluence}`;
-                
-            const text = new PIXI.Text(displayText, {
+            // Add resource character at the top
+            const charText = new PIXI.Text(resourceChar, {
                 fontFamily: 'Arial',
-                fontSize: 14,
+                fontSize: 20,
                 fill: 0xffffff,
                 fontWeight: 'bold',
                 align: 'center'
             });
-            text.anchor.set(0.5);
-            hex.addChild(text);
+            charText.anchor.set(0.5);
+            charText.y = -15;
+            hex.addChild(charText);
+            
+            // Add base influence (always shown)
+            const baseInfluenceText = new PIXI.Text(tile.baseInfluence.toString(), {
+                fontFamily: 'Arial',
+                fontSize: 14,
+                fill: 0x000000, // Black text
+                fontWeight: 'bold',
+                align: 'center'
+            });
+            baseInfluenceText.anchor.set(0.5);
+            baseInfluenceText.y = -2;
+            
+            // Add white background circle for base influence
+            const baseBgCircle = new PIXI.Graphics();
+            baseBgCircle.beginFill(0xffffff);
+            baseBgCircle.drawCircle(0, -2, 8);
+            baseBgCircle.endFill();
+            hex.addChild(baseBgCircle);
+            hex.addChild(baseInfluenceText);
+            
+            // Add relative influence (if on board)
+            if (showRelativeInfluence) {
+                const relativeInfluence = tile.getRelativeInfluence();
+                const relativeInfluenceText = new PIXI.Text(relativeInfluence.toString(), {
+                    fontFamily: 'Arial',
+                    fontSize: 12,
+                    fill: 0xffffff, // White text
+                    fontWeight: 'bold',
+                    align: 'center'
+                });
+                relativeInfluenceText.anchor.set(0.5);
+                relativeInfluenceText.y = 8;
+                hex.addChild(relativeInfluenceText);
+            }
+            
+            // Add effect text at the bottom (if it exists)
+            if (tile.effect && tile.effect.length > 0) {
+                const effectText = new PIXI.Text(tile.effect, {
+                    fontFamily: 'Arial',
+                    fontSize: 9,
+                    fill: 0xffffaa,
+                    fontWeight: 'normal',
+                    align: 'center',
+                    wordWrap: true,
+                    wordWrapWidth: HEX_SIZE * 1.4
+                });
+                effectText.anchor.set(0.5);
+                effectText.y = 18;
+                hex.addChild(effectText);
+            }
             
             return hex;
         }
@@ -472,6 +593,10 @@
         function canAffordTile(tile) {
             if (tile.cost.length === 0) return true; // Free tiles
             
+            // First tile is always free
+            const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${currentPlayer}`);
+            if (playerTiles.length === 0) return true;
+            
             const available = getAvailableResources();
             const required = {};
             
@@ -493,6 +618,10 @@
         // Pay for a tile by marking resources as used (only friendly tiles)
         function payForTile(tile) {
             if (tile.cost.length === 0) return; // Free tiles
+            
+            // First tile is always free
+            const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${currentPlayer}`);
+            if (playerTiles.length === 0) return;
             
             const costCopy = [...tile.cost];
             
@@ -539,11 +668,14 @@
             boardTiles.forEach(boardTile => {
                 const hex = hexGrid[boardTile.col][boardTile.row];
                 if (!hex.isEmpty && hex.tile) {
-                    // Remove old text and add updated text
-                    const oldText = hex.children.find(child => child instanceof PIXI.Text);
-                    if (oldText) {
-                        hex.removeChild(oldText);
-                    }
+                    // Instead of replacing the entire hex, just update the text elements
+                    // Remove all children except the base graphics
+                    const children = [...hex.children];
+                    children.forEach(child => {
+                        if (child instanceof PIXI.Text || child instanceof PIXI.Graphics) {
+                            hex.removeChild(child);
+                        }
+                    });
                     
                     let resourceChar;
                     if (hex.tile.type === 'NEUTRAL') {
@@ -554,15 +686,65 @@
                         resourceChar = hex.tile.resourceTypes.length > 0 ? hex.tile.resourceTypes.join('') : '?';
                     }
                     
-                    const newText = new PIXI.Text(`${resourceChar}\n${hex.tile.getRelativeInfluence()}`, {
+                    // Add resource character at the top
+                    const charText = new PIXI.Text(resourceChar, {
                         fontFamily: 'Arial',
-                        fontSize: 14,
+                        fontSize: 20,
                         fill: 0xffffff,
                         fontWeight: 'bold',
                         align: 'center'
                     });
-                    newText.anchor.set(0.5);
-                    hex.addChild(newText);
+                    charText.anchor.set(0.5);
+                    charText.y = -15;
+                    hex.addChild(charText);
+                    
+                    // Add base influence
+                    const baseInfluenceText = new PIXI.Text(hex.tile.baseInfluence.toString(), {
+                        fontFamily: 'Arial',
+                        fontSize: 14,
+                        fill: 0x000000, // Black text
+                        fontWeight: 'bold',
+                        align: 'center'
+                    });
+                    baseInfluenceText.anchor.set(0.5);
+                    baseInfluenceText.y = -2;
+                    
+                    // Add white background circle for base influence
+                    const baseBgCircle = new PIXI.Graphics();
+                    baseBgCircle.beginFill(0xffffff);
+                    baseBgCircle.drawCircle(0, -2, 8);
+                    baseBgCircle.endFill();
+                    hex.addChild(baseBgCircle);
+                    hex.addChild(baseInfluenceText);
+                    
+                    // Add relative influence
+                    const relativeInfluence = hex.tile.getRelativeInfluence();
+                    const relativeInfluenceText = new PIXI.Text(relativeInfluence.toString(), {
+                        fontFamily: 'Arial',
+                        fontSize: 12,
+                        fill: 0xffffff, // White text
+                        fontWeight: 'bold',
+                        align: 'center'
+                    });
+                    relativeInfluenceText.anchor.set(0.5);
+                    relativeInfluenceText.y = 8;
+                    hex.addChild(relativeInfluenceText);
+                    
+                    // Add effect text at the bottom (if it exists)
+                    if (hex.tile.effect && hex.tile.effect.length > 0) {
+                        const effectText = new PIXI.Text(hex.tile.effect, {
+                            fontFamily: 'Arial',
+                            fontSize: 9,
+                            fill: 0xffffaa,
+                            fontWeight: 'normal',
+                            align: 'center',
+                            wordWrap: true,
+                            wordWrapWidth: HEX_SIZE * 1.4
+                        });
+                        effectText.anchor.set(0.5);
+                        effectText.y = 18;
+                        hex.addChild(effectText);
+                    }
                     
                     // Visual feedback for tile status
                     const influence = hex.tile.getRelativeInfluence();
@@ -762,16 +944,22 @@
                     }
                 }
             } else {
-                // No tile selected - show status
+                // No tile selected - show status and info card
                 if (hex.isEmpty) {
                     hex.tint = 0xffff00; // Yellow for empty
                     document.getElementById('hover').textContent = `${col},${row} (Empty)`;
+                    hideTileInfoCard();
                 } else if (isInRevolt(col, row)) {
                     hex.tint = 0xffaaaa; // Light red for in revolt
                     document.getElementById('hover').textContent = `${col},${row} (In Revolt!)`;
+                    if (hex.tile) showTileInfoCard(hex.tile, col, row);
                 } else if (isSecure(col, row)) {
                     hex.tint = 0xaaffaa; // Light green for secure
                     document.getElementById('hover').textContent = `${col},${row} (Secure)`;
+                    if (hex.tile) showTileInfoCard(hex.tile, col, row);
+                } else if (hex.tile) {
+                    // Show info for any tile
+                    showTileInfoCard(hex.tile, col, row);
                 }
             }
         }
@@ -779,6 +967,34 @@
         // Handle hex out
         function handleHexOut() {
             updateAllTileDisplays(); // Reset colors
+            hideTileInfoCard();
+        }
+        
+        // Show tile info card
+        function showTileInfoCard(tile, col, row) {
+            const card = document.getElementById('tileInfoCard');
+            
+            document.getElementById('infoTitle').textContent = `${tile.type} (${col},${row})`;
+            document.getElementById('infoType').textContent = tile.type;
+            document.getElementById('infoBaseInfluence').textContent = tile.baseInfluence;
+            document.getElementById('infoCurrentInfluence').textContent = tile.getRelativeInfluence();
+            document.getElementById('infoResources').textContent = tile.resourceTypes.length > 0 ? tile.resourceTypes.join(', ') : 'None';
+            document.getElementById('infoCost').textContent = tile.cost.length > 0 ? tile.cost.join(', ') : 'Free';
+            document.getElementById('infoEffect').textContent = tile.effect || 'No special effect';
+            document.getElementById('infoOwner').textContent = tile.owner || 'Neutral';
+            
+            // Position the card near the mouse
+            const mouseX = event.clientX || window.innerWidth / 2;
+            const mouseY = event.clientY || window.innerHeight / 2;
+            
+            card.style.left = Math.min(mouseX + 20, window.innerWidth - 320) + 'px';
+            card.style.top = Math.min(mouseY + 20, window.innerHeight - 250) + 'px';
+            card.style.display = 'block';
+        }
+        
+        // Hide tile info card
+        function hideTileInfoCard() {
+            document.getElementById('tileInfoCard').style.display = 'none';
         }
         
         // Update displays of adjacent tiles when a new tile is placed
@@ -794,15 +1010,45 @@
                     }
                     
                     const resourceChar = neighborHex.tile.resourceTypes.length > 0 ? neighborHex.tile.resourceTypes.join('') : '?';
-                    const newText = new PIXI.Text(`${resourceChar}\n${neighborHex.tile.getRelativeInfluence()}`, {
+                    // Add resource character at the top
+                    const charText = new PIXI.Text(resourceChar, {
+                        fontFamily: 'Arial',
+                        fontSize: 20,
+                        fill: 0xffffff,
+                        fontWeight: 'bold',
+                        align: 'center'
+                    });
+                    charText.anchor.set(0.5);
+                    charText.y = -15;
+                    neighborHex.addChild(charText);
+                    
+                    // Add influence number in the center
+                    const influenceText = new PIXI.Text(neighborHex.tile.getRelativeInfluence(), {
                         fontFamily: 'Arial',
                         fontSize: 16,
                         fill: 0xffffff,
                         fontWeight: 'bold',
                         align: 'center'
                     });
-                    newText.anchor.set(0.5);
-                    neighborHex.addChild(newText);
+                    influenceText.anchor.set(0.5);
+                    influenceText.y = 0;
+                    neighborHex.addChild(influenceText);
+                    
+                    // Add effect text at the bottom (if it exists)
+                    if (neighborHex.tile.effect && neighborHex.tile.effect.length > 0) {
+                        const effectText = new PIXI.Text(neighborHex.tile.effect, {
+                            fontFamily: 'Arial',
+                            fontSize: 10,
+                            fill: 0xffffaa,
+                            fontWeight: 'normal',
+                            align: 'center',
+                            wordWrap: true,
+                            wordWrapWidth: HEX_SIZE * 1.5
+                        });
+                        effectText.anchor.set(0.5);
+                        effectText.y = 15;
+                        neighborHex.addChild(effectText);
+                    }
                 }
             });
         }
@@ -819,7 +1065,8 @@
                         tileTemplate.char,
                         0x000000, // Color will be set by getPlayerColor
                         [...tileTemplate.resources],
-                        [...tileTemplate.cost]
+                        [...tileTemplate.cost],
+                        tileTemplate.effect || ''
                     );
                     deck.push(tile);
                 }
