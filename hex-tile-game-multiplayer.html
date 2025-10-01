@@ -346,20 +346,51 @@
                 resourceChar = tile.resourceTypes.length > 0 ? tile.resourceTypes.join('') : '?';
             }
             
-            // Add resource types and influence text
-            const displayText = showRelativeInfluence ? 
-                `${resourceChar}\n${tile.getRelativeInfluence()}` : 
-                `${resourceChar}\n${tile.baseInfluence}`;
-                
-            const text = new PIXI.Text(displayText, {
+            // Add resource character (white text)
+            const charText = new PIXI.Text(resourceChar, {
                 fontFamily: 'Arial',
-                fontSize: 14,
+                fontSize: 16,
                 fill: 0xffffff,
                 fontWeight: 'bold',
                 align: 'center'
             });
-            text.anchor.set(0.5);
-            hex.addChild(text);
+            charText.anchor.set(0.5);
+            charText.y = -12; // Position higher up
+            hex.addChild(charText);
+            
+            // Add base influence (black text on white background)
+            const baseInfluenceText = new PIXI.Text(tile.baseInfluence.toString(), {
+                fontFamily: 'Arial',
+                fontSize: 10,
+                fill: 0x000000, // Black text
+                fontWeight: 'bold',
+                align: 'center'
+            });
+            baseInfluenceText.anchor.set(0.5);
+            baseInfluenceText.y = 4; // Position below center
+            
+            // Add white background circle for base influence
+            const baseBgCircle = new PIXI.Graphics();
+            baseBgCircle.beginFill(0xffffff);
+            baseBgCircle.drawCircle(0, 4, 7);
+            baseBgCircle.endFill();
+            hex.addChild(baseBgCircle);
+            hex.addChild(baseInfluenceText);
+            
+            // If showing relative influence (on board), also show net influence
+            if (showRelativeInfluence) {
+                const relativeInfluence = tile.getRelativeInfluence();
+                const relativeInfluenceText = new PIXI.Text(relativeInfluence.toString(), {
+                    fontFamily: 'Arial',
+                    fontSize: 12,
+                    fill: 0xffffff, // White text
+                    fontWeight: 'bold',
+                    align: 'center'
+                });
+                relativeInfluenceText.anchor.set(0.5);
+                relativeInfluenceText.y = 14; // Position lower
+                hex.addChild(relativeInfluenceText);
+            }
             
             return hex;
         }
@@ -577,15 +608,26 @@
                         resourceChar = hex.tile.resourceTypes.length > 0 ? hex.tile.resourceTypes.join('') : '?';
                     }
                     
-                    const newText = new PIXI.Text(`${resourceChar}\n${hex.tile.getRelativeInfluence()}`, {
-                        fontFamily: 'Arial',
-                        fontSize: 14,
-                        fill: 0xffffff,
-                        fontWeight: 'bold',
-                        align: 'center'
-                    });
-                    newText.anchor.set(0.5);
-                    hex.addChild(newText);
+                    // Recreate the tile with updated influence
+                    const updatedTileHex = createTileHex(hex.tile, true);
+                    
+                    // Copy position and properties
+                    updatedTileHex.x = hex.x;
+                    updatedTileHex.y = hex.y;
+                    updatedTileHex.gridCol = hex.gridCol;
+                    updatedTileHex.gridRow = hex.gridRow;
+                    updatedTileHex.isEmpty = hex.isEmpty;
+                    updatedTileHex.tile = hex.tile;
+                    updatedTileHex.interactive = true;
+                    updatedTileHex.buttonMode = true;
+                    updatedTileHex.on('pointerdown', () => handleHexClick(hex.gridCol, hex.gridRow));
+                    updatedTileHex.on('pointerover', () => handleHexHover(hex.gridCol, hex.gridRow));
+                    updatedTileHex.on('pointerout', () => handleHexOut());
+                    
+                    // Replace in container and grid
+                    hexContainer.removeChild(hex);
+                    hexContainer.addChild(updatedTileHex);
+                    hexGrid[hex.gridCol][hex.gridRow] = updatedTileHex;
                     
                     // Visual feedback for tile status
                     const influence = hex.tile.getRelativeInfluence();
@@ -816,16 +858,26 @@
                         neighborHex.removeChild(oldText);
                     }
                     
-                    const resourceChar = neighborHex.tile.resourceTypes.length > 0 ? neighborHex.tile.resourceTypes.join('') : '?';
-                    const newText = new PIXI.Text(`${resourceChar}\n${neighborHex.tile.getRelativeInfluence()}`, {
-                        fontFamily: 'Arial',
-                        fontSize: 16,
-                        fill: 0xffffff,
-                        fontWeight: 'bold',
-                        align: 'center'
-                    });
-                    newText.anchor.set(0.5);
-                    neighborHex.addChild(newText);
+                    // Recreate the tile with updated influence
+                    const updatedTileHex = createTileHex(neighborHex.tile, true);
+                    
+                    // Copy position and properties
+                    updatedTileHex.x = neighborHex.x;
+                    updatedTileHex.y = neighborHex.y;
+                    updatedTileHex.gridCol = neighborHex.gridCol;
+                    updatedTileHex.gridRow = neighborHex.gridRow;
+                    updatedTileHex.isEmpty = neighborHex.isEmpty;
+                    updatedTileHex.tile = neighborHex.tile;
+                    updatedTileHex.interactive = true;
+                    updatedTileHex.buttonMode = true;
+                    updatedTileHex.on('pointerdown', () => handleHexClick(neighborHex.gridCol, neighborHex.gridRow));
+                    updatedTileHex.on('pointerover', () => handleHexHover(neighborHex.gridCol, neighborHex.gridRow));
+                    updatedTileHex.on('pointerout', () => handleHexOut());
+                    
+                    // Replace in container and grid
+                    hexContainer.removeChild(neighborHex);
+                    hexContainer.addChild(updatedTileHex);
+                    hexGrid[neighborHex.gridCol][neighborHex.gridRow] = updatedTileHex;
                 }
             });
         }
@@ -1058,7 +1110,7 @@
             if (gamePhase === 'capital_placement') {
                 const capitalTile = new Tile(
                     'CAPITAL', 
-                    8, // High influence for capital
+                    1, // Reduced capital influence to 1
                     'K', 
                     0xffd700, 
                     ['C', 'M', 'R', 'F'], // Provides all resources
