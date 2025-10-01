@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Supabase Database Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status { padding: 15px; margin: 10px 0; border-radius: 5px; font-weight: bold; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .results { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #007bff; }
+        .code { background: #f1f3f4; padding: 10px; border-radius: 4px; font-family: monospace; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Supabase Database Test for Hex Tile Game</h1>
+        
+        <div id="status"></div>
+        
+        <div>
+            <button class="btn-primary" onclick="testConnection()">Test Connection</button>
+            <button class="btn-success" onclick="testRoomCreation()">Test Room Creation</button>
+            <button class="btn-warning" onclick="testRoomJoin()">Test Room Join</button>
+            <button class="btn-danger" onclick="testCleanup()">Cleanup Test Data</button>
+        </div>
+        
+        <div id="results"></div>
+        
+        <div class="info">
+            <h3>📋 Setup Instructions:</h3>
+            <ol>
+                <li>Go to <a href="https://supabase.com/dashboard" target="_blank">Supabase Dashboard</a></li>
+                <li>Select your project</li>
+                <li>Go to <strong>SQL Editor</strong></li>
+                <li>Copy and paste the contents of <code>supabase-setup-complete.sql</code></li>
+                <li>Click <strong>Run</strong> to create the database tables</li>
+                <li>Come back here and test the connection!</li>
+            </ol>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://hbklikgmdfekwroqbwtf.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhia2xpa2dtZGZla3dyb3Fid3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzMzk0MjUsImV4cCI6MjA3NDkxNTQyNX0.Lmtba2Pp869mYX54q1gMCI2REUHKLoUBziSP73G6tog';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let testRoomId = null;
+        
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function addResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `results ${type}`;
+            resultDiv.innerHTML = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        async function testConnection() {
+            showStatus('Testing Supabase connection...', 'info');
+            addResult('🔄 Testing basic connection...', 'info');
+            
+            try {
+                const { data, error } = await supabase.from('rooms').select('count').limit(1);
+                
+                if (error) {
+                    showStatus(`❌ Connection failed: ${error.message}`, 'error');
+                    addResult(`❌ Error: ${JSON.stringify(error, null, 2)}`, 'error');
+                } else {
+                    showStatus('✅ Supabase connection successful!', 'success');
+                    addResult('✅ Basic connection test passed', 'success');
+                }
+            } catch (err) {
+                showStatus(`❌ Connection error: ${err.message}`, 'error');
+                addResult(`❌ Exception: ${err.message}`, 'error');
+            }
+        }
+        
+        async function testRoomCreation() {
+            showStatus('Testing room creation...', 'info');
+            addResult('🔄 Creating test room...', 'info');
+            
+            try {
+                const testRoomCode = 'TEST' + Math.floor(Math.random() * 1000);
+                const testPlayerId = 'test-player-' + Math.random().toString(36).substr(2, 9);
+                
+                const { data, error } = await supabase
+                    .from('rooms')
+                    .insert([{
+                        room_code: testRoomCode,
+                        game_state: {
+                            currentPlayer: 1,
+                            gamePhase: 'capital_placement',
+                            boardTiles: [],
+                            playersReady: { 1: false, 2: false },
+                            currentTurn: 1,
+                            score: { 1: 0, 2: 0 }
+                        },
+                        player1_id: testPlayerId
+                    }])
+                    .select()
+                    .single();
+                
+                if (error) {
+                    showStatus(`❌ Room creation failed: ${error.message}`, 'error');
+                    addResult(`❌ Room creation error: ${JSON.stringify(error, null, 2)}`, 'error');
+                } else {
+                    testRoomId = data.id;
+                    showStatus('✅ Room creation successful!', 'success');
+                    addResult(`✅ Room created: <strong>${testRoomCode}</strong> (ID: ${data.id})`, 'success');
+                    addResult(`✅ Player 1 ID: ${testPlayerId}`, 'info');
+                }
+            } catch (err) {
+                showStatus(`❌ Room creation error: ${err.message}`, 'error');
+                addResult(`❌ Exception: ${err.message}`, 'error');
+            }
+        }
+        
+        async function testRoomJoin() {
+            if (!testRoomId) {
+                addResult('⚠️ Please create a room first!', 'warning');
+                return;
+            }
+            
+            showStatus('Testing room join...', 'info');
+            addResult('🔄 Testing room join...', 'info');
+            
+            try {
+                const testPlayer2Id = 'test-player-2-' + Math.random().toString(36).substr(2, 9);
+                
+                // Add player 2 to the room
+                const { error: playerError } = await supabase
+                    .from('players')
+                    .insert([{
+                        id: testPlayer2Id,
+                        room_id: testRoomId,
+                        player_number: 2
+                    }]);
+                
+                if (playerError) throw playerError;
+                
+                // Update room with player 2
+                const { error: updateError } = await supabase
+                    .from('rooms')
+                    .update({ player2_id: testPlayer2Id })
+                    .eq('id', testRoomId);
+                
+                if (updateError) throw updateError;
+                
+                // Fetch updated room data
+                const { data: roomData, error: fetchError } = await supabase
+                    .from('rooms')
+                    .select('*')
+                    .eq('id', testRoomId)
+                    .single();
+                
+                if (fetchError) throw fetchError;
+                
+                showStatus('✅ Room join successful!', 'success');
+                addResult(`✅ Player 2 joined: ${testPlayer2Id}`, 'success');
+                addResult(`✅ Room now has both players!`, 'success');
+                addResult(`<div class="code">Room Data: ${JSON.stringify(roomData, null, 2)}</div>`, 'info');
+                
+            } catch (err) {
+                showStatus(`❌ Room join error: ${err.message}`, 'error');
+                addResult(`❌ Exception: ${err.message}`, 'error');
+            }
+        }
+        
+        async function testCleanup() {
+            if (!testRoomId) {
+                addResult('⚠️ No test room to clean up!', 'warning');
+                return;
+            }
+            
+            showStatus('Cleaning up test data...', 'info');
+            addResult('🔄 Cleaning up test data...', 'info');
+            
+            try {
+                // Delete players first (due to foreign key constraint)
+                const { error: playersError } = await supabase
+                    .from('players')
+                    .delete()
+                    .eq('room_id', testRoomId);
+                
+                if (playersError) throw playersError;
+                
+                // Delete room
+                const { error: roomError } = await supabase
+                    .from('rooms')
+                    .delete()
+                    .eq('id', testRoomId);
+                
+                if (roomError) throw roomError;
+                
+                showStatus('✅ Test data cleaned up!', 'success');
+                addResult('✅ Test room and players deleted', 'success');
+                testRoomId = null;
+                
+            } catch (err) {
+                showStatus(`❌ Cleanup error: ${err.message}`, 'error');
+                addResult(`❌ Exception: ${err.message}`, 'error');
+            }
+        }
+        
+        // Auto-test connection on load
+        window.addEventListener('load', () => {
+            addResult('🎮 Hex Tile Game - Supabase Database Test', 'info');
+            addResult('Click the buttons above to test different database operations', 'info');
+            testConnection();
+        });
+    </script>
+</body>
+</html>

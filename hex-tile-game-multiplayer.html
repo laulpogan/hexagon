@@ -84,19 +84,150 @@
             font-size: 12px;
             z-index: 1000;
         }
+        
+        /* Room Setup Styles */
+        #roomSetup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        
+        #roomSetup.hidden {
+            display: none;
+        }
+        
+        .room-container {
+            background: #333;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .room-container h2 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        
+        .room-container input {
+            padding: 12px;
+            margin: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #555;
+            color: white;
+            font-size: 16px;
+            width: 250px;
+        }
+        
+        .room-container button {
+            padding: 12px 24px;
+            margin: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .room-container button:hover {
+            background: #45a049;
+        }
+        
+        .room-container button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .status-message {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .status-connected { background: #4CAF50; }
+        .status-waiting { background: #ff9800; }
+        .status-error { background: #f44336; }
+        
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            z-index: 10001;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .notification.success { background: #4CAF50; }
+        .notification.info { background: #2196F3; }
+        .notification.warning { background: #ff9800; }
+        .notification.error { background: #f44336; }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .multiplayer-info {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
+    <!-- Room Setup Modal -->
+    <div id="roomSetup">
+        <div class="room-container">
+            <h2>🎯 Hex Tile Game</h2>
+            <p>Create or join a multiplayer room!</p>
+            <input type="text" id="roomCodeInput" placeholder="Room Code (e.g. DEMO123)" maxlength="8">
+            <br>
+            <button onclick="createRoom()">Create Room</button>
+            <button onclick="joinRoom()">Join Room</button>
+            <button onclick="playOffline()">Play Offline</button>
+            <br>
+            <div id="roomStatus"></div>
+        </div>
+    </div>
+
     <div id="debug">
         <div>Mouse: <span id="mouse">0, 0</span></div>
         <div>Selected: <span id="selected">None</span></div>
         <div>Hover: <span id="hover">-</span></div>
+        <div>Room: <span id="roomInfo">-</span></div>
     </div>
     
     <div id="gameContainer">
         <div id="gameBoard"></div>
         <div id="sidebar">
             <h2>Hex Tile Game</h2>
+            
+            <div class="multiplayer-info">
+                <div>Room: <span id="currentRoom">-</span></div>
+                <div>You are: <span id="playerRole">Player 1</span></div>
+                <div>Status: <span id="connectionStatus">Offline</span></div>
+            </div>
+            
             <div>Current Player: <span id="currentPlayerValue">1</span></div>
             <div>Phase: <span id="gamePhaseValue">Capital Placement</span></div>
             <div id="score">Score: <span id="scoreValue">0</span></div>
@@ -111,6 +242,8 @@
             </div>
             
             <button id="endTurnBtn" onclick="endPlayerTurn()" style="margin: 10px 0; padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">End Turn</button>
+            
+            <button onclick="leaveRoom()" style="margin: 10px 0; padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Leave Room</button>
             
             <h3>Your Hand</h3>
             <div id="hand">
@@ -129,22 +262,13 @@
         </div>
     </div>
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.3.2/dist/pixi.min.js"></script>
     <script>
-        // Firebase configuration (demo config - replace with your own)
-        const firebaseConfig = {
-            apiKey: "demo-key",
-            authDomain: "hexagon-game-demo.firebaseapp.com", 
-            databaseURL: "https://hexagon-game-demo-default-rtdb.firebaseio.com",
-            projectId: "hexagon-game-demo"
-        };
-        
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        // Supabase configuration
+        const SUPABASE_URL = 'https://hbklikgmdfekwroqbwtf.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhia2xpa2dtZGZla3dyb3Fid3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzMzk0MjUsImV4cCI6MjA3NDkxNTQyNX0.Lmtba2Pp869mYX54q1gMCI2REUHKLoUBziSP73G6tog';
         
         // Multiplayer state
         let roomCode = '';
@@ -153,6 +277,49 @@
         let gameRef = null;
         let isHost = false;
         let isMultiplayer = false;
+        let gameChannel = null;
+        let syncTimeout = null;
+        
+        // Initialize Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Test Supabase connection
+        async function testSupabaseConnection() {
+            try {
+                const { data, error } = await supabase.from('rooms').select('count').limit(1);
+                if (error) {
+                    console.log('Supabase connection test:', error.message);
+                    return false;
+                }
+                console.log('✅ Supabase connected successfully!');
+                return true;
+            } catch (err) {
+                console.log('❌ Supabase connection failed:', err.message);
+                return false;
+            }
+        }
+        
+        // Notification system
+        function showNotification(message, type = 'info', duration = 3000) {
+            // Remove existing notifications
+            const existing = document.querySelectorAll('.notification');
+            existing.forEach(n => n.remove());
+            
+            // Create new notification
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remove after duration
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.animation = 'slideIn 0.3s ease-out reverse';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, duration);
+        }
         
         // Game constants
         const HEX_SIZE = 25;
@@ -318,16 +485,21 @@
         
         // Get player-specific color for tiles
         function getPlayerColor(tile) {
+            // Player-relative coloring
             if (tile.type === 'CAPITAL') {
-                return 0xffd700; // Gold for capitals (both players)
-            } else if (tile.owner === 'player1') {
-                return 0x4488ff; // Blue for player 1
-            } else if (tile.owner === 'player2') {
-                return 0xff4444; // Red for player 2  
+                if (tile.owner === `player${playerNumber}`) {
+                    return 0xffd700; // Gold for your capital
+                } else {
+                    return 0xff8800; // Orange for enemy capital
+                }
+            } else if (tile.owner === `player${playerNumber}`) {
+                return 0x4488ff; // Blue for your tiles
+            } else if (tile.owner && tile.owner.startsWith('player')) {
+                return 0xff4444; // Red for enemy tiles
             } else if (tile.owner === 'neutral') {
                 return 0x888888; // Gray for neutral
             } else {
-                return tile.color; // Fallback to original color
+                return 0x666666; // Dark gray for unowned
             }
         }
         
@@ -424,7 +596,7 @@
                     hex.on('pointerover', () => handleHexHover(col, row));
                     
                     hex.on('pointerout', () => {
-                        hex.tint = 0xffffff; // Reset tint
+                        hex.tint = 0xffffff; // Reset tint to show base color
                         document.getElementById('hover').textContent = '-';
                     });
                     
@@ -464,26 +636,21 @@
         function canPlaceTile(col, row) {
             const hex = hexGrid[col][row];
             
-            console.log(`Checking placement at ${col},${row}:`, {
-                isEmpty: hex.isEmpty,
-                hasTile: !!hex.tile,
-                currentPlayer: currentPlayer
-            });
-            
-            // Case 1: Empty space - must be adjacent to friendly tile
+            // Case 1: Empty space - must be adjacent to friendly tile OR be first tile
             if (hex.isEmpty) {
+                // If this is the first tile for this player, allow placement anywhere
+                const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${currentPlayer}`);
+                if (playerTiles.length === 0) {
+                    return true; // First tile can be placed anywhere
+                }
+                
+                // Otherwise, must be adjacent to friendly tile
                 const neighbors = getNeighbors(col, row);
                 const friendlyNeighbors = neighbors.filter(neighbor => 
                     !neighbor.isEmpty && 
                     neighbor.tile && 
                     neighbor.tile.owner === `player${currentPlayer}`
                 );
-                
-                console.log(`Empty space at ${col},${row}:`, {
-                    totalNeighbors: neighbors.length,
-                    friendlyNeighbors: friendlyNeighbors.length,
-                    friendlyOwners: friendlyNeighbors.map(n => n.tile.owner)
-                });
                 
                 return friendlyNeighbors.length > 0;
             }
@@ -493,13 +660,6 @@
                 const influence = hex.tile.getRelativeInfluence();
                 const isEnemyOrNeutral = hex.tile.owner !== `player${currentPlayer}`;
                 const inRevolt = influence === 0 && isEnemyOrNeutral;
-                
-                console.log(`Occupied space at ${col},${row}:`, {
-                    owner: hex.tile.owner,
-                    influence: influence,
-                    isEnemyOrNeutral: isEnemyOrNeutral,
-                    inRevolt: inRevolt
-                });
                 
                 return inRevolt;
             }
@@ -664,30 +824,60 @@
         
         // Place capital tile during setup phase
         function placeCapital(col, row, tile) {
+            // Prevent placing multiple capitals
+            if (playersReady[currentPlayer]) {
+                console.log(`Player ${playerNumber}: Player ${currentPlayer} already placed their capital! playersReady:`, playersReady);
+                showNotification(`Player ${currentPlayer} already placed their capital!`, 'warning');
+                return;
+            }
+            
             tile.owner = `player${currentPlayer}`;
             placeTileDirectly(col, row, tile);
             
             // Mark player as ready
             playersReady[currentPlayer] = true;
+            console.log(`Player ${playerNumber}: Marked player ${currentPlayer} as ready. playersReady:`, playersReady);
             
-            // Clear hand
-            playerHand = [];
+            // Clear selection but don't clear hand yet
             selectedTile = null;
-            updateHand();
             updateSelectedDisplay();
             
+            // Sync to multiplayer if connected
+            if (isMultiplayer) {
+                syncGameState();
+            }
+            
             // Switch to next player or start normal game
+            console.log(`Player ${playerNumber}: Checking if both players ready: playersReady[1]=${playersReady[1]}, playersReady[2]=${playersReady[2]}`);
             if (!playersReady[1] || !playersReady[2]) {
                 // Switch to other player for capital placement
+                const oldPlayer = currentPlayer;
                 currentPlayer = currentPlayer === 1 ? 2 : 1;
-                giveCapitalTile();
+                console.log(`Player ${playerNumber}: Switched from Player ${oldPlayer} to Player ${currentPlayer}`);
+                showNotification(`Player ${currentPlayer}'s turn to place capital!`, 'info');
+                
+                // Sync the turn change
+                if (isMultiplayer) {
+                    syncGameState();
+                }
+                
+                // Give capital tile to the new current player
+                if (currentPlayer === playerNumber) {
+                    giveCapitalTile();
+                }
                 updateGamePhaseDisplay();
             } else {
-                // Both capitals placed, start normal game
-                gamePhase = 'normal_play';
-                currentPlayer = 1; // Player 1 goes first
-                drawTiles();
-                updateGamePhaseDisplay();
+                // Both capitals placed, transition to normal play
+                console.log(`Player ${playerNumber}: Both capitals placed, transitioning to normal play`);
+                
+                // Sync the phase change immediately
+                if (isMultiplayer) {
+                    syncGameState();
+                }
+                
+                // Transition to normal play (this will give this player their tiles)
+                transitionToNormalPlay();
+                
                 console.log('Both capitals placed! Normal play begins.');
             }
         }
@@ -726,6 +916,15 @@
             tile.row = row;
             tile.owner = `player${currentPlayer}`;
             
+            // Mark first tile as capital (check before adding to boardTiles)
+            const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${currentPlayer}`);
+            if (playerTiles.length === 0) {
+                tile.type = 'CAPITAL';
+                tile.char = 'K';
+                tile.color = 0xFFFF00; // Yellow for capital
+                console.log(`First tile becomes capital for player ${currentPlayer}`);
+            }
+            
             // Create visual representation
             const tileHex = createTileHex(tile, true); // Show relative influence on board
             
@@ -760,6 +959,12 @@
                 updateHand();
             }
             
+            // Draw a new tile for the current player
+            if (currentPlayer === playerNumber) {
+                console.log(`Player ${playerNumber}: Drawing new tile after placement`);
+                drawTurnTile();
+            }
+            
             // Update all tile displays (influence may have changed globally)
             updateAllTileDisplays();
             
@@ -772,16 +977,32 @@
             
             console.log(`Successfully placed ${tile.type} at ${col},${row}`);
             
+            // Sync to multiplayer if connected
+            if (isMultiplayer) {
+                syncGameState();
+            }
+            
             // End turn automatically after placing one tile
             endPlayerTurn();
         }
         
         // Handle hex click (for placed tiles)
         function handleHexClick(col, row) {
+            // Check if it's actually our turn
+            if (currentPlayer !== playerNumber) {
+                console.log(`Not your turn! Current player: ${currentPlayer}, You are: ${playerNumber}`);
+                showNotification(`It's Player ${currentPlayer}'s turn!`, 'warning');
+                return;
+            }
+            
             if (selectedTile) {
-                if (gamePhase === 'capital_placement') {
-                    if (hexGrid[col][row].isEmpty && isValidCapitalPlacement(col, row, currentPlayer)) {
-                        placeCapital(col, row, selectedTile);
+                // Handle first tile placement (becomes capital)
+                if (boardTiles.length === 0) {
+                    if (hexGrid[col][row].isEmpty) {
+                        console.log(`Placing first tile (capital) at ${col},${row}`);
+                        placeTile(col, row, selectedTile);
+                    } else {
+                        console.log(`Cannot place first tile: not empty space`);
                     }
                 } else if (canPlaceTile(col, row) && canAffordTile(selectedTile)) {
                     console.log(`Attempting to place ${selectedTile.type} at ${col},${row}`);
@@ -796,13 +1017,14 @@
         function handleHexHover(col, row) {
             const hex = hexGrid[col][row];
             if (selectedTile) {
-                if (gamePhase === 'capital_placement') {
-                    if (hex.isEmpty && isValidCapitalPlacement(col, row, currentPlayer)) {
-                        hex.tint = 0x00ff00; // Green for valid capital placement
-                        document.getElementById('hover').textContent = `${col},${row} (Capital Zone)`;
+                // Handle first tile hover (becomes capital)
+                if (boardTiles.length === 0) {
+                    if (hex.isEmpty) {
+                        hex.tint = 0x00ff00; // Green for valid first tile placement
+                        document.getElementById('hover').textContent = `${col},${row} (Place First Tile - Capital)`;
                     } else {
-                        hex.tint = 0xff0000; // Red for invalid capital placement
-                        document.getElementById('hover').textContent = `${col},${row} (Invalid)`;
+                        hex.tint = 0xff0000; // Red for invalid first tile placement
+                        document.getElementById('hover').textContent = `${col},${row} (Invalid - not empty space)`;
                     }
                 } else {
                     // Normal play - check if can place and afford
@@ -816,7 +1038,13 @@
                             document.getElementById('hover').textContent = `${col},${row} (Capture ${tileType}!)`;
                         } else {
                             hex.tint = 0x00ff00; // Green for normal placement
-                            document.getElementById('hover').textContent = `${col},${row} (Place)`;
+                            // Check if this is first tile for this player
+                            const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${currentPlayer}`);
+                            if (playerTiles.length === 0) {
+                                document.getElementById('hover').textContent = `${col},${row} (Place First Tile - Capital)`;
+                            } else {
+                                document.getElementById('hover').textContent = `${col},${row} (Place)`;
+                            }
                         }
                     } else {
                         hex.tint = 0xff0000; // Red for invalid
@@ -827,16 +1055,25 @@
                     }
                 }
             } else {
-                // No tile selected - show status
+                // No tile selected - show status based on current player
                 if (hex.isEmpty) {
-                    hex.tint = 0xffff00; // Yellow for empty
-                    document.getElementById('hover').textContent = `${col},${row} (Empty)`;
+                    // Only highlight empty tiles if it's your turn
+                    if (currentPlayer === playerNumber) {
+                        hex.tint = 0x4444ff; // Blue tint for placeable empty tiles
+                        document.getElementById('hover').textContent = `${col},${row} (Empty - Placeable)`;
+                    } else {
+                        hex.tint = 0x666666; // Gray for empty when not your turn
+                        document.getElementById('hover').textContent = `${col},${row} (Empty)`;
+                    }
                 } else if (isInRevolt(col, row)) {
                     hex.tint = 0xffaaaa; // Light red for in revolt
                     document.getElementById('hover').textContent = `${col},${row} (In Revolt!)`;
                 } else if (isSecure(col, row)) {
                     hex.tint = 0xaaffaa; // Light green for secure
                     document.getElementById('hover').textContent = `${col},${row} (Secure)`;
+                } else {
+                    hex.tint = 0xffffff; // Reset tint
+                    document.getElementById('hover').textContent = `${col},${row}`;
                 }
             }
         }
@@ -923,16 +1160,78 @@
             return tile;
         }
         
-        // Draw tiles for hand
-        function drawTiles() {
+        // Start the game with initial hands
+        function startGameWithInitialHands() {
+            console.log(`Player ${playerNumber}: Starting game with initial hands`);
+            console.log(`Player ${playerNumber}: Deck length: ${playerDecks[playerNumber] ? playerDecks[playerNumber].length : 'undefined'}`);
+            
+            gamePhase = 'normal_play';
+            currentPlayer = 1; // Player 1 goes first
+            
+            // Give both players their starting hands (5 tiles + 1 capital)
+            if (playerNumber === 1 || playerNumber === 2) {
+                giveInitialHand();
+            }
+            
+            showNotification('Game started! Place your first tile (it becomes your capital)!', 'success');
+            updateGamePhaseDisplay();
+        }
+
+        // Give initial hand (5 normal tiles)
+        function giveInitialHand() {
+            console.log(`Player ${playerNumber}: Giving initial hand`);
+            
+            // Clear any existing hand
             playerHand = [];
+            
+            // Draw 5 regular tiles
             for (let i = 0; i < 5; i++) {
-                const tile = drawTileFromDeck(currentPlayer);
+                const tile = drawTileFromDeck(playerNumber);
                 if (tile) {
                     playerHand.push(tile);
+                    console.log(`Player ${playerNumber} drew initial tile ${i+1}: ${tile.type}`);
+                }
+            }
+            
+            updateHand();
+            console.log(`Player ${playerNumber} initial hand:`, playerHand.map(t => t.type));
+        }
+
+        // Draw a single tile for the current turn
+        function drawTurnTile() {
+            console.log(`drawTurnTile() called for Player ${playerNumber}, current hand length: ${playerHand.length}`);
+            console.log(`Player ${playerNumber} deck length: ${playerDecks[playerNumber] ? playerDecks[playerNumber].length : 'undefined'}`);
+            
+            const tile = drawTileFromDeck(playerNumber);
+            if (tile) {
+                playerHand.push(tile);
+                console.log(`Player ${playerNumber} drew turn tile: ${tile.type}`);
+                updateHand();
+            } else {
+                console.log(`Player ${playerNumber} failed to draw turn tile - deck empty`);
+                showNotification('Deck is empty!', 'warning');
+            }
+        }
+
+        // Draw tiles for hand (used for initial setup)
+        function drawTiles() {
+            console.log(`drawTiles() called for Player ${playerNumber}, current hand length: ${playerHand.length}`);
+            console.log(`Player ${playerNumber} deck length: ${playerDecks[playerNumber] ? playerDecks[playerNumber].length : 'undefined'}`);
+            console.log(`Player ${playerNumber} deck contents:`, playerDecks[playerNumber] ? playerDecks[playerNumber].slice(0, 3).map(t => t.type) : 'undefined');
+            
+            playerHand = [];
+            for (let i = 0; i < 5; i++) {
+                const tile = drawTileFromDeck(playerNumber);
+                if (tile) {
+                    playerHand.push(tile);
+                    console.log(`Player ${playerNumber} drew tile ${i+1}: ${tile.type}`);
+                } else {
+                    console.log(`Player ${playerNumber} failed to draw tile ${i+1} - deck empty or error`);
                 }
             }
             updateHand();
+            console.log(`Player ${playerNumber} drew ${playerHand.length} tiles for hand`);
+            console.log(`Player ${playerNumber} final hand:`, playerHand.map(t => t.type));
         }
         
         // Update hand display
@@ -1025,35 +1324,39 @@
         
         // Update game phase display
         function updateGamePhaseDisplay() {
-            const phaseText = gamePhase === 'capital_placement' ? 'Capital Placement' : 'Normal Play';
-            document.getElementById('gamePhaseValue').textContent = phaseText;
-            
-            if (gamePhase === 'capital_placement') {
-                document.getElementById('instructionTitle').textContent = `Player ${currentPlayer} - Capital Placement:`;
-                document.getElementById('instructionText').innerHTML = 
-                    '• Place your golden capital tile<br>' +
-                    '• Can be placed anywhere on the board<br>' +
-                    '• Capital provides all 4 resource types<br>' +
-                    '• This will be your starting base<br>';
-            } else {
-                document.getElementById('instructionTitle').textContent = 'Normal Play:';
-                document.getElementById('instructionText').innerHTML = 
-                    '• Click tiles in your hand to select them<br>' +
-                    '• Click empty hexes on the board to place<br>' +
-                    '• Tiles must connect to existing tiles<br>' +
-                    '• Pay costs using tile resources<br>' +
-                    '• (Cost) = required resources<br>';
-            }
+            document.getElementById('gamePhaseValue').textContent = 'Normal Play';
+            document.getElementById('instructionTitle').textContent = 'Normal Play:';
+            document.getElementById('instructionText').innerHTML = 
+                '• Click tiles in your hand to select them<br>' +
+                '• Place your first tile anywhere (it becomes your capital)<br>' +
+                '• Then place other tiles adjacent to existing ones<br>' +
+                '• Pay costs using tile resources<br>' +
+                '• (Cost) = required resources<br>';
         }
         
         // End player turn
         function endPlayerTurn() {
             if (gamePhase === 'normal_play') {
                 // Switch players and start new turn
+                const oldPlayer = currentPlayer;
                 currentPlayer = currentPlayer === 1 ? 2 : 1;
+                
+                console.log(`Turn switching: ${oldPlayer} → ${currentPlayer}`);
+                showNotification(`Player ${currentPlayer}'s turn!`, 'info');
+                
                 startNewTurn();
-                drawTiles(); // Give new player fresh tiles
+                
+                // Give new player a single tile for their turn
+                if (currentPlayer === playerNumber) {
+                    drawTurnTile();
+                }
+                
                 updateGamePhaseDisplay();
+                
+                // Sync to multiplayer if connected
+                if (isMultiplayer) {
+                    syncGameState();
+                }
             }
         }
         
@@ -1132,24 +1435,380 @@
             playerDecks[1] = createPlayerDeck();
             playerDecks[2] = createPlayerDeck();
             
-            // Give first player their capital
-            giveCapitalTile();
+            // Start game with initial hands (5 tiles + 1 capital each)
+            startGameWithInitialHands();
             
             updateScore();
             updateResourceDisplay();
-            updateGamePhaseDisplay();
             
-            console.log('PixiJS Hex Tile Game initialized! Place your capital anywhere on the board.');
+            console.log('PixiJS Hex Tile Game initialized! Place your capital tile from your hand.');
             console.log(`Player decks created: P1=${playerDecks[1].length} tiles, P2=${playerDecks[2].length} tiles`);
         }
         
+        // Multiplayer functions
+        function createRoom() {
+            roomCode = document.getElementById('roomCodeInput').value.toUpperCase() || 'DEMO' + Math.floor(Math.random() * 1000);
+            playerNumber = 1;
+            isHost = true;
+            isMultiplayer = true;
+            
+            document.getElementById('roomStatus').innerHTML = 
+                `<div class="status-message status-waiting">Room ${roomCode} created! Share this code with your opponent.</div>`;
+            
+            // Set up Supabase room
+            setupSupabaseRoom();
+        }
+        
+        function joinRoom() {
+            roomCode = document.getElementById('roomCodeInput').value.toUpperCase();
+            if (!roomCode) {
+                alert('Please enter a room code!');
+                return;
+            }
+            
+            playerNumber = 2;
+            isHost = false;
+            isMultiplayer = true;
+            
+            document.getElementById('roomStatus').innerHTML = 
+                `<div class="status-message status-waiting">Joining room ${roomCode}...</div>`;
+            
+            // Set up Supabase room
+            setupSupabaseRoom();
+        }
+        
+        function playOffline() {
+            isMultiplayer = false;
+            hideRoomSetup();
+            startGame();
+        }
+        
+        function leaveRoom() {
+            if (isMultiplayer && roomCode) {
+                // Clean up Supabase connection
+                if (gameChannel) {
+                    gameChannel.unsubscribe();
+                }
+            }
+            
+            // Reset game state
+            location.reload();
+        }
+        
+        function hideRoomSetup() {
+            document.getElementById('roomSetup').classList.add('hidden');
+            document.getElementById('currentRoom').textContent = roomCode || 'Offline';
+            document.getElementById('playerRole').textContent = `Player ${playerNumber}`;
+            document.getElementById('connectionStatus').textContent = isMultiplayer ? 'Connected' : 'Offline';
+            document.getElementById('roomInfo').textContent = roomCode || 'Offline';
+        }
+        
+        async function setupSupabaseRoom() {
+            try {
+                if (isHost) {
+                    // Create a new room
+                    const { data: roomData, error: roomError } = await supabase
+                        .from('rooms')
+                        .insert([{
+                            room_code: roomCode,
+                            game_state: {
+                                currentPlayer: 1,
+                                gamePhase: 'normal_play',
+                                boardTiles: [],
+                                playersReady: { 1: true, 2: true }
+                            },
+                            player1_id: playerId
+                        }])
+                        .select()
+                        .single();
+                    
+                    if (roomError) {
+                        console.error('Room creation error:', roomError);
+                        throw new Error(`Failed to create room: ${roomError.message}`);
+                    }
+                    
+                    gameRef = roomData.id;
+                    console.log('Room created successfully:', roomData);
+                    showNotification(`Room ${roomCode} created! Waiting for Player 2...`, 'success');
+                    
+                    // Small delay to ensure room is fully created
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                } else {
+                    // Join existing room
+                    console.log('Looking for room with code:', roomCode);
+                    
+                    const { data: roomData, error: roomError } = await supabase
+                        .from('rooms')
+                        .select('*')
+                        .eq('room_code', roomCode)
+                        .eq('is_active', true)
+                        .single();
+                    
+                    if (roomError) {
+                        console.error('Room query error:', roomError);
+                        throw new Error(`Room not found: ${roomError.message}`);
+                    }
+                    
+                    if (!roomData) {
+                        throw new Error('Room not found or not active');
+                    }
+                    
+                    console.log('Found room:', roomData);
+                    gameRef = roomData.id;
+                    
+                    // Check if room already has 2 players
+                    if (roomData.player2_id) {
+                        throw new Error('Room is full');
+                    }
+                    
+                    // Add player to room
+                    const { error: playerError } = await supabase
+                        .from('players')
+                        .insert([{
+                            id: playerId,
+                            room_id: gameRef,
+                            player_number: 2
+                        }]);
+                    
+                    if (playerError) {
+                        console.error('Player insert error:', playerError);
+                        throw new Error(`Failed to join room: ${playerError.message}`);
+                    }
+                    
+                    // Update room with player 2
+                    const { error: updateError } = await supabase
+                        .from('rooms')
+                        .update({ player2_id: playerId })
+                        .eq('id', gameRef);
+                    
+                    if (updateError) {
+                        console.error('Room update error:', updateError);
+                        throw new Error(`Failed to update room: ${updateError.message}`);
+                    }
+                    
+                    console.log('Successfully joined room:', roomData);
+                    showNotification(`Joined room ${roomCode} as Player 2!`, 'success');
+                }
+                
+                // Set up real-time subscription
+                setupRealtimeSubscription();
+                
+                hideRoomSetup();
+                startGame();
+                
+                document.getElementById('roomStatus').innerHTML = 
+                    `<div class="status-message status-connected">Connected to room ${roomCode}!</div>`;
+                    
+            } catch (error) {
+                console.error('Error setting up room:', error);
+                document.getElementById('roomStatus').innerHTML = 
+                    `<div class="status-message status-error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        function setupRealtimeSubscription() {
+            if (!gameRef) return;
+            
+            gameChannel = supabase
+                .channel(`room-${gameRef}`)
+                .on('postgres_changes', 
+                    { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${gameRef}` },
+                    (payload) => {
+                        console.log('Room updated:', payload);
+                        handleRoomUpdate(payload.new);
+                    }
+                )
+                .subscribe();
+        }
+        
+        function handleRoomUpdate(roomData) {
+            if (!roomData.game_state) return;
+            
+            const gameState = roomData.game_state;
+            const oldCurrentPlayer = currentPlayer;
+            
+            console.log('Handling room update:', gameState);
+            console.log('Current player before update:', currentPlayer, 'Player number:', playerNumber);
+            
+            // Update local game state
+            const newCurrentPlayer = gameState.currentPlayer || currentPlayer;
+            const newGamePhase = gameState.gamePhase || gamePhase;
+            const newCurrentTurn = gameState.currentTurn || currentTurn;
+            
+            // Force update these values
+            currentPlayer = newCurrentPlayer;
+            gamePhase = newGamePhase;
+            currentTurn = newCurrentTurn;
+            
+            console.log('Current player after update:', currentPlayer, 'Player number:', playerNumber);
+            
+            // Show notifications for important changes
+            if (oldCurrentPlayer !== currentPlayer) {
+                showNotification(`Player ${currentPlayer}'s turn!`, 'info');
+            }
+            
+            // Reconstruct board tiles from game state
+            if (gameState.boardTiles && Array.isArray(gameState.boardTiles)) {
+                // Clear existing board
+                boardTiles = [];
+                
+                // Recreate all tiles on the board
+                gameState.boardTiles.forEach(boardTileData => {
+                    const { col, row, tile: tileData } = boardTileData;
+                    
+                    // Create tile object
+                    const tile = new Tile(
+                        tileData.type,
+                        tileData.baseInfluence,
+                        tileData.char || '?',
+                        tileData.color || 0x000000,
+                        tileData.resourceTypes || [],
+                        tileData.cost || []
+                    );
+                    
+                    // Set tile properties
+                    tile.col = col;
+                    tile.row = row;
+                    tile.owner = tileData.owner;
+                    tile.usedThisTurn = tileData.usedThisTurn || false;
+                    
+                    // Place tile on board
+                    placeTileDirectly(col, row, tile);
+                });
+                
+                // Update all tile displays
+                updateAllTileDisplays();
+            }
+            
+            // Update players ready state
+            if (gameState.playersReady) {
+                const oldPlayersReady = { ...playersReady };
+                playersReady = gameState.playersReady;
+                console.log(`Player ${playerNumber}: Updated playersReady:`, playersReady);
+                
+                // Check for new player ready
+                for (let playerNum = 1; playerNum <= 2; playerNum++) {
+                    if (!oldPlayersReady[playerNum] && playersReady[playerNum]) {
+                        showNotification(`Player ${playerNum} is ready!`, 'success');
+                    }
+                }
+            }
+            
+            // Give capital tile to current player if it's capital placement phase
+            if (gamePhase === 'capital_placement' && currentPlayer === playerNumber && playerHand.length === 0) {
+                giveCapitalTile();
+            }
+            
+            // Handle transition to normal play if both players are ready
+            console.log(`Player ${playerNumber}: Checking transition - gamePhase: ${gamePhase}, playersReady:`, playersReady);
+            if (gamePhase === 'capital_placement' && playersReady[1] && playersReady[2]) {
+                console.log(`Player ${playerNumber}: Both players ready, transitioning to normal play via room update`);
+                console.log(`Player ${playerNumber}: Current hand length before transition: ${playerHand.length}`);
+                
+                // Use the same transition function to ensure consistency
+                transitionToNormalPlay();
+            } else if (gamePhase === 'normal_play' && playersReady[1] && playersReady[2] && playerHand.length === 0) {
+                // Game is in normal play but this player doesn't have any tiles yet
+                console.log(`Player ${playerNumber}: Game in normal play but no tiles, drawing first turn tile`);
+                drawTurnTile();
+            } else {
+                console.log(`Player ${playerNumber}: Not transitioning - gamePhase: ${gamePhase}, playersReady[1]: ${playersReady[1]}, playersReady[2]: ${playersReady[2]}, handLength: ${playerHand.length}`);
+            }
+            
+            // Update UI
+            updateGamePhaseDisplay();
+            updateResourceDisplay();
+            
+            // If it's not our turn, disable interactions
+            if (currentPlayer !== playerNumber) {
+                // Disable tile selection and placement
+                selectedTile = null;
+                updateSelectedDisplay();
+                showNotification(`Waiting for Player ${currentPlayer}...`, 'warning');
+            } else {
+                showNotification(`Your turn!`, 'success');
+                
+                // Draw a tile if it's this player's turn and they don't have one
+                if (gamePhase === 'normal_play' && playerHand.length === 0) {
+                    console.log(`Player ${playerNumber}: It's my turn but no tiles, drawing turn tile`);
+                    drawTurnTile();
+                }
+            }
+            
+            console.log('Room update handled successfully');
+        }
+        
+        async function syncGameState() {
+            if (!isMultiplayer || !gameRef) return;
+            
+            // Debounce rapid syncs
+            if (syncTimeout) {
+                clearTimeout(syncTimeout);
+            }
+            
+            syncTimeout = setTimeout(async () => {
+                try {
+                    const gameState = {
+                        currentPlayer,
+                        gamePhase,
+                        boardTiles: boardTiles.map(bt => ({
+                            col: bt.col,
+                            row: bt.row,
+                            tile: {
+                                type: bt.tile.type,
+                                owner: bt.tile.owner,
+                                baseInfluence: bt.tile.baseInfluence,
+                                char: bt.tile.char,
+                                color: bt.tile.color,
+                                resourceTypes: bt.tile.resourceTypes,
+                                cost: bt.tile.cost,
+                                usedThisTurn: bt.tile.usedThisTurn
+                            }
+                        })),
+                        playersReady,
+                        currentTurn,
+                        score: { 1: 0, 2: 0 } // Add score tracking
+                    };
+                    
+                    console.log('Syncing game state:', gameState);
+                    console.log('Syncing currentPlayer:', currentPlayer, 'gamePhase:', gamePhase);
+                    
+                    const { error } = await supabase
+                        .from('rooms')
+                        .update({ 
+                            game_state: gameState,
+                            current_player: currentPlayer,
+                            game_phase: gamePhase
+                        })
+                        .eq('id', gameRef);
+                    
+                    if (error) throw error;
+                    
+                    console.log('Game state synced to Supabase successfully');
+                } catch (error) {
+                    console.error('Error syncing game state:', error);
+                }
+            }, 100); // 100ms debounce
+        }
+        
+        function startGame() {
+            initGame();
+        }
+        
         // Start the game when page loads
-        window.addEventListener('load', initGame);
+        window.addEventListener('load', async () => {
+            // Test Supabase connection
+            await testSupabaseConnection();
+            // Don't auto-start, show room setup instead
+            // initGame();
+        });
         
         // Handle window resize
         window.addEventListener('resize', () => {
-            const gameBoard = document.getElementById('gameBoard');
-            app.renderer.resize(gameBoard.offsetWidth, window.innerHeight);
+            if (app && app.renderer) {
+                const gameBoard = document.getElementById('gameBoard');
+                app.renderer.resize(gameBoard.offsetWidth, window.innerHeight);
+            }
         });
     </script>
 </body>

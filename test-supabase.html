@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Supabase Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>Supabase Connection Test</h1>
+    <div id="status"></div>
+    <button onclick="testConnection()">Test Connection</button>
+    <button onclick="testRoomCreation()">Test Room Creation</button>
+    <div id="results"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://hbklikgmdfekwroqbwtf.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhia2xpa2dtZGZla3dyb3Fid3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzMzk0MjUsImV4cCI6MjA3NDkxNTQyNX0.Lmtba2Pp869mYX54q1gMCI2REUHKLoUBziSP73G6tog';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function addResult(message) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML += `<div>${message}</div>`;
+        }
+        
+        async function testConnection() {
+            showStatus('Testing Supabase connection...', 'info');
+            
+            try {
+                // Test basic connection
+                const { data, error } = await supabase.from('rooms').select('count').limit(1);
+                
+                if (error) {
+                    showStatus(`❌ Connection failed: ${error.message}`, 'error');
+                    addResult(`Error: ${JSON.stringify(error, null, 2)}`);
+                } else {
+                    showStatus('✅ Supabase connection successful!', 'success');
+                    addResult('✅ Basic connection test passed');
+                }
+            } catch (err) {
+                showStatus(`❌ Connection error: ${err.message}`, 'error');
+                addResult(`Exception: ${err.message}`);
+            }
+        }
+        
+        async function testRoomCreation() {
+            showStatus('Testing room creation...', 'info');
+            
+            try {
+                const testRoomCode = 'TEST' + Math.floor(Math.random() * 1000);
+                
+                const { data, error } = await supabase
+                    .from('rooms')
+                    .insert([{
+                        room_code: testRoomCode,
+                        game_state: {
+                            currentPlayer: 1,
+                            gamePhase: 'capital_placement',
+                            boardTiles: [],
+                            playersReady: { 1: false, 2: false }
+                        },
+                        player1_id: 'test-player-' + Math.random().toString(36).substr(2, 9)
+                    }])
+                    .select()
+                    .single();
+                
+                if (error) {
+                    showStatus(`❌ Room creation failed: ${error.message}`, 'error');
+                    addResult(`Room creation error: ${JSON.stringify(error, null, 2)}`);
+                } else {
+                    showStatus('✅ Room creation successful!', 'success');
+                    addResult(`✅ Room created: ${testRoomCode} (ID: ${data.id})`);
+                    
+                    // Clean up test room
+                    await supabase.from('rooms').delete().eq('id', data.id);
+                    addResult('✅ Test room cleaned up');
+                }
+            } catch (err) {
+                showStatus(`❌ Room creation error: ${err.message}`, 'error');
+                addResult(`Exception: ${err.message}`);
+            }
+        }
+        
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            testConnection();
+        });
+    </script>
+</body>
+</html>
