@@ -332,6 +332,182 @@
             }, duration);
         }
         
+        // Show replay prompt when game ends
+        function showReplayPrompt(winningPlayer) {
+            const replayDiv = document.createElement('div');
+            replayDiv.id = 'replayPrompt';
+            replayDiv.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+                border: 3px solid #ffd700;
+                border-radius: 15px;
+                padding: 30px;
+                text-align: center;
+                z-index: 10000;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+                min-width: 400px;
+            `;
+            
+            replayDiv.innerHTML = `
+                <h2 style="color: #ffd700; margin: 0 0 15px 0; font-size: 28px;">
+                    🏆 VICTORY! 🏆
+                </h2>
+                <p style="color: white; font-size: 18px; margin: 0 0 20px 0;">
+                    Player ${winningPlayer} wins by capturing the enemy capital!
+                </p>
+                <p style="color: #ccc; font-size: 16px; margin: 0 0 25px 0;">
+                    Would you like to play again?
+                </p>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button id="replayYes" style="
+                        background: linear-gradient(135deg, #4CAF50, #45a049);
+                        color: white;
+                        border: none;
+                        padding: 12px 25px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                    ">Yes, Play Again!</button>
+                    <button id="replayNo" style="
+                        background: linear-gradient(135deg, #f44336, #d32f2f);
+                        color: white;
+                        border: none;
+                        padding: 12px 25px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                    ">No, Exit</button>
+                </div>
+            `;
+            
+            document.body.appendChild(replayDiv);
+            
+            // Add hover effects
+            document.getElementById('replayYes').addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.05)';
+                this.style.boxShadow = '0 5px 15px rgba(76, 175, 80, 0.4)';
+            });
+            document.getElementById('replayYes').addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+                this.style.boxShadow = 'none';
+            });
+            
+            document.getElementById('replayNo').addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.05)';
+                this.style.boxShadow = '0 5px 15px rgba(244, 67, 54, 0.4)';
+            });
+            document.getElementById('replayNo').addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+                this.style.boxShadow = 'none';
+            });
+            
+            // Handle button clicks
+            document.getElementById('replayYes').onclick = () => {
+                document.body.removeChild(replayDiv);
+                rebootRoom();
+            };
+            
+            document.getElementById('replayNo').onclick = () => {
+                document.body.removeChild(replayDiv);
+                showNotification('Thanks for playing!', 'success');
+            };
+        }
+        
+        // Reboot the room for a new game
+        function rebootRoom() {
+            console.log('🔄 Rebooting room for new game...');
+            
+            // Reset all game state
+            gameWon = false;
+            winner = null;
+            currentTurn = 1;
+            currentPlayer = 1;
+            gamePhase = 'capital_placement';
+            turnPhase = 'start_phase';
+            playersReady = { 1: false, 2: false };
+            boardTiles = [];
+            playerHand = [];
+            selectedTile = null;
+            score = 0;
+            
+            // Clear the board
+            if (hexContainer) {
+                hexContainer.removeChildren();
+            }
+            
+            // Recreate the hex grid
+            createHexGrid();
+            
+            // Reset UI
+            updateGamePhaseDisplay();
+            updateTurnPhaseDisplay();
+            updateResourceDisplay();
+            updateSelectedDisplay();
+            
+            // Clear hand display
+            const handDiv = document.getElementById('hand');
+            if (handDiv) {
+                handDiv.innerHTML = '';
+            }
+            
+            // Reset player decks
+            createPlayerDecks();
+            
+            // Give initial hands
+            if (playerNumber === 1 || playerNumber === 2) {
+                giveInitialHand();
+            }
+            
+            // Reset Supabase room state if in multiplayer
+            if (isMultiplayer && gameRef) {
+                resetRoomInDatabase();
+            }
+            
+            showNotification('🔄 Room rebooted! New game starting...', 'success');
+            console.log('✅ Room reboot complete!');
+        }
+        
+        // Reset room state in database
+        async function resetRoomInDatabase() {
+            if (!isMultiplayer || !gameRef) return;
+            
+            try {
+                const resetGameState = {
+                    currentPlayer: 1,
+                    gamePhase: 'capital_placement',
+                    turnPhase: 'start_phase',
+                    boardTiles: [],
+                    playersReady: { 1: false, 2: false },
+                    currentTurn: 1,
+                    score: { 1: 0, 2: 0 }
+                };
+                
+                const { error } = await supabase
+                    .from('rooms')
+                    .update({
+                        game_state: resetGameState,
+                        current_player: 1,
+                        game_phase: 'capital_placement'
+                    })
+                    .eq('id', gameRef);
+                
+                if (error) {
+                    console.error('Error resetting room:', error);
+                } else {
+                    console.log('✅ Room reset in database');
+                }
+            } catch (error) {
+                console.error('Error resetting room in database:', error);
+            }
+        }
+        
         // Game constants
         const HEX_SIZE = 40;
         const HEX_WIDTH = HEX_SIZE * 2;
@@ -928,7 +1104,9 @@
                     gameWon = true;
                     winner = currentPlayer;
                     console.log(`🏆 GAME WON! Player ${currentPlayer} captured the enemy capital!`);
-                    alert(`🏆 VICTORY! Player ${currentPlayer} wins by capturing the enemy capital!`);
+                    
+                    // Show replay prompt
+                    showReplayPrompt(currentPlayer);
                     return; // Don't continue with placement
                 }
                 
