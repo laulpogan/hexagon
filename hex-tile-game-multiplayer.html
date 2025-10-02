@@ -571,13 +571,22 @@
             selectedTile = null;
             score = 0;
             
-            // Clear the board
+            // Clear the board and clean up event listeners
             if (hexContainer) {
+                // Remove all event listeners before removing children
+                hexContainer.children.slice().forEach(child => {
+                    if (child.removeAllListeners) {
+                        child.removeAllListeners();
+                    }
+                });
                 hexContainer.removeChildren();
             }
             
+            // Reset hexGrid array
+            hexGrid = [];
+            
             // Recreate the hex grid
-            createHexGrid();
+            initHexGrid();
             
             // Reset UI
             updateGamePhaseDisplay();
