@@ -31,23 +31,33 @@
         
         #hand {
             margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            border: 2px solid #555;
+            border-radius: 8px;
+            padding: 10px;
+            background: #222;
         }
         
         .hand-tile {
-            width: 60px;
-            height: 60px;
-            margin: 5px;
+            width: 70px;
+            height: 70px;
+            margin: 4px;
             border: 2px solid #666;
-            border-radius: 8px;
+            border-radius: 6px;
             display: inline-block;
             cursor: pointer;
             background: #333;
             color: white;
             text-align: center;
-            line-height: 56px;
+            line-height: 1.2;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 16px;
             transition: all 0.2s;
+            vertical-align: top;
+            padding: 4px;
+            box-sizing: border-box;
         }
         
         .hand-tile:hover {
@@ -230,6 +240,7 @@
             
             <div>Current Player: <span id="currentPlayerValue">1</span></div>
             <div>Phase: <span id="gamePhaseValue">Capital Placement</span></div>
+            <div>Turn Phase: <span id="turnPhaseValue">Start</span></div>
             <div id="score">Score: <span id="scoreValue">0</span></div>
             <div>Turn: <span id="turnValue">1</span></div>
             
@@ -442,6 +453,7 @@
         let currentTurn = 1;
         let currentPlayer = 1; // 1 or 2
         let gamePhase = 'capital_placement'; // 'capital_placement' or 'normal_play'
+        let turnPhase = 'start_phase'; // 'start_phase', 'placement_phase', 'cleanup_phase'
         let playersReady = { 1: false, 2: false };
         let neutralTiles = [];
         
@@ -1160,21 +1172,33 @@
             return tile;
         }
         
-        // Start the game with initial hands
-        function startGameWithInitialHands() {
-            console.log(`Player ${playerNumber}: Starting game with initial hands`);
-            console.log(`Player ${playerNumber}: Deck length: ${playerDecks[playerNumber] ? playerDecks[playerNumber].length : 'undefined'}`);
+        // Transition to normal play phase
+        function transitionToNormalPlay() {
+            console.log(`Player ${playerNumber}: Transitioning to normal play`);
             
             gamePhase = 'normal_play';
             currentPlayer = 1; // Player 1 goes first
+            turnPhase = 'start_phase'; // Start with start phase
             
             // Give both players their starting hands (5 tiles + 1 capital)
             if (playerNumber === 1 || playerNumber === 2) {
                 giveInitialHand();
             }
             
+            // Start the first turn properly
+            startNewTurn();
+            
             showNotification('Game started! Place your first tile (it becomes your capital)!', 'success');
             updateGamePhaseDisplay();
+            updateTurnPhaseDisplay();
+        }
+        
+        // Start the game with initial hands
+        function startGameWithInitialHands() {
+            console.log(`Player ${playerNumber}: Starting game with initial hands`);
+            console.log(`Player ${playerNumber}: Deck length: ${playerDecks[playerNumber] ? playerDecks[playerNumber].length : 'undefined'}`);
+            
+            transitionToNormalPlay();
         }
 
         // Give initial hand (5 normal tiles)
@@ -1239,15 +1263,26 @@
             const handDiv = document.getElementById('hand');
             handDiv.innerHTML = '';
             
+            // Add hand size indicator
+            const sizeIndicator = document.createElement('div');
+            sizeIndicator.style.cssText = 'color: #aaa; font-size: 12px; margin-bottom: 5px; text-align: center;';
+            sizeIndicator.textContent = `${playerHand.length} tiles`;
+            handDiv.appendChild(sizeIndicator);
+            
             playerHand.forEach((tile, index) => {
                 const tileDiv = document.createElement('div');
                 tileDiv.className = 'hand-tile';
                 
+                // Create organized content within the tile
                 const resourceChar = tile.resourceTypes.length > 0 ? tile.resourceTypes.join('') : '?';
-                const costStr = tile.cost.length > 0 ? `<br><small style="color:#ffaa00;">(${tile.cost.join('')})</small>` : '';
+                const influenceStr = `<div style="font-size:12px; color:#fff; margin-top:2px;">${tile.baseInfluence}</div>`;
+                const costStr = tile.cost.length > 0 ? `<div style="font-size:10px; color:#ffaa00; margin-top:1px;">(${tile.cost.join('')})</div>` : '';
                 
-                tileDiv.innerHTML = `${resourceChar}<br><small>${tile.baseInfluence}</small>${costStr}`;
-                tileDiv.style.backgroundColor = `#${tile.color.toString(16).padStart(6, '0')}`;
+                tileDiv.innerHTML = `
+                    <div style="font-size:18px; font-weight:bold;">${resourceChar}</div>
+                    ${influenceStr}
+                    ${costStr}
+                `;
                 
                 // Dim if can't afford
                 if (!canAffordTile(tile)) {
@@ -1334,29 +1369,65 @@
                 '• (Cost) = required resources<br>';
         }
         
+        // Update turn phase display
+        function updateTurnPhaseDisplay() {
+            const phaseNames = {
+                'start_phase': 'Start (Card Draw)',
+                'placement_phase': 'Placement',
+                'cleanup_phase': 'Cleanup'
+            };
+            
+            document.getElementById('turnPhaseValue').textContent = phaseNames[turnPhase] || turnPhase;
+        }
+        
         // End player turn
         function endPlayerTurn() {
             if (gamePhase === 'normal_play') {
-                // Switch players and start new turn
-                const oldPlayer = currentPlayer;
-                currentPlayer = currentPlayer === 1 ? 2 : 1;
+                // Move to cleanup phase first
+                turnPhase = 'cleanup_phase';
+                updateTurnPhaseDisplay();
                 
-                console.log(`Turn switching: ${oldPlayer} → ${currentPlayer}`);
-                showNotification(`Player ${currentPlayer}'s turn!`, 'info');
+                // After cleanup, switch players and start new turn
+                setTimeout(() => {
+                    const oldPlayer = currentPlayer;
+                    currentPlayer = currentPlayer === 1 ? 2 : 1;
+                    
+                    console.log(`Turn switching: ${oldPlayer} → ${currentPlayer}`);
+                    showNotification(`Player ${currentPlayer}'s turn!`, 'info');
+                    
+                    // Start new turn with start phase
+                    startNewTurn();
+                    
+                    updateGamePhaseDisplay();
+                    updateTurnPhaseDisplay();
+                    
+                    // Sync to multiplayer if connected
+                    if (isMultiplayer) {
+                        syncGameState();
+                    }
+                }, 500); // Small delay for visual feedback
+            }
+        }
+        
+        function startNewTurn() {
+            if (gamePhase === 'normal_play') {
+                turnPhase = 'start_phase';
+                updateTurnPhaseDisplay();
                 
-                startNewTurn();
+                console.log(`Starting new turn for Player ${currentPlayer} - Start Phase`);
                 
-                // Give new player a single tile for their turn
+                // Always draw a card at the start of each turn
                 if (currentPlayer === playerNumber) {
+                    console.log(`Player ${playerNumber}: Drawing card for start phase`);
                     drawTurnTile();
                 }
                 
-                updateGamePhaseDisplay();
-                
-                // Sync to multiplayer if connected
-                if (isMultiplayer) {
-                    syncGameState();
-                }
+                // Move to placement phase after card draw
+                setTimeout(() => {
+                    turnPhase = 'placement_phase';
+                    updateTurnPhaseDisplay();
+                    console.log(`Player ${currentPlayer} - Placement Phase`);
+                }, 1000);
             }
         }
         
@@ -1634,11 +1705,13 @@
             const newCurrentPlayer = gameState.currentPlayer || currentPlayer;
             const newGamePhase = gameState.gamePhase || gamePhase;
             const newCurrentTurn = gameState.currentTurn || currentTurn;
+            const newTurnPhase = gameState.turnPhase || turnPhase;
             
             // Force update these values
             currentPlayer = newCurrentPlayer;
             gamePhase = newGamePhase;
             currentTurn = newCurrentTurn;
+            turnPhase = newTurnPhase;
             
             console.log('Current player after update:', currentPlayer, 'Player number:', playerNumber);
             
@@ -1717,6 +1790,7 @@
             
             // Update UI
             updateGamePhaseDisplay();
+            updateTurnPhaseDisplay();
             updateResourceDisplay();
             
             // If it's not our turn, disable interactions
@@ -1751,6 +1825,7 @@
                     const gameState = {
                         currentPlayer,
                         gamePhase,
+                        turnPhase,
                         boardTiles: boardTiles.map(bt => ({
                             col: bt.col,
                             row: bt.row,
