@@ -254,6 +254,8 @@
             
             <button id="endTurnBtn" onclick="endPlayerTurn()" style="margin: 10px 0; padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">End Turn</button>
             
+            <button id="soundToggle" onclick="toggleSound()" style="margin: 10px 0; padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">🔊 Sound On</button>
+            
             <button onclick="leaveRoom()" style="margin: 10px 0; padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Leave Room</button>
             
             <h3>Your Hand</h3>
@@ -332,8 +334,140 @@
             }, duration);
         }
         
+        // Sound system using Web Audio API
+        class SoundSystem {
+            constructor() {
+                this.audioContext = null;
+                this.isEnabled = true;
+                this.initAudio();
+            }
+            
+            initAudio() {
+                try {
+                    // Create audio context (will be resumed on first user interaction)
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (error) {
+                    console.warn('Web Audio API not supported:', error);
+                    this.isEnabled = false;
+                }
+            }
+            
+            // Ensure audio context is running (required for user interaction)
+            ensureAudioContext() {
+                if (!this.isEnabled || !this.audioContext) return false;
+                
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
+                return true;
+            }
+            
+            // Generate a simple tone
+            playTone(frequency, duration, type = 'sine', volume = 0.1) {
+                if (!this.ensureAudioContext()) return;
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                oscillator.type = type;
+                
+                // Volume envelope
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + duration);
+            }
+            
+            // Play a chord (multiple frequencies)
+            playChord(frequencies, duration, volume = 0.08) {
+                frequencies.forEach((freq, index) => {
+                    setTimeout(() => {
+                        this.playTone(freq, duration, 'sine', volume);
+                    }, index * 50); // Stagger the notes slightly
+                });
+            }
+            
+            // Sound effects
+            playTurnSwitch() {
+                // Pleasant ascending chord
+                this.playChord([523.25, 659.25, 783.99], 0.3, 0.06); // C5, E5, G5
+            }
+            
+            playTilePlace() {
+                // Quick, satisfying click
+                this.playTone(800, 0.1, 'square', 0.05);
+                setTimeout(() => {
+                    this.playTone(1000, 0.1, 'square', 0.03);
+                }, 50);
+            }
+            
+            playTileCapture() {
+                // Dramatic descending sound
+                this.playTone(600, 0.2, 'sawtooth', 0.07);
+                setTimeout(() => {
+                    this.playTone(400, 0.2, 'sawtooth', 0.05);
+                }, 100);
+                setTimeout(() => {
+                    this.playTone(300, 0.2, 'sawtooth', 0.03);
+                }, 200);
+            }
+            
+            playVictory() {
+                // Triumphant fanfare
+                const victoryMelody = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                victoryMelody.forEach((freq, index) => {
+                    setTimeout(() => {
+                        this.playTone(freq, 0.4, 'sine', 0.08);
+                    }, index * 150);
+                });
+                
+                // Add some sparkle
+                setTimeout(() => {
+                    this.playChord([1046.50, 1318.51, 1567.98], 0.5, 0.06); // C6, E6, G6
+                }, 600);
+            }
+            
+            playError() {
+                // Low, unpleasant sound
+                this.playTone(200, 0.3, 'sawtooth', 0.04);
+            }
+            
+            playHover() {
+                // Subtle high-pitched tick
+                this.playTone(1200, 0.05, 'sine', 0.02);
+            }
+        }
+        
+        // Initialize sound system
+        const soundSystem = new SoundSystem();
+        
+        // Toggle sound on/off
+        function toggleSound() {
+            soundSystem.isEnabled = !soundSystem.isEnabled;
+            const button = document.getElementById('soundToggle');
+            
+            if (soundSystem.isEnabled) {
+                button.textContent = '🔊 Sound On';
+                button.style.background = '#2196F3';
+                showNotification('Sound enabled', 'success');
+            } else {
+                button.textContent = '🔇 Sound Off';
+                button.style.background = '#666';
+                showNotification('Sound disabled', 'info');
+            }
+        }
+        
         // Show replay prompt when game ends
         function showReplayPrompt(winningPlayer) {
+            // Play victory sound
+            soundSystem.playVictory();
+            
             const replayDiv = document.createElement('div');
             replayDiv.id = 'replayPrompt';
             replayDiv.style.cssText = `
@@ -1111,6 +1245,7 @@
                 }
                 
                 console.log(`Capturing tile at ${col},${row}! Was: ${capturedTile.type}, Now: ${tile.type}`);
+                soundSystem.playTileCapture();
             }
             
             // Set tile position and owner
@@ -1179,6 +1314,9 @@
             
             console.log(`Successfully placed ${tile.type} at ${col},${row}`);
             
+            // Play placement sound
+            soundSystem.playTilePlace();
+            
             // Sync to multiplayer if connected
             if (isMultiplayer) {
                 syncGameState();
@@ -1194,6 +1332,7 @@
             if (currentPlayer !== playerNumber) {
                 console.log(`Not your turn! Current player: ${currentPlayer}, You are: ${playerNumber}`);
                 showNotification(`It's Player ${currentPlayer}'s turn!`, 'warning');
+                soundSystem.playError();
                 return;
             }
             
@@ -1218,6 +1357,10 @@
         // Handle hex hover
         function handleHexHover(col, row) {
             const hex = hexGrid[col][row];
+            
+            // Play subtle hover sound
+            soundSystem.playHover();
+            
             if (selectedTile) {
                 // Handle first tile hover (becomes capital)
                 if (boardTiles.length === 0) {
@@ -1592,6 +1735,7 @@
                     
                     console.log(`Turn switching: ${oldPlayer} → ${currentPlayer}`);
                     showNotification(`Player ${currentPlayer}'s turn!`, 'info');
+                    soundSystem.playTurnSwitch();
                     
                     // Start new turn with start phase
                     startNewTurn();
