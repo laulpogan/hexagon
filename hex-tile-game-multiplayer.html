@@ -696,6 +696,12 @@
         
         // Check if player can afford a tile
         function canAffordTile(tile) {
+            // First tile placement is always free
+            const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${playerNumber}`);
+            if (playerTiles.length === 0) {
+                return true;
+            }
+            
             if (tile.cost.length === 0) return true; // Free tiles
             
             const available = getAvailableResources();
@@ -718,6 +724,12 @@
         
         // Pay for a tile by marking resources as used (only friendly tiles)
         function payForTile(tile) {
+            // First tile placement is always free
+            const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${playerNumber}`);
+            if (playerTiles.length === 0) {
+                return;
+            }
+            
             if (tile.cost.length === 0) return; // Free tiles
             
             const costCopy = [...tile.cost];
@@ -1033,7 +1045,7 @@
                 if (boardTiles.length === 0) {
                     if (hex.isEmpty) {
                         hex.tint = 0x00ff00; // Green for valid first tile placement
-                        document.getElementById('hover').textContent = `${col},${row} (Place First Tile - Capital)`;
+                        document.getElementById('hover').textContent = `${col},${row} (Place First Tile - FREE!)`;
                     } else {
                         hex.tint = 0xff0000; // Red for invalid first tile placement
                         document.getElementById('hover').textContent = `${col},${row} (Invalid - not empty space)`;
@@ -1053,7 +1065,7 @@
                             // Check if this is first tile for this player
                             const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${currentPlayer}`);
                             if (playerTiles.length === 0) {
-                                document.getElementById('hover').textContent = `${col},${row} (Place First Tile - Capital)`;
+                                document.getElementById('hover').textContent = `${col},${row} (Place First Tile - FREE!)`;
                             } else {
                                 document.getElementById('hover').textContent = `${col},${row} (Place)`;
                             }
@@ -1276,7 +1288,15 @@
                 // Create organized content within the tile
                 const resourceChar = tile.resourceTypes.length > 0 ? tile.resourceTypes.join('') : '?';
                 const influenceStr = `<div style="font-size:12px; color:#fff; margin-top:2px;">${tile.baseInfluence}</div>`;
-                const costStr = tile.cost.length > 0 ? `<div style="font-size:10px; color:#ffaa00; margin-top:1px;">(${tile.cost.join('')})</div>` : '';
+                
+                // Show cost, but mark as FREE if it's the first tile
+                let costStr = '';
+                const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${playerNumber}`);
+                if (playerTiles.length === 0) {
+                    costStr = `<div style="font-size:10px; color:#00ff00; margin-top:1px;">FREE</div>`;
+                } else if (tile.cost.length > 0) {
+                    costStr = `<div style="font-size:10px; color:#ffaa00; margin-top:1px;">(${tile.cost.join('')})</div>`;
+                }
                 
                 tileDiv.innerHTML = `
                     <div style="font-size:18px; font-weight:bold;">${resourceChar}</div>
