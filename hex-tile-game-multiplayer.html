@@ -919,22 +919,46 @@
         
         // Initialize sound system
         const soundSystem = new SoundSystem();
-        
-        // Toggle sound on/off
+
+        // Restore sound preference from localStorage
+        try {
+            const savedSound = localStorage.getItem('hexagon_sound_enabled');
+            if (savedSound === 'false') soundSystem.isEnabled = false;
+        } catch {}
+
+        // Toggle sound on/off (persists to localStorage)
         function toggleSound() {
             soundSystem.isEnabled = !soundSystem.isEnabled;
+            try { localStorage.setItem('hexagon_sound_enabled', String(soundSystem.isEnabled)); } catch {}
             const button = document.getElementById('soundToggle');
-            
-            if (soundSystem.isEnabled) {
-                button.textContent = '🔊 Sound On';
-                button.style.background = '#2196F3';
-                showNotification('Sound enabled', 'success');
-            } else {
+            if (button) {
+                if (soundSystem.isEnabled) {
+                    button.textContent = '🔊 Sound On';
+                    button.style.background = '#2196F3';
+                } else {
+                    button.textContent = '🔇 Sound Off';
+                    button.style.background = '#666';
+                }
+            }
+            showNotification(soundSystem.isEnabled ? 'Sound enabled' : 'Sound disabled', soundSystem.isEnabled ? 'success' : 'info');
+        }
+
+        // Restore button label on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const button = document.getElementById('soundToggle');
+            if (button && !soundSystem.isEnabled) {
                 button.textContent = '🔇 Sound Off';
                 button.style.background = '#666';
-                showNotification('Sound disabled', 'info');
             }
-        }
+            // Restore last room code in the input
+            try {
+                const lastCode = localStorage.getItem('hexagon_last_room');
+                if (lastCode) {
+                    const inp = document.getElementById('joinCodeInput');
+                    if (inp) inp.value = lastCode;
+                }
+            } catch {}
+        });
         
         // Show replay prompt when game ends
         function showReplayPrompt(winningPlayer) {
@@ -3145,6 +3169,7 @@
 
         function joinRoomWithCode(code) {
             roomCode = code.toUpperCase();
+            try { localStorage.setItem('hexagon_last_room', roomCode); } catch {}
             playerNumber = 2;
             isHost = false;
             isMultiplayer = true;
