@@ -232,6 +232,43 @@
 
         #debug { display: none; }
 
+        /* Board tile tooltip */
+        #boardTooltip {
+            position: fixed;
+            pointer-events: none;
+            background: rgba(15,15,18,0.96);
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #eee;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+            z-index: 9999;
+            min-width: 160px;
+            max-width: 240px;
+            display: none;
+        }
+        #boardTooltip .tt-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffd966;
+            margin-bottom: 4px;
+        }
+        #boardTooltip .tt-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            color: #bbb;
+        }
+        #boardTooltip .tt-row b { color: #fff; font-weight: bold; }
+        #boardTooltip .tt-divider {
+            border-top: 1px solid #444;
+            margin: 4px 0;
+        }
+        #boardTooltip .tt-owner-1 { color: #6cb6ff; }
+        #boardTooltip .tt-owner-2 { color: #ff6b6b; }
+
         /* Resource display */
         :root {
             --res-c: #ffd700;
@@ -335,6 +372,8 @@
         <div>Hover: <span id="hover">-</span></div>
         <div>Room: <span id="roomInfo">-</span></div>
     </div>
+
+    <div id="boardTooltip"></div>
     
     <div id="gameContainer">
         <div id="gameBoard"></div>
@@ -1582,12 +1621,64 @@
             }
         }
         
+        // Tooltip rendering for board tiles
+        function showBoardTooltip(col, row) {
+            const hex = hexGrid[col]?.[row];
+            const tip = document.getElementById('boardTooltip');
+            if (!tip) return;
+            if (!hex || hex.isEmpty || !hex.tile) {
+                tip.style.display = 'none';
+                return;
+            }
+            const tile = hex.tile;
+            const ownerNum = tile.owner === 'player1' ? 1 : tile.owner === 'player2' ? 2 : null;
+            const ownerLabel = ownerNum
+                ? `<span class="tt-owner-${ownerNum}">Player ${ownerNum}</span>`
+                : '<span style="color:#999">neutral</span>';
+            const rel = tile.getRelativeInfluence();
+            const baseInf = tile.baseInfluence;
+            const neighborMod = rel - baseInf;
+            const producesPips = tile.resourceTypes.length
+                ? tile.resourceTypes.map(r => resPip(r, null, {size:13})).join(' ')
+                : '<span style="color:#888">none</span>';
+            const costPips = tile.cost && tile.cost.length
+                ? tile.cost.map(r => resPip(r, null, {size:11})).join(' ')
+                : '<span style="color:#888">free</span>';
+            const tappedTag = tile.usedThisTurn
+                ? '<div style="color:#ffaa44; font-size:11px; font-style:italic;">⟲ tapped</div>'
+                : '';
+            tip.innerHTML = `
+                <div class="tt-title">${tile.type}</div>
+                <div class="tt-row"><span>Owner</span> <b>${ownerLabel}</b></div>
+                <div class="tt-row"><span>Influence</span> <b>${baseInf}${neighborMod !== 0 ? (neighborMod > 0 ? ` +${neighborMod}` : ` ${neighborMod}`) : ''} = ${rel}</b></div>
+                <div class="tt-row"><span>Produces</span> <b>${producesPips}</b></div>
+                <div class="tt-row"><span>Cost</span> <b>${costPips}</b></div>
+                ${tappedTag}
+            `;
+            tip.style.display = 'block';
+        }
+        function hideBoardTooltip() {
+            const tip = document.getElementById('boardTooltip');
+            if (tip) tip.style.display = 'none';
+        }
+        // Track mouse for tooltip positioning
+        document.addEventListener('mousemove', (e) => {
+            const tip = document.getElementById('boardTooltip');
+            if (tip && tip.style.display !== 'none') {
+                tip.style.left = (e.clientX + 16) + 'px';
+                tip.style.top  = (e.clientY + 16) + 'px';
+            }
+        });
+
         // Handle hex hover
         function handleHexHover(col, row) {
             const hex = hexGrid[col][row];
-            
+
             // Play subtle hover sound
             soundSystem.playHover();
+
+            // Show board tooltip for occupied tiles
+            showBoardTooltip(col, row);
             
             if (selectedTile) {
                 // Handle first tile hover (becomes capital)
@@ -1653,6 +1744,7 @@
         
         // Handle hex out
         function handleHexOut() {
+            hideBoardTooltip();
             updateAllTileDisplays(); // Reset colors
         }
         
