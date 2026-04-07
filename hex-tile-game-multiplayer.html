@@ -1935,10 +1935,12 @@
                     justPlaced: false
                 }
             );
-            const ghost = createTileHex(fakeTile, false);
+            // Render with relative influence so the player sees the actual
+            // placement value (accounting for adjacent friendlies/enemies & keywords)
+            const ghost = createTileHex(fakeTile, true);
             ghost.x = target.x;
             ghost.y = target.y;
-            ghost.alpha = 0.55;
+            ghost.alpha = 0.6;
             hexContainer.addChild(ghost);
             _ghostHex = ghost;
         }
