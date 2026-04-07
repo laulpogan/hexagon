@@ -1174,54 +1174,70 @@
             return true;
         }
         
-        // Pay for a tile by marking resources as used (only friendly tiles)
+        // Animate a hex tile being tapped (MTG-style rotation)
+        function animateTap(hex, tapped = true) {
+            if (!hex || !app) return;
+            const targetRot = tapped ? 0.22 : 0; // ~12.6° tap angle
+            const targetAlpha = tapped ? 0.55 : 1.0;
+            const startRot = hex.rotation || 0;
+            const startAlpha = hex.alpha;
+            const duration = 220; // ms
+            const startTime = performance.now();
+
+            const tick = () => {
+                const elapsed = performance.now() - startTime;
+                const t = Math.min(1, elapsed / duration);
+                // Ease-out cubic
+                const e = 1 - Math.pow(1 - t, 3);
+                hex.rotation = startRot + (targetRot - startRot) * e;
+                hex.alpha = startAlpha + (targetAlpha - startAlpha) * e;
+                if (t < 1) {
+                    requestAnimationFrame(tick);
+                }
+            };
+            requestAnimationFrame(tick);
+        }
+
+        // Pay for a tile by tapping friendly resource tiles
         function payForTile(tile) {
             const activePNum = getActivePlayerNumber();
             // First tile placement is always free
             const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${activePNum}`);
-            if (playerTiles.length === 0) {
-                return;
-            }
-            
-            if (tile.cost.length === 0) return; // Free tiles
-            
+            if (playerTiles.length === 0) return;
+            if (tile.cost.length === 0) return;
+
             const costCopy = [...tile.cost];
-            
+
             // Find friendly tiles to use for payment
             boardTiles.forEach(boardTile => {
                 if (costCopy.length === 0) return;
-                
+
                 if (boardTile.tile.owner === `player${currentPlayer}` && !boardTile.tile.usedThisTurn) {
                     boardTile.tile.resourceTypes.forEach(resource => {
                         const costIndex = costCopy.indexOf(resource);
                         if (costIndex !== -1) {
                             costCopy.splice(costIndex, 1);
                             boardTile.tile.usedThisTurn = true;
-                            
-                            // Visual feedback - dim the tile
+
                             const hex = hexGrid[boardTile.col][boardTile.row];
-                            hex.alpha = 0.6;
+                            animateTap(hex, true);
                         }
                     });
                 }
             });
         }
         
-        // Reset all tiles for new turn
-        function startNewTurn() {
-            currentTurn++;
-            
-            // Reset all friendly tiles' used status
+        // Reset all tiles for new turn (untap all friendly tiles)
+        function untapAllFriendlyTiles() {
             boardTiles.forEach(boardTile => {
                 if (boardTile.tile.owner === `player${currentPlayer}`) {
-                    boardTile.tile.usedThisTurn = false;
-                    const hex = hexGrid[boardTile.col][boardTile.row];
-                    hex.alpha = 1.0; // Restore full opacity
+                    if (boardTile.tile.usedThisTurn) {
+                        boardTile.tile.usedThisTurn = false;
+                        const hex = hexGrid[boardTile.col][boardTile.row];
+                        animateTap(hex, false); // animate untap
+                    }
                 }
             });
-            
-            // Update all tile displays (influence may have changed)
-            updateAllTileDisplays();
             updateResourceDisplay();
         }
         
@@ -1261,6 +1277,12 @@
                     updatedTileHex.on('pointerover', () => handleHexHover(hex.gridCol, hex.gridRow));
                     updatedTileHex.on('pointerout', () => handleHexOut());
                     
+                    // Preserve tap state (rotation + alpha) across rebuilds
+                    if (updatedTileHex.tile.usedThisTurn) {
+                        updatedTileHex.rotation = 0.22;
+                        updatedTileHex.alpha = 0.55;
+                    }
+
                     // Replace in container and grid
                     hexContainer.removeChild(hex);
                     hexContainer.addChild(updatedTileHex);
@@ -1956,8 +1978,12 @@
         
         function startNewTurn() {
             if (gamePhase === 'normal_play') {
+                currentTurn++;
                 turnPhase = 'start_phase';
                 updateTurnPhaseDisplay();
+
+                // Untap all friendly tiles at start of turn
+                untapAllFriendlyTiles();
 
                 // Draw a card if it's our turn:
                 //   - Offline: always draw (we control all players)
