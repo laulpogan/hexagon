@@ -332,6 +332,159 @@
             flex-wrap: wrap;
         }
 
+        /* Deckbuilder modal */
+        #deckbuilderModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 9998;
+            display: none;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: auto;
+        }
+        #deckbuilderModal.open { display: flex; flex-direction: column; align-items: center; }
+        .db-shell {
+            background: #1a1a1f;
+            border: 1px solid #444;
+            border-radius: 12px;
+            padding: 20px;
+            width: 100%;
+            max-width: 1100px;
+            color: #eee;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+        }
+        .db-shell h2 { margin: 0 0 4px 0; color: #ffd700; }
+        .db-shell .db-sub { color: #aaa; font-size: 13px; margin-bottom: 12px; }
+        .db-cols {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+            min-height: 420px;
+        }
+        .db-pool, .db-deck {
+            background: #232328;
+            border: 1px solid #3a3a40;
+            border-radius: 8px;
+            padding: 12px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .db-pool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 8px;
+        }
+        .db-card {
+            background: linear-gradient(180deg, #2e2e35, #1f1f24);
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+        }
+        .db-card:hover { border-color: #ffd700; transform: translateY(-2px); }
+        .db-card .db-card-name {
+            font-weight: bold;
+            font-size: 12px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .db-card .db-card-meta {
+            font-size: 11px;
+            color: #aaa;
+            margin: 4px 0;
+        }
+        .db-card .db-card-cost { font-size: 11px; }
+        .db-card .db-card-kw {
+            font-size: 9px;
+            color: #b0a4ff;
+            margin-top: 3px;
+        }
+        .db-card .db-card-count {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #ffd700;
+            color: #000;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 1px 5px;
+            border-radius: 8px;
+            display: none;
+        }
+        .db-card.in-deck .db-card-count { display: block; }
+        .db-deck h3 { margin: 0 0 4px 0; color: #7fdd5f; font-size: 14px; }
+        .db-deck-stats { font-size: 12px; color: #aaa; margin-bottom: 8px; }
+        .db-deck-stats.invalid { color: #ff6b6b; }
+        .db-deck-stats.valid { color: #7fdd5f; }
+        .db-deck-list { font-size: 12px; }
+        .db-deck-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 6px;
+            border-bottom: 1px solid #2a2a30;
+        }
+        .db-deck-row button {
+            background: #553030;
+            color: #fff;
+            border: 1px solid #774444;
+            border-radius: 3px;
+            font-size: 10px;
+            padding: 1px 6px;
+            cursor: pointer;
+        }
+        .db-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .db-actions button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .db-curve {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            height: 60px;
+            padding: 4px;
+            background: #1a1a20;
+            border-radius: 6px;
+            margin: 6px 0;
+        }
+        .db-curve-bar {
+            flex: 1;
+            background: linear-gradient(180deg, #6a5cae, #4a3c8e);
+            min-height: 2px;
+            position: relative;
+            border-radius: 3px 3px 0 0;
+        }
+        .db-curve-bar-label {
+            position: absolute;
+            bottom: -16px;
+            left: 0; right: 0;
+            text-align: center;
+            font-size: 10px;
+            color: #aaa;
+        }
+        .db-curve-bar-count {
+            position: absolute;
+            top: -14px;
+            left: 0; right: 0;
+            text-align: center;
+            font-size: 10px;
+            color: #fff;
+            font-weight: bold;
+        }
+
         /* Keyword badges */
         .kw-badges {
             display: flex;
@@ -389,8 +542,40 @@
             <button onclick="playOffline()" style="background: #666; font-size: 13px; padding: 8px 16px;">
                 Play Local (2 players, 1 screen)
             </button>
+            <br>
+            <button onclick="openDeckbuilder()" style="background: #6a5cae; font-size: 13px; padding: 8px 16px; margin-top: 6px;">
+                🛠 Build Deck
+            </button>
 
             <div id="roomStatus" style="margin-top: 12px;"></div>
+        </div>
+    </div>
+
+    <!-- Deckbuilder Modal -->
+    <div id="deckbuilderModal">
+        <div class="db-shell">
+            <h2>🛠 Deck Builder</h2>
+            <div class="db-sub">
+                Build a custom deck (40-60 cards). Up to 4 of each common card,
+                2 of each tier-3 card, 1 of each legendary. Saved to this browser.
+            </div>
+            <div class="db-cols">
+                <div class="db-pool">
+                    <div id="dbPoolGrid" class="db-pool-grid"></div>
+                </div>
+                <div class="db-deck">
+                    <h3>Your Deck</h3>
+                    <div id="dbDeckStats" class="db-deck-stats">0 / 40 cards</div>
+                    <div class="db-curve" id="dbCurve"></div>
+                    <div id="dbDeckList" class="db-deck-list"></div>
+                </div>
+            </div>
+            <div class="db-actions">
+                <button onclick="dbResetToDefault()" style="background:#444; color:#fff;">Reset to Default</button>
+                <button onclick="dbClear()" style="background:#553030; color:#fff;">Clear Deck</button>
+                <button onclick="dbSaveAndClose()" style="background:#4CAF50; color:#fff;">Save &amp; Close</button>
+                <button onclick="closeDeckbuilder()" style="background:#666; color:#fff;">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -1007,6 +1192,156 @@
             { type: 'DRAGON',     influence: 7, char: 'D', resources: ['M', 'R'],          cost: ['M', 'M', 'R', 'F'], count: 1, keywords: ['HASTE', 'SIEGE', 'DOUBLESTRIKE'] }
         ];
         
+        // ─── Deckbuilder ─────────────────────────────────────────────────────
+        const DECK_MIN = 40;
+        const DECK_MAX = 60;
+
+        // Per-card limits based on tier (cost length)
+        function maxCopiesOf(tpl) {
+            if (tpl.cost.length >= 4) return 1; // legendary
+            if (tpl.cost.length >= 3) return 2; // tier 3
+            return 4;                            // common
+        }
+
+        // Build the default deck composition from TILE_DECK count fields
+        function getDefaultDeckComposition() {
+            const composition = {};
+            TILE_DECK.forEach(tpl => { composition[tpl.type] = tpl.count; });
+            return composition;
+        }
+
+        // Saved deck (loaded from localStorage on demand)
+        let userDeckComposition = null;
+        function loadSavedDeck() {
+            try {
+                const raw = localStorage.getItem('hexagon_user_deck');
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (typeof parsed !== 'object') return null;
+                return parsed;
+            } catch { return null; }
+        }
+        function saveDeck(comp) {
+            try {
+                localStorage.setItem('hexagon_user_deck', JSON.stringify(comp));
+                return true;
+            } catch { return false; }
+        }
+        function getActiveDeckComposition() {
+            return userDeckComposition || loadSavedDeck() || getDefaultDeckComposition();
+        }
+
+        // Deckbuilder UI state
+        let _dbWorkingComposition = null;
+        function openDeckbuilder() {
+            _dbWorkingComposition = { ...(loadSavedDeck() || getDefaultDeckComposition()) };
+            renderDeckbuilder();
+            document.getElementById('deckbuilderModal').classList.add('open');
+        }
+        function closeDeckbuilder() {
+            document.getElementById('deckbuilderModal').classList.remove('open');
+            _dbWorkingComposition = null;
+        }
+        function dbClear() {
+            Object.keys(_dbWorkingComposition).forEach(k => _dbWorkingComposition[k] = 0);
+            renderDeckbuilder();
+        }
+        function dbResetToDefault() {
+            _dbWorkingComposition = getDefaultDeckComposition();
+            renderDeckbuilder();
+        }
+        function dbSaveAndClose() {
+            const total = Object.values(_dbWorkingComposition).reduce((a,b) => a+b, 0);
+            if (total < DECK_MIN || total > DECK_MAX) {
+                showNotification(`Deck must have ${DECK_MIN}–${DECK_MAX} cards (currently ${total})`, 'error');
+                return;
+            }
+            saveDeck(_dbWorkingComposition);
+            userDeckComposition = { ..._dbWorkingComposition };
+            showNotification('Deck saved!', 'success');
+            closeDeckbuilder();
+        }
+        function dbAdd(type) {
+            const tpl = TILE_DECK.find(t => t.type === type);
+            if (!tpl) return;
+            const total = Object.values(_dbWorkingComposition).reduce((a,b) => a+b, 0);
+            const max = maxCopiesOf(tpl);
+            const cur = _dbWorkingComposition[type] || 0;
+            if (total >= DECK_MAX) { showNotification('Deck is full', 'warning'); return; }
+            if (cur >= max) { showNotification(`Max ${max} of ${type}`, 'warning'); return; }
+            _dbWorkingComposition[type] = cur + 1;
+            renderDeckbuilder();
+        }
+        function dbRemove(type) {
+            const cur = _dbWorkingComposition[type] || 0;
+            if (cur <= 0) return;
+            _dbWorkingComposition[type] = cur - 1;
+            renderDeckbuilder();
+        }
+        function renderDeckbuilder() {
+            const grid = document.getElementById('dbPoolGrid');
+            const deckList = document.getElementById('dbDeckList');
+            const stats = document.getElementById('dbDeckStats');
+            const curve = document.getElementById('dbCurve');
+            if (!grid || !deckList || !stats || !curve) return;
+
+            // Pool
+            grid.innerHTML = TILE_DECK.map(tpl => {
+                const count = _dbWorkingComposition[tpl.type] || 0;
+                const max = maxCopiesOf(tpl);
+                const costPips = tpl.cost.length
+                    ? tpl.cost.map(r => resPip(r, null, {size:11})).join('')
+                    : '<span style="color:#7fdd5f;">free</span>';
+                const prodPips = tpl.resources.length
+                    ? tpl.resources.map(r => resPip(r, null, {size:11})).join('')
+                    : '—';
+                const kw = (tpl.keywords || []).map(k =>
+                    `<span class="kw-badge" title="${KEYWORDS[k]?.desc || ''}">${(KEYWORDS[k]?.name || k).substring(0,4)}</span>`
+                ).join(' ');
+                return `
+                    <div class="db-card ${count > 0 ? 'in-deck' : ''}" onclick="dbAdd('${tpl.type}')" oncontextmenu="event.preventDefault(); dbRemove('${tpl.type}'); return false;">
+                        <span class="db-card-count">${count}</span>
+                        <div class="db-card-name">${tpl.type}</div>
+                        <div class="db-card-meta">⚔ ${tpl.influence} · max ${max}</div>
+                        <div class="db-card-cost">cost: ${costPips}</div>
+                        <div class="db-card-cost">prod: ${prodPips}</div>
+                        <div class="db-card-kw">${kw}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Deck list
+            const total = Object.values(_dbWorkingComposition).reduce((a,b) => a+b, 0);
+            stats.textContent = `${total} / ${DECK_MIN}-${DECK_MAX} cards`;
+            stats.className = 'db-deck-stats ' + (total >= DECK_MIN && total <= DECK_MAX ? 'valid' : 'invalid');
+
+            const rows = TILE_DECK
+                .filter(tpl => (_dbWorkingComposition[tpl.type] || 0) > 0)
+                .map(tpl => {
+                    const c = _dbWorkingComposition[tpl.type];
+                    return `<div class="db-deck-row">
+                        <span><b>${c}×</b> ${tpl.type}</span>
+                        <button onclick="dbRemove('${tpl.type}')">−</button>
+                    </div>`;
+                }).join('');
+            deckList.innerHTML = rows || '<div style="color:#666; text-align:center; padding:20px;">No cards added yet. Click cards on the left to add.</div>';
+
+            // Mana curve (by total cost length 0..4+)
+            const buckets = [0, 0, 0, 0, 0]; // 0, 1, 2, 3, 4+
+            TILE_DECK.forEach(tpl => {
+                const c = _dbWorkingComposition[tpl.type] || 0;
+                const idx = Math.min(tpl.cost.length, 4);
+                buckets[idx] += c;
+            });
+            const maxBucket = Math.max(1, ...buckets);
+            curve.innerHTML = buckets.map((n, i) => `
+                <div class="db-curve-bar" style="height:${(n / maxBucket) * 100}%">
+                    <div class="db-curve-bar-count">${n || ''}</div>
+                    <div class="db-curve-bar-label">${i === 4 ? '4+' : i}</div>
+                </div>
+            `).join('');
+        }
+
         // Game state
         let playerDecks = { 1: [], 2: [] };
         let playerHands = { 1: [], 2: [] }; // offline mode stores both players' hands
@@ -1928,9 +2263,11 @@
         // Create and shuffle a deck for a player
         function createPlayerDeck() {
             const deck = [];
-            
+            const composition = getActiveDeckComposition();
+
             TILE_DECK.forEach(tileTemplate => {
-                for (let i = 0; i < tileTemplate.count; i++) {
+                const count = composition[tileTemplate.type] ?? tileTemplate.count;
+                for (let i = 0; i < count; i++) {
                     const tile = new Tile(
                         tileTemplate.type,
                         tileTemplate.influence,
