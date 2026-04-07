@@ -982,13 +982,37 @@
                 min-width: 400px;
             `;
             
+            const s1 = gameStats[1] || { placed:0, captured:0, discarded:0 };
+            const s2 = gameStats[2] || { placed:0, captured:0, discarded:0 };
+            const statsTable = `
+                <table style="margin: 0 auto 20px; border-collapse: collapse; color: #ddd; font-size: 13px;">
+                    <thead>
+                        <tr><th></th>
+                            <th style="padding:4px 12px; color:#6cb6ff;">Player 1</th>
+                            <th style="padding:4px 12px; color:#ff6b6b;">Player 2</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td style="text-align:right; padding:2px 8px; color:#999;">Tiles placed</td>
+                            <td style="padding:2px 12px;">${s1.placed}</td>
+                            <td style="padding:2px 12px;">${s2.placed}</td></tr>
+                        <tr><td style="text-align:right; padding:2px 8px; color:#999;">Tiles captured</td>
+                            <td style="padding:2px 12px;">${s1.captured}</td>
+                            <td style="padding:2px 12px;">${s2.captured}</td></tr>
+                        <tr><td style="text-align:right; padding:2px 8px; color:#999;">Tiles discarded</td>
+                            <td style="padding:2px 12px;">${s1.discarded}</td>
+                            <td style="padding:2px 12px;">${s2.discarded}</td></tr>
+                        <tr><td style="text-align:right; padding:2px 8px; color:#999;">Turns played</td>
+                            <td colspan="2" style="padding:2px 12px; text-align:center;">${currentTurn}</td></tr>
+                    </tbody>
+                </table>`;
             replayDiv.innerHTML = `
                 <h2 style="color: #ffd700; margin: 0 0 15px 0; font-size: 28px;">
                     🏆 VICTORY! 🏆
                 </h2>
-                <p style="color: white; font-size: 18px; margin: 0 0 20px 0;">
+                <p style="color: white; font-size: 18px; margin: 0 0 12px 0;">
                     Player ${winningPlayer} wins by capturing the enemy capital!
                 </p>
+                ${statsTable}
                 <p style="color: #ccc; font-size: 16px; margin: 0 0 25px 0;">
                     Would you like to play again?
                 </p>
@@ -1054,10 +1078,12 @@
         // Reboot the room for a new game
         function rebootRoom() {
             console.log('🔄 Rebooting room for new game...');
-            
+
             // Reset all game state
             gameWon = false;
             winner = null;
+            resetGameStats();
+            clearActionLog();
             currentTurn = 1;
             currentPlayer = 1;
             gamePhase = 'capital_placement';
@@ -1528,6 +1554,16 @@
         let _discardUsedThisTurn = false;    // once-per-turn discard-and-redraw
         let gameWon = false;
         let winner = null;
+        let gameStats = {
+            1: { placed: 0, captured: 0, discarded: 0 },
+            2: { placed: 0, captured: 0, discarded: 0 }
+        };
+        function resetGameStats() {
+            gameStats = {
+                1: { placed: 0, captured: 0, discarded: 0 },
+                2: { placed: 0, captured: 0, discarded: 0 }
+            };
+        }
         
         // Game state
         let app;
@@ -2295,6 +2331,7 @@
                 logAction(`<b>P${currentPlayer}</b> captured enemy <b>${capturedTile.type}</b> with ${tile.type}`, `p${currentPlayer}`);
                 animateFlash(hex, 0xff4444); // red flash on the dying tile
                 soundSystem.playTileCapture();
+                if (gameStats[currentPlayer]) gameStats[currentPlayer].captured++;
             }
             
             // Set tile position and owner
@@ -2367,6 +2404,7 @@
 
             // Mark that this player has acted this turn (used by End Turn button)
             _hasActedThisTurn = true;
+            if (gameStats[currentPlayer]) gameStats[currentPlayer].placed++;
             updateTurnIndicator();
 
             // Play placement sound
@@ -2697,6 +2735,7 @@
             if (idx === -1) return;
             playerHand.splice(idx, 1);
             _discardUsedThisTurn = true;
+            if (gameStats[currentPlayer]) gameStats[currentPlayer].discarded++;
             logAction(`<b>P${currentPlayer}</b> discarded <b>${tile.type}</b>`, `p${currentPlayer}`);
             drawTurnTile();
             updateHand();
