@@ -1687,7 +1687,12 @@
                     hex.on('pointerover', () => handleHexHover(col, row));
                     
                     hex.on('pointerout', () => {
-                        hex.tint = 0xffffff;
+                        // Restore legal placement tint if applicable, otherwise white
+                        if (isLegalPlacementCell(col, row) && hex.isEmpty) {
+                            hex.tint = 0x88ff88;
+                        } else {
+                            hex.tint = 0xffffff;
+                        }
                         clearGhostPreview();
                         document.getElementById('hover').textContent = '-';
                     });
@@ -2760,25 +2765,41 @@
                 document.getElementById('selected').textContent = 'None';
 
                 // Reset highlighting in resource panel and board
+                clearLegalPlacements();
+                clearPaymentPreview();
                 updateResourceDisplay(null);
                 updateAllTileDisplays();
             }
         }
         
         // Highlight all valid placement positions
+        // Track which cells are currently flagged as legal placements
+        // (so the highlight persists across hover/out events)
+        let _legalPlacementCells = new Set(); // "col,row" keys
+        function isLegalPlacementCell(col, row) {
+            return _legalPlacementCells.has(`${col},${row}`);
+        }
         function highlightValidPlacements() {
+            _legalPlacementCells.clear();
+            if (!selectedTile) return;
             for (let col = 0; col < GRID_WIDTH; col++) {
                 for (let row = 0; row < GRID_HEIGHT; row++) {
-                    const hex = hexGrid[col][row];
                     if (canPlaceTile(col, row) && canAffordTile(selectedTile)) {
-                        if (hex.isEmpty) {
-                            hex.tint = 0x88ff88; // Light green for empty valid spaces
-                        } else {
-                            hex.tint = 0x00ff00; // Bright green for capturable tiles
-                        }
+                        _legalPlacementCells.add(`${col},${row}`);
+                        const hex = hexGrid[col][row];
+                        if (hex.isEmpty) hex.tint = 0x88ff88;
+                        else             hex.tint = 0x00ff00;
                     }
                 }
             }
+        }
+        function clearLegalPlacements() {
+            _legalPlacementCells.forEach(key => {
+                const [c, r] = key.split(',').map(Number);
+                const hex = hexGrid[c]?.[r];
+                if (hex) hex.tint = 0xffffff;
+            });
+            _legalPlacementCells.clear();
         }
         
         // Update score display
