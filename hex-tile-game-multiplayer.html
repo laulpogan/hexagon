@@ -484,6 +484,18 @@
             color: #fff;
             font-weight: bold;
         }
+        .db-filter-btn {
+            padding: 6px 12px;
+            background: #2a2a30;
+            border: 1px solid #444;
+            color: #aaa;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .db-filter-btn:hover { background: #3a3a40; color: #fff; }
+        .db-filter-btn.active { background: #6a5cae; border-color: #8a7ccf; color: #fff; }
 
         /* End Turn button */
         #endTurnBtn {
@@ -640,6 +652,14 @@
             <div class="db-sub">
                 Build a custom deck (40-60 cards). Up to 4 of each common card,
                 2 of each tier-3 card, 1 of each legendary. Saved to this browser.
+            </div>
+            <div id="dbFilters" style="display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap;">
+                <button onclick="dbSetFilter('all')" class="db-filter-btn">All</button>
+                <button onclick="dbSetFilter('0')" class="db-filter-btn">Free</button>
+                <button onclick="dbSetFilter('1')" class="db-filter-btn">Tier 1</button>
+                <button onclick="dbSetFilter('2')" class="db-filter-btn">Tier 2</button>
+                <button onclick="dbSetFilter('3')" class="db-filter-btn">Tier 3</button>
+                <button onclick="dbSetFilter('4')" class="db-filter-btn">Legendary</button>
             </div>
             <div class="db-cols">
                 <div class="db-pool">
@@ -1347,8 +1367,16 @@
 
         // Deckbuilder UI state
         let _dbWorkingComposition = null;
+        let _dbFilter = 'all'; // 'all', '0', '1', '2', '3', '4'
+
+        function dbSetFilter(f) {
+            _dbFilter = f;
+            renderDeckbuilder();
+        }
+
         function openDeckbuilder() {
             _dbWorkingComposition = { ...(loadSavedDeck() || getDefaultDeckComposition()) };
+            _dbFilter = 'all';
             renderDeckbuilder();
             document.getElementById('deckbuilderModal').classList.add('open');
         }
@@ -1399,8 +1427,21 @@
             const curve = document.getElementById('dbCurve');
             if (!grid || !deckList || !stats || !curve) return;
 
+            // Highlight active filter button
+            document.querySelectorAll('#dbFilters .db-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase() === ({
+                    all:'all', '0':'free', '1':'tier 1', '2':'tier 2', '3':'tier 3', '4':'legendary'
+                })[_dbFilter]);
+            });
+
+            // Filter pool by selected tier
+            const filteredPool = TILE_DECK.filter(tpl => {
+                if (_dbFilter === 'all') return true;
+                return String(tpl.cost.length) === _dbFilter;
+            });
+
             // Pool
-            grid.innerHTML = TILE_DECK.map(tpl => {
+            grid.innerHTML = filteredPool.map(tpl => {
                 const count = _dbWorkingComposition[tpl.type] || 0;
                 const max = maxCopiesOf(tpl);
                 const costPips = tpl.cost.length
