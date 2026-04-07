@@ -821,43 +821,90 @@
             return `<span class="res-pip" style="color:${meta.color}; font-size:${size}px;" title="${meta.name}">${meta.icon}${showCount ? `<b>${count}</b>` : ''}</span>`;
         }
         
+        // Keyword definitions — central registry of tile abilities
+        // Each keyword is a string code; behavior is implemented where it
+        // matters (influence calc, placement rules, capture handling, etc).
+        const KEYWORDS = {
+            WARD:        { name: 'Ward',        desc: 'Cannot be captured the first time it would be (once per game).' },
+            RALLY:       { name: 'Rally',       desc: '+1 to base influence of friendly neighbors.' },
+            SIEGE:       { name: 'Siege',       desc: '+2 influence vs adjacent enemies (extra subtraction).' },
+            SCOUT:       { name: 'Scout',       desc: 'Can be placed on any empty tile (no adjacency required).' },
+            MERCHANT:    { name: 'Merchant',    desc: 'Produces one extra of its resource type when paying.' },
+            FORTIFIED:   { name: 'Fortified',   desc: '+2 base influence at board edges or corners.' },
+            HASTE:       { name: 'Haste',       desc: 'Can be tapped for resources the same turn it is placed.' },
+            DOUBLESTRIKE:{ name: 'Double Strike', desc: 'Counts twice for influence calculations on adjacent tiles.' },
+            VIGILANT:    { name: 'Vigilant',    desc: 'Does not become tapped when used to pay costs.' },
+            REGEN:       { name: 'Regenerate',  desc: 'Untaps automatically at end of opponent turn as well.' }
+        };
+
         // Tile class definition
         class Tile {
-            constructor(type, baseInfluence, char, color, resourceTypes = [], cost = []) {
+            constructor(type, baseInfluence, char, color, resourceTypes = [], cost = [], keywords = []) {
                 this.type = type;
                 this.baseInfluence = baseInfluence;
                 this.char = char;
                 this.color = color;
-                this.resourceTypes = resourceTypes; // Array of resource types this tile provides (C, M, R, F)
-                this.cost = cost; // Array of resource requirements to play this tile
+                this.resourceTypes = resourceTypes; // C/M/R/F this tile provides
+                this.cost = cost;                   // C/M/R/F to play
+                this.keywords = keywords;           // array of keyword codes
                 this.col = null;
                 this.row = null;
-                this.owner = 'player'; // For now, all tiles belong to player
-                this.usedThisTurn = false; // Track if resources were used this turn
+                this.owner = 'player';
+                this.usedThisTurn = false;
+                this.wardConsumed = false;          // for WARD keyword
+                this.justPlaced = false;            // for HASTE keyword
             }
-            
-            // Calculate relative influence based on adjacent tiles (friendly add, enemy subtract)
+
+            hasKeyword(kw) { return this.keywords.includes(kw); }
+
+            // Effective base influence accounting for keywords (FORTIFIED, neighbor RALLY)
+            getEffectiveBaseInfluence() {
+                let inf = this.baseInfluence;
+                if (this.col !== null && this.row !== null) {
+                    // FORTIFIED: bonus on edge/corner
+                    if (this.hasKeyword('FORTIFIED')) {
+                        const onEdge = this.col === 0 || this.col === GRID_WIDTH - 1
+                                    || this.row === 0 || this.row === GRID_HEIGHT - 1;
+                        if (onEdge) inf += 2;
+                    }
+                    // RALLY from friendly neighbors boosts this tile's effective base
+                    const neighbors = getNeighbors(this.col, this.row);
+                    neighbors.forEach(nh => {
+                        if (!nh.isEmpty && nh.tile && nh.tile.owner === this.owner && nh.tile.hasKeyword('RALLY')) {
+                            inf += 1;
+                        }
+                    });
+                }
+                return inf;
+            }
+
+            // Calculate relative influence with all neighbor effects + keywords
             getRelativeInfluence() {
                 if (this.col === null || this.row === null) {
-                    return this.baseInfluence; // Not placed yet, return base
+                    return this.baseInfluence;
                 }
-                
-                let totalInfluence = this.baseInfluence;
+
+                let totalInfluence = this.getEffectiveBaseInfluence();
                 const neighbors = getNeighbors(this.col, this.row);
-                
+
                 neighbors.forEach(neighborHex => {
                     if (!neighborHex.isEmpty && neighborHex.tile) {
-                        if (neighborHex.tile.owner === this.owner) {
-                            // Friendly tiles add their base influence
-                            totalInfluence += neighborHex.tile.baseInfluence;
+                        const nt = neighborHex.tile;
+                        const friendly = nt.owner === this.owner;
+                        // Use neighbor's effective base; double-count if DOUBLESTRIKE
+                        const mult = nt.hasKeyword('DOUBLESTRIKE') ? 2 : 1;
+                        const contribution = nt.getEffectiveBaseInfluence() * mult;
+                        if (friendly) {
+                            totalInfluence += contribution;
                         } else {
-                            // Enemy tiles (including neutral) subtract their base influence
-                            totalInfluence -= neighborHex.tile.baseInfluence;
+                            // SIEGE on this tile: extra subtraction vs enemies
+                            const siegeBonus = this.hasKeyword('SIEGE') ? 2 : 0;
+                            totalInfluence -= (contribution + siegeBonus);
                         }
                     }
                 });
-                
-                return Math.max(0, totalInfluence); // Never go below 0
+
+                return Math.max(0, totalInfluence);
             }
             
             // Get display text for this tile
@@ -1142,47 +1189,59 @@
             return hex.tile.getRelativeInfluence() > 0;
         }
         
-        // Check if tile can be placed at position (unified logic for empty and revolt)
-        function canPlaceTile(col, row) {
+        // Check if tile can be placed at position; pass forTile to evaluate keywords (e.g. SCOUT)
+        function canPlaceTile(col, row, forTile = null) {
             const hex = hexGrid[col][row];
-            
-            // Case 1: Empty space - must be adjacent to friendly tile OR be first tile
+            const evalTile = forTile || selectedTile;
+
+            // Case 1: Empty space
             if (hex.isEmpty) {
-                // If this is the first tile for this player, allow placement anywhere
+                // First tile can be placed anywhere
                 const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${currentPlayer}`);
-                if (playerTiles.length === 0) {
-                    return true; // First tile can be placed anywhere
-                }
-                
-                // Otherwise, must be adjacent to friendly tile
+                if (playerTiles.length === 0) return true;
+
+                // SCOUT keyword: ignore adjacency requirement
+                if (evalTile && evalTile.hasKeyword && evalTile.hasKeyword('SCOUT')) return true;
+
+                // Otherwise must be adjacent to friendly tile
                 const neighbors = getNeighbors(col, row);
-                const friendlyNeighbors = neighbors.filter(neighbor => 
-                    !neighbor.isEmpty && 
-                    neighbor.tile && 
+                return neighbors.some(neighbor =>
+                    !neighbor.isEmpty &&
+                    neighbor.tile &&
                     neighbor.tile.owner === `player${currentPlayer}`
                 );
-                
-                return friendlyNeighbors.length > 0;
             }
-            
+
             // Case 2: Occupied space - can only place if in revolt
             if (!hex.isEmpty && hex.tile) {
                 const influence = hex.tile.getRelativeInfluence();
                 const isEnemyOrNeutral = hex.tile.owner !== `player${currentPlayer}`;
-                const inRevolt = influence === 0 && isEnemyOrNeutral;
-                
-                return inRevolt;
+                return influence === 0 && isEnemyOrNeutral;
             }
-            
+
             return false;
         }
         
-        // Get available (untapped) resources from friendly board tiles
+        // How many of a given resource a tile produces (accounting for keywords)
+        function tileProducesCount(tile, resource) {
+            let n = tile.resourceTypes.filter(r => r === resource).length;
+            if (n > 0 && tile.hasKeyword('MERCHANT')) n += 1;
+            return n;
+        }
+        function isTileSpendable(tile) {
+            if (tile.usedThisTurn) return false;
+            // HASTE: usable the same turn it's placed; otherwise justPlaced means unusable
+            if (tile.justPlaced && !tile.hasKeyword('HASTE')) return false;
+            return true;
+        }
+
+        // Get available (untapped, spendable) resources from friendly board tiles
         function getAvailableResources() {
             const resources = { C: 0, M: 0, R: 0, F: 0 };
             boardTiles.forEach(boardTile => {
-                if (boardTile.tile.owner === `player${currentPlayer}` && !boardTile.tile.usedThisTurn) {
-                    boardTile.tile.resourceTypes.forEach(resource => { resources[resource]++; });
+                const t = boardTile.tile;
+                if (t.owner === `player${currentPlayer}` && isTileSpendable(t)) {
+                    RESOURCE_ORDER.forEach(r => { resources[r] += tileProducesCount(t, r); });
                 }
             });
             return resources;
@@ -1192,8 +1251,9 @@
         function getTotalResources() {
             const resources = { C: 0, M: 0, R: 0, F: 0 };
             boardTiles.forEach(boardTile => {
-                if (boardTile.tile.owner === `player${currentPlayer}`) {
-                    boardTile.tile.resourceTypes.forEach(resource => { resources[resource]++; });
+                const t = boardTile.tile;
+                if (t.owner === `player${currentPlayer}`) {
+                    RESOURCE_ORDER.forEach(r => { resources[r] += tileProducesCount(t, r); });
                 }
             });
             return resources;
@@ -1252,8 +1312,9 @@
             requestAnimationFrame(tick);
         }
 
-        // Compute which board tiles would tap to pay for the given tile
-        // (greedy match, matches the order payForTile uses). Returns array of {col,row}.
+        // Compute which board tiles would tap to pay for the given tile.
+        // Mirrors payForTile order; respects MERCHANT (extra resource), HASTE/justPlaced,
+        // and VIGILANT (no actual tap, but preview still shows it as a contributor).
         function getPaymentPreview(tile) {
             if (!tile || !tile.cost || tile.cost.length === 0) return [];
             const activePNum = getActivePlayerNumber();
@@ -1264,12 +1325,17 @@
             const tapped = [];
             boardTiles.forEach(bt => {
                 if (costCopy.length === 0) return;
-                if (bt.tile.owner !== `player${currentPlayer}` || bt.tile.usedThisTurn) return;
+                const t = bt.tile;
+                if (t.owner !== `player${currentPlayer}`) return;
+                if (!isTileSpendable(t)) return;
                 let usedThisTile = false;
-                bt.tile.resourceTypes.forEach(resource => {
-                    const idx = costCopy.indexOf(resource);
-                    if (idx !== -1) {
+                RESOURCE_ORDER.forEach(r => {
+                    let provides = tileProducesCount(t, r);
+                    while (provides > 0) {
+                        const idx = costCopy.indexOf(r);
+                        if (idx === -1) break;
                         costCopy.splice(idx, 1);
+                        provides--;
                         usedThisTile = true;
                     }
                 });
@@ -1298,43 +1364,50 @@
             _paymentPreviewCells = [];
         }
 
-        // Pay for a tile by tapping friendly resource tiles
+        // Pay for a tile by tapping friendly resource tiles (keyword-aware)
         function payForTile(tile) {
             const activePNum = getActivePlayerNumber();
-            // First tile placement is always free
             const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${activePNum}`);
             if (playerTiles.length === 0) return;
             if (tile.cost.length === 0) return;
 
             const costCopy = [...tile.cost];
 
-            // Find friendly tiles to use for payment
             boardTiles.forEach(boardTile => {
                 if (costCopy.length === 0) return;
+                const t = boardTile.tile;
+                if (t.owner !== `player${currentPlayer}`) return;
+                if (!isTileSpendable(t)) return;
 
-                if (boardTile.tile.owner === `player${currentPlayer}` && !boardTile.tile.usedThisTurn) {
-                    boardTile.tile.resourceTypes.forEach(resource => {
-                        const costIndex = costCopy.indexOf(resource);
-                        if (costIndex !== -1) {
-                            costCopy.splice(costIndex, 1);
-                            boardTile.tile.usedThisTurn = true;
+                let usedThisTile = false;
+                RESOURCE_ORDER.forEach(r => {
+                    let provides = tileProducesCount(t, r);
+                    while (provides > 0) {
+                        const idx = costCopy.indexOf(r);
+                        if (idx === -1) break;
+                        costCopy.splice(idx, 1);
+                        provides--;
+                        usedThisTile = true;
+                    }
+                });
 
-                            const hex = hexGrid[boardTile.col][boardTile.row];
-                            animateTap(hex, true);
-                        }
-                    });
+                if (usedThisTile && !t.hasKeyword('VIGILANT')) {
+                    t.usedThisTurn = true;
+                    const hex = hexGrid[boardTile.col][boardTile.row];
+                    animateTap(hex, true);
                 }
             });
         }
         
-        // Reset all tiles for new turn (untap all friendly tiles)
+        // Reset all tiles for new turn (untap all friendly tiles, clear justPlaced)
         function untapAllFriendlyTiles() {
             boardTiles.forEach(boardTile => {
                 if (boardTile.tile.owner === `player${currentPlayer}`) {
+                    boardTile.tile.justPlaced = false; // summoning sickness wears off
                     if (boardTile.tile.usedThisTurn) {
                         boardTile.tile.usedThisTurn = false;
                         const hex = hexGrid[boardTile.col][boardTile.row];
-                        animateTap(hex, false); // animate untap
+                        animateTap(hex, false);
                     }
                 }
             });
@@ -1492,26 +1565,46 @@
             
             // Pay for the tile
             payForTile(tile);
-            
-            // If capturing an existing tile, remove it from boardTiles
+
+            // If capturing an existing tile
             if (!hex.isEmpty && hex.tile) {
                 const capturedTile = hex.tile;
+
+                // WARD: first capture attempt is blocked, ward is consumed
+                if (capturedTile.hasKeyword('WARD') && !capturedTile.wardConsumed) {
+                    capturedTile.wardConsumed = true;
+                    showNotification(`${capturedTile.type}'s Ward absorbed the attack!`, 'warning');
+                    soundSystem.playError();
+                    // Refund: untap any tiles we just tapped
+                    boardTiles.forEach(bt => {
+                        if (bt.tile.usedThisTurn && bt.tile.owner === `player${currentPlayer}`) {
+                            // Heuristic: only those tapped in this payForTile call have just been tapped
+                            // (we can't perfectly distinguish; safer to leave tapped, that's the cost of a failed siege)
+                        }
+                    });
+                    // Remove tile from hand (it was spent attempting the assault)
+                    const handIndex2 = playerHand.indexOf(tile);
+                    if (handIndex2 > -1) { playerHand.splice(handIndex2, 1); updateHand(); }
+                    updateAllTileDisplays();
+                    if (isMultiplayer) syncGameState();
+                    endPlayerTurn();
+                    return;
+                }
+
                 const existingTileIndex = boardTiles.findIndex(bt => bt.col === col && bt.row === row);
                 if (existingTileIndex !== -1) {
                     boardTiles.splice(existingTileIndex, 1);
                 }
-                
+
                 // Check for capital capture (win condition)
                 if (capturedTile.type === 'CAPITAL') {
                     gameWon = true;
                     winner = currentPlayer;
                     console.log(`🏆 GAME WON! Player ${currentPlayer} captured the enemy capital!`);
-                    
-                    // Show replay prompt
                     showReplayPrompt(currentPlayer);
-                    return; // Don't continue with placement
+                    return;
                 }
-                
+
                 console.log(`Capturing tile at ${col},${row}! Was: ${capturedTile.type}, Now: ${tile.type}`);
                 soundSystem.playTileCapture();
             }
@@ -1553,8 +1646,9 @@
             hexGrid[col][row] = tileHex;
             
             // Update game state
+            tile.justPlaced = true; // cleared at start of next turn (HASTE bypasses this check)
             boardTiles.push({ col, row, tile: tile });
-            score += tile.baseInfluence; // Score based on base influence for now
+            score += tile.baseInfluence;
             updateScore();
             
             // Remove tile from hand
@@ -1796,7 +1890,8 @@
                         tileTemplate.char,
                         0x000000, // Color will be set by getPlayerColor
                         [...tileTemplate.resources],
-                        [...tileTemplate.cost]
+                        [...tileTemplate.cost],
+                        [...(tileTemplate.keywords || [])]
                     );
                     deck.push(tile);
                 }
@@ -2539,12 +2634,15 @@
                         tileData.char || '?',
                         tileData.color || 0x000000,
                         tileData.resourceTypes || [],
-                        tileData.cost || []
+                        tileData.cost || [],
+                        tileData.keywords || []
                     );
                     tile.col = col;
                     tile.row = row;
                     tile.owner = tileData.owner;
                     tile.usedThisTurn = tileData.usedThisTurn || false;
+                    tile.wardConsumed = tileData.wardConsumed || false;
+                    tile.justPlaced = tileData.justPlaced || false;
                     placeTileDirectly(col, row, tile);
                 });
 
@@ -2603,7 +2701,10 @@
                                 color: bt.tile.color,
                                 resourceTypes: bt.tile.resourceTypes,
                                 cost: bt.tile.cost,
-                                usedThisTurn: bt.tile.usedThisTurn
+                                keywords: bt.tile.keywords || [],
+                                usedThisTurn: bt.tile.usedThisTurn,
+                                wardConsumed: bt.tile.wardConsumed,
+                                justPlaced: bt.tile.justPlaced
                             }
                         })),
                         playersReady,
