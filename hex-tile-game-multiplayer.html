@@ -41,34 +41,36 @@
         }
         
         .hand-tile {
-            width: 70px;
-            height: 70px;
+            width: 88px;
+            min-height: 88px;
             margin: 4px;
             border: 2px solid #666;
-            border-radius: 6px;
+            border-radius: 8px;
             display: inline-block;
             cursor: pointer;
-            background: #333;
+            background: linear-gradient(180deg, #3a3a3a, #2a2a2a);
             color: white;
             text-align: center;
             line-height: 1.2;
             font-weight: bold;
-            font-size: 16px;
-            transition: all 0.2s;
+            font-size: 14px;
+            transition: all 0.18s;
             vertical-align: top;
-            padding: 4px;
+            padding: 6px 4px;
             box-sizing: border-box;
         }
-        
+
         .hand-tile:hover {
             border-color: #ffff00;
-            background: #444;
-            transform: scale(1.1);
+            background: linear-gradient(180deg, #4a4a4a, #333);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(255,255,0,0.25);
         }
-        
+
         .hand-tile.selected {
-            border-color: #00ff00;
-            background: #004400;
+            border-color: #00ff88;
+            background: linear-gradient(180deg, #1a4a2a, #0a2a18);
+            box-shadow: 0 0 12px rgba(0,255,136,0.5);
         }
         
         #score {
@@ -229,6 +231,69 @@
         }
 
         #debug { display: none; }
+
+        /* Resource display */
+        :root {
+            --res-c: #ffd700;
+            --res-m: #b070ff;
+            --res-r: #ff8844;
+            --res-f: #7fdd5f;
+        }
+        #resourcesPanel {
+            background: #1f1f1f;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 8px;
+            margin: 8px 0;
+        }
+        .res-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 8px;
+            margin: 2px 0;
+            background: #2a2a2a;
+            border-radius: 5px;
+            border-left: 3px solid #555;
+            transition: all 0.2s;
+        }
+        .res-row.has-resource { border-left-color: var(--row-color, #555); background: #2e2e2e; }
+        .res-row.highlighted {
+            background: #4a4400;
+            border-left-color: #ffff00;
+            box-shadow: 0 0 8px rgba(255,255,0,0.3);
+        }
+        .res-row .res-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #ddd;
+        }
+        .res-row .res-icon { font-size: 16px; }
+        .res-row .res-name { color: var(--row-color, #ddd); font-weight: bold; }
+        .res-row .res-counts {
+            font-family: 'SF Mono', Menlo, monospace;
+            font-size: 14px;
+        }
+        .res-row .res-counts .avail { color: #fff; font-weight: bold; }
+        .res-row .res-counts .sep { color: #666; margin: 0 2px; }
+        .res-row .res-counts .total { color: #888; }
+
+        /* Inline resource pip (for hand tile costs etc) */
+        .res-pip {
+            display: inline-block;
+            margin: 0 1px;
+            text-shadow: 0 0 2px rgba(0,0,0,0.8);
+        }
+        .res-pip b { font-size: 0.85em; margin-left: 1px; color: #fff; }
+
+        .cost-pips, .produces-pips {
+            display: flex;
+            gap: 2px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
     </style>
 </head>
 <body>
@@ -289,12 +354,9 @@
             <div id="score">Score: <span id="scoreValue">0</span></div>
             <div>Turn #: <span id="turnValue">1</span></div>
             
-            <h3>Resources Available</h3>
-            <div id="resources">
-                <div>C: <span id="resourceC">0</span></div>
-                <div>M: <span id="resourceM">0</span></div>
-                <div>R: <span id="resourceR">0</span></div>
-                <div>F: <span id="resourceF">0</span></div>
+            <h3 style="margin-bottom:4px;">Resources <span style="font-size:11px;color:#888;font-weight:normal;">(untapped / total)</span></h3>
+            <div id="resourcesPanel">
+                <!-- populated by updateResourceDisplay() -->
             </div>
             
             <button id="endTurnBtn" onclick="endPlayerTurn()" style="margin: 10px 0; padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">End Turn</button>
@@ -701,6 +763,24 @@
         const HEX_HEIGHT = Math.sqrt(3) * HEX_SIZE;
         const GRID_WIDTH = 15;
         const GRID_HEIGHT = 10;
+
+        // Resource metadata - single source of truth for icons, colors, names
+        const RESOURCE_META = {
+            C: { name: 'Commerce', icon: '🪙', color: '#ffd700', cssVar: '--res-c' },
+            M: { name: 'Magic',    icon: '🔮', color: '#b070ff', cssVar: '--res-m' },
+            R: { name: 'Raw',      icon: '⛏️', color: '#ff8844', cssVar: '--res-r' },
+            F: { name: 'Food',     icon: '🌾', color: '#7fdd5f', cssVar: '--res-f' }
+        };
+        const RESOURCE_ORDER = ['C', 'M', 'R', 'F'];
+
+        // HTML helper: render a resource pip (icon + optional count)
+        function resPip(type, count = null, opts = {}) {
+            const meta = RESOURCE_META[type];
+            if (!meta) return '';
+            const size = opts.size || 14;
+            const showCount = count !== null;
+            return `<span class="res-pip" style="color:${meta.color}; font-size:${size}px;" title="${meta.name}">${meta.icon}${showCount ? `<b>${count}</b>` : ''}</span>`;
+        }
         
         // Tile class definition
         class Tile {
@@ -1043,18 +1123,25 @@
             return false;
         }
         
-        // Get available resources from board tiles (only friendly tiles)
+        // Get available (untapped) resources from friendly board tiles
         function getAvailableResources() {
             const resources = { C: 0, M: 0, R: 0, F: 0 };
-            
             boardTiles.forEach(boardTile => {
                 if (boardTile.tile.owner === `player${currentPlayer}` && !boardTile.tile.usedThisTurn) {
-                    boardTile.tile.resourceTypes.forEach(resource => {
-                        resources[resource]++;
-                    });
+                    boardTile.tile.resourceTypes.forEach(resource => { resources[resource]++; });
                 }
             });
-            
+            return resources;
+        }
+
+        // Get total resources (including tapped) from friendly board tiles
+        function getTotalResources() {
+            const resources = { C: 0, M: 0, R: 0, F: 0 };
+            boardTiles.forEach(boardTile => {
+                if (boardTile.tile.owner === `player${currentPlayer}`) {
+                    boardTile.tile.resourceTypes.forEach(resource => { resources[resource]++; });
+                }
+            });
             return resources;
         }
         
@@ -1641,57 +1728,72 @@
         function updateHand() {
             const handDiv = document.getElementById('hand');
             handDiv.innerHTML = '';
-            
-            // Add hand size indicator
+
             const sizeIndicator = document.createElement('div');
             sizeIndicator.style.cssText = 'color: #aaa; font-size: 12px; margin-bottom: 5px; text-align: center;';
-            sizeIndicator.textContent = `${playerHand.length} tiles`;
+            sizeIndicator.textContent = `${playerHand.length} tiles in hand`;
             handDiv.appendChild(sizeIndicator);
-            
+
+            const activePNum = getActivePlayerNumber();
+            const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${activePNum}`);
+            const isFirstTile = playerTiles.length === 0;
+
             playerHand.forEach((tile, index) => {
                 const tileDiv = document.createElement('div');
                 tileDiv.className = 'hand-tile';
-                
-                // Create organized content within the tile
-                const resourceChar = tile.resourceTypes.length > 0 ? tile.resourceTypes.join('') : '?';
-                const influenceStr = `<div style="font-size:12px; color:#fff; margin-top:2px;">${tile.baseInfluence}</div>`;
-                
-                // Show cost, but mark as FREE if it's the first tile
-                let costStr = '';
-                const activePNum = getActivePlayerNumber();
-                const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${activePNum}`);
-                if (playerTiles.length === 0) {
-                    costStr = `<div style="font-size:10px; color:#00ff00; margin-top:1px;">FREE</div>`;
-                } else if (tile.cost.length > 0) {
-                    costStr = `<div style="font-size:10px; color:#ffaa00; margin-top:1px;">(${tile.cost.join('')})</div>`;
+
+                // Produces (resources this tile gives)
+                const producesPips = tile.resourceTypes.length > 0
+                    ? `<div class="produces-pips">${tile.resourceTypes.map(r => resPip(r, null, {size:13})).join('')}</div>`
+                    : '';
+
+                // Cost pips
+                let costHTML;
+                if (isFirstTile) {
+                    costHTML = `<div style="font-size:10px; color:#7fff7f; font-weight:bold; margin-top:2px;">FREE</div>`;
+                } else if (tile.cost.length === 0) {
+                    costHTML = `<div style="font-size:10px; color:#7fff7f; margin-top:2px;">— free —</div>`;
+                } else {
+                    costHTML = `<div class="cost-pips" style="margin-top:2px;">${tile.cost.map(r => resPip(r, null, {size:11})).join('')}</div>`;
                 }
-                
+
                 tileDiv.innerHTML = `
-                    <div style="font-size:18px; font-weight:bold;">${resourceChar}</div>
-                    ${influenceStr}
-                    ${costStr}
+                    <div style="font-size:11px; color:#bbb; text-transform:uppercase; letter-spacing:0.5px;">${tile.type}</div>
+                    <div style="font-size:14px; color:#fff; font-weight:bold;">⚔ ${tile.baseInfluence}</div>
+                    ${producesPips}
+                    ${costHTML}
                 `;
-                
-                // Dim if can't afford
+
                 if (!canAffordTile(tile)) {
-                    tileDiv.style.opacity = '0.5';
+                    tileDiv.style.opacity = '0.45';
                     tileDiv.style.cursor = 'not-allowed';
+                    tileDiv.title = 'Not enough resources';
                 } else {
                     tileDiv.style.opacity = '1';
                     tileDiv.style.cursor = 'pointer';
+                    tileDiv.title = `${tile.type}: influence ${tile.baseInfluence}, cost ${tile.cost.join('') || 'free'}, produces ${tile.resourceTypes.join('') || '—'}`;
                 }
-                
+
+                // Hover: highlight which resources will be tapped to pay for this tile
+                tileDiv.onmouseenter = () => {
+                    if (canAffordTile(tile) && !isFirstTile) {
+                        updateResourceDisplay(tile.cost);
+                    }
+                };
+                tileDiv.onmouseleave = () => {
+                    updateResourceDisplay(selectedTile ? selectedTile.cost : null);
+                };
+
                 tileDiv.onclick = () => {
                     if (canAffordTile(tile)) {
                         selectedTile = tile;
                         updateSelectedDisplay();
-                        
-                        // Update visual selection
+                        updateResourceDisplay(tile.cost);
                         document.querySelectorAll('.hand-tile').forEach(t => t.classList.remove('selected'));
                         tileDiv.classList.add('selected');
                     }
                 };
-                
+
                 handDiv.appendChild(tileDiv);
             });
         }
@@ -1707,8 +1809,9 @@
                 highlightValidPlacements();
             } else {
                 document.getElementById('selected').textContent = 'None';
-                
-                // Reset all highlighting
+
+                // Reset highlighting in resource panel and board
+                updateResourceDisplay(null);
                 updateAllTileDisplays();
             }
         }
@@ -1735,14 +1838,46 @@
         }
         
         // Update resource display
-        function updateResourceDisplay() {
-            const resources = getAvailableResources();
-            document.getElementById('resourceC').textContent = resources.C;
-            document.getElementById('resourceM').textContent = resources.M;
-            document.getElementById('resourceR').textContent = resources.R;
-            document.getElementById('resourceF').textContent = resources.F;
-            document.getElementById('turnValue').textContent = currentTurn;
-            document.getElementById('currentPlayerValue').textContent = currentPlayer;
+        function updateResourceDisplay(highlightCost = null) {
+            const avail = getAvailableResources();
+            const total = getTotalResources();
+            const panel = document.getElementById('resourcesPanel');
+            if (panel) {
+                // Compute the per-resource need from highlightCost (array of resource codes)
+                const need = { C: 0, M: 0, R: 0, F: 0 };
+                if (Array.isArray(highlightCost)) {
+                    highlightCost.forEach(r => { if (need[r] !== undefined) need[r]++; });
+                }
+
+                panel.innerHTML = RESOURCE_ORDER.map(r => {
+                    const meta = RESOURCE_META[r];
+                    const a = avail[r], t = total[r];
+                    const hasIt = t > 0;
+                    const isHighlighted = need[r] > 0;
+                    const insufficient = need[r] > a;
+                    const rowStyle = `--row-color:${meta.color};`;
+                    const classes = ['res-row'];
+                    if (hasIt) classes.push('has-resource');
+                    if (isHighlighted) classes.push('highlighted');
+                    const needBadge = isHighlighted
+                        ? ` <span style="color:${insufficient ? '#ff6666' : '#ffff66'}; font-size:11px; margin-left:4px;">need ${need[r]}</span>`
+                        : '';
+                    return `
+                        <div class="${classes.join(' ')}" style="${rowStyle}">
+                            <span class="res-label">
+                                <span class="res-icon">${meta.icon}</span>
+                                <span class="res-name">${meta.name}</span>${needBadge}
+                            </span>
+                            <span class="res-counts">
+                                <span class="avail">${a}</span><span class="sep">/</span><span class="total">${t}</span>
+                            </span>
+                        </div>`;
+                }).join('');
+            }
+            const turnEl = document.getElementById('turnValue');
+            const cpEl = document.getElementById('currentPlayerValue');
+            if (turnEl) turnEl.textContent = currentTurn;
+            if (cpEl) cpEl.textContent = currentPlayer;
         }
         
         // Update game phase display
