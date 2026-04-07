@@ -1034,11 +1034,11 @@
         }
         
         // Game constants
-        const HEX_SIZE = 40;
+        const HEX_SIZE = 48;            // bigger for readability
         const HEX_WIDTH = HEX_SIZE * 2;
         const HEX_HEIGHT = Math.sqrt(3) * HEX_SIZE;
-        const GRID_WIDTH = 15;
-        const GRID_HEIGHT = 10;
+        const GRID_WIDTH = 13;          // slightly smaller grid keeps it on screen
+        const GRID_HEIGHT = 9;
 
         // Resource metadata - single source of truth for icons, colors, names
         const RESOURCE_META = {
@@ -1485,15 +1485,15 @@
         function drawResourcePips(hex, resourceTypes) {
             const n = resourceTypes.length;
             if (n === 0) return;
-            const pipRadius = n > 2 ? 4 : 5;
-            const spacing = pipRadius * 2 + 2;
+            const pipRadius = n > 2 ? 5 : 6;
+            const spacing = pipRadius * 2 + 3;
             const totalWidth = (n - 1) * spacing;
             const startX = -totalWidth / 2;
-            const py = -16; // top portion of hex
+            const py = -22;
             resourceTypes.forEach((rt, i) => {
                 const color = RESOURCE_HEX[rt] || 0xcccccc;
                 const pip = new PIXI.Graphics();
-                pip.lineStyle(1, 0x000000, 0.7);
+                pip.lineStyle(1.5, 0x000000, 0.85);
                 pip.beginFill(color);
                 pip.drawCircle(startX + i * spacing, py, pipRadius);
                 pip.endFill();
@@ -1509,78 +1509,76 @@
             // Special case: capital gets a crown icon, no resource pips
             if (tile.type === 'CAPITAL') {
                 const crown = new PIXI.Text('♛', {
-                    fontFamily: 'Arial', fontSize: 18, fill: 0xffffff, fontWeight: 'bold'
+                    fontFamily: 'Arial', fontSize: 22, fill: 0xffffff, fontWeight: 'bold'
                 });
                 crown.anchor.set(0.5);
-                crown.y = -14;
+                crown.y = -18;
                 hex.addChild(crown);
             } else {
-                // Show colored pips for what this tile produces
                 drawResourcePips(hex, tile.resourceTypes);
             }
 
-            // Type label (small, top-center)
-            const typeLabel = new PIXI.Text(tile.type.substring(0, 4), {
-                fontFamily: 'Arial', fontSize: 8, fill: 0xeeeeee, fontWeight: 'bold'
+            // Type label
+            const typeLabel = new PIXI.Text(tile.type.substring(0, 5), {
+                fontFamily: 'Arial', fontSize: 10, fill: 0xeeeeee, fontWeight: 'bold'
             });
             typeLabel.anchor.set(0.5, 0);
-            typeLabel.y = -7;
+            typeLabel.y = -10;
             hex.addChild(typeLabel);
 
             // Base influence (black text in white circle, center)
             const baseBgCircle = new PIXI.Graphics();
             baseBgCircle.beginFill(0xffffff);
-            baseBgCircle.drawCircle(0, 6, 8);
+            baseBgCircle.drawCircle(0, 8, 10);
             baseBgCircle.endFill();
             hex.addChild(baseBgCircle);
 
             const baseInfluenceText = new PIXI.Text(tile.baseInfluence.toString(), {
-                fontFamily: 'Arial', fontSize: 11, fill: 0x000000, fontWeight: 'bold'
+                fontFamily: 'Arial', fontSize: 14, fill: 0x000000, fontWeight: 'bold'
             });
             baseInfluenceText.anchor.set(0.5);
-            baseInfluenceText.y = 6;
+            baseInfluenceText.y = 8;
             hex.addChild(baseInfluenceText);
 
-            // Relative influence (bottom, white text) if on board
+            // Relative influence
             if (showRelativeInfluence) {
                 const rel = tile.getRelativeInfluence();
                 const relText = new PIXI.Text(`(${rel})`, {
-                    fontFamily: 'Arial', fontSize: 10,
+                    fontFamily: 'Arial', fontSize: 12,
                     fill: rel === 0 ? 0xff6666 : 0xffffff,
                     fontWeight: 'bold'
                 });
                 relText.anchor.set(0.5);
-                relText.y = 19;
+                relText.y = 25;
                 hex.addChild(relText);
             }
 
-            // Keyword glyphs around the right edge of the tile
+            // Keyword glyphs along the right edge
             if (tile.keywords && tile.keywords.length) {
-                const startY = -14;
+                const startY = -18;
                 tile.keywords.slice(0, 4).forEach((kw, idx) => {
                     const meta = KEYWORD_GLYPH[kw] || { c: 0xffffff, g: '?' };
-                    // small filled circle background for contrast
                     const bg = new PIXI.Graphics();
-                    bg.beginFill(0x000000, 0.8);
-                    bg.lineStyle(1, meta.c, 1);
-                    bg.drawCircle(20, startY + idx * 11, 6);
+                    bg.beginFill(0x000000, 0.85);
+                    bg.lineStyle(1.5, meta.c, 1);
+                    bg.drawCircle(26, startY + idx * 13, 7);
                     bg.endFill();
                     hex.addChild(bg);
                     const txt = new PIXI.Text(meta.g, {
-                        fontFamily: 'Arial', fontSize: 9, fill: meta.c, fontWeight: 'bold'
+                        fontFamily: 'Arial', fontSize: 11, fill: meta.c, fontWeight: 'bold'
                     });
                     txt.anchor.set(0.5);
-                    txt.x = 20;
-                    txt.y = startY + idx * 11;
+                    txt.x = 26;
+                    txt.y = startY + idx * 13;
                     hex.addChild(txt);
                 });
             }
 
-            // WARD shield indicator (consumed = faded)
+            // WARD shield ring
             if (tile.hasKeyword && tile.hasKeyword('WARD') && !tile.wardConsumed) {
                 const shield = new PIXI.Graphics();
-                shield.lineStyle(2, 0x9999ff, 0.9);
-                shield.drawCircle(0, 0, 26);
+                shield.lineStyle(2.5, 0x9999ff, 0.9);
+                shield.drawCircle(0, 0, 32);
                 hex.addChild(shield);
             }
 
