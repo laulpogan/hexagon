@@ -485,6 +485,27 @@
             font-weight: bold;
         }
 
+        /* Action log */
+        #actionLog {
+            background: #161619;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 8px;
+            max-height: 130px;
+            overflow-y: auto;
+            font-size: 11px;
+            line-height: 1.5;
+            color: #ccc;
+            margin-top: 8px;
+        }
+        #actionLog::-webkit-scrollbar { width: 6px; }
+        #actionLog::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+        .log-entry { padding: 2px 4px; border-bottom: 1px solid #222; }
+        .log-entry.p1 { color: #6cb6ff; }
+        .log-entry.p2 { color: #ff6b6b; }
+        .log-entry.system { color: #888; font-style: italic; }
+        .log-entry b { color: #fff; }
+
         /* Keyword badges */
         .kw-badges {
             display: flex;
@@ -617,6 +638,9 @@
             
             <button onclick="leaveRoom()" style="margin: 10px 0; padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Leave Room</button>
             
+            <h3 style="margin-bottom:4px;">Game Log</h3>
+            <div id="actionLog"></div>
+
             <h3>Your Hand</h3>
             <div id="hand">
                 <!-- Hand tiles will be generated here -->
@@ -1192,6 +1216,24 @@
             { type: 'DRAGON',     influence: 7, char: 'D', resources: ['M', 'R'],          cost: ['M', 'M', 'R', 'F'], count: 1, keywords: ['HASTE', 'SIEGE', 'DOUBLESTRIKE'] }
         ];
         
+        // ─── Action log ──────────────────────────────────────────────────────
+        const _actionLogEntries = [];
+        function logAction(text, kind = 'system') {
+            _actionLogEntries.push({ text, kind, ts: Date.now() });
+            // Keep last 30 entries
+            if (_actionLogEntries.length > 30) _actionLogEntries.shift();
+            const el = document.getElementById('actionLog');
+            if (!el) return;
+            el.innerHTML = _actionLogEntries.slice().reverse().map(e =>
+                `<div class="log-entry ${e.kind}">${e.text}</div>`
+            ).join('');
+        }
+        function clearActionLog() {
+            _actionLogEntries.length = 0;
+            const el = document.getElementById('actionLog');
+            if (el) el.innerHTML = '';
+        }
+
         // ─── Deckbuilder ─────────────────────────────────────────────────────
         const DECK_MIN = 40;
         const DECK_MAX = 60;
@@ -1951,6 +1993,7 @@
                     capturedTile.wardConsumed = true;
                     showNotification(`${capturedTile.type}'s Ward absorbed the attack!`, 'warning');
                     soundSystem.playError();
+                    logAction(`<b>P${currentPlayer}</b> attacked ${capturedTile.type} but Ward absorbed it`, `p${currentPlayer}`);
                     // Refund: untap any tiles we just tapped
                     boardTiles.forEach(bt => {
                         if (bt.tile.usedThisTurn && bt.tile.owner === `player${currentPlayer}`) {
@@ -1982,6 +2025,7 @@
                 }
 
                 console.log(`Capturing tile at ${col},${row}! Was: ${capturedTile.type}, Now: ${tile.type}`);
+                logAction(`<b>P${currentPlayer}</b> captured enemy <b>${capturedTile.type}</b> with ${tile.type}`, `p${currentPlayer}`);
                 soundSystem.playTileCapture();
             }
             
@@ -2050,7 +2094,8 @@
             updateSelectedDisplay();
             
             console.log(`Successfully placed ${tile.type} at ${col},${row}`);
-            
+            logAction(`<b>P${currentPlayer}</b> placed <b>${tile.type}</b> at (${col},${row})`, `p${currentPlayer}`);
+
             // Play placement sound
             soundSystem.playTilePlace();
             
@@ -2604,6 +2649,7 @@
                     const oldPlayer = currentPlayer;
                     currentPlayer = currentPlayer === 1 ? 2 : 1;
 
+                    logAction(`— Turn ${currentTurn + 1} → P${currentPlayer} —`, 'system');
                     soundSystem.playTurnSwitch();
 
                     // In offline mode, swap hands between players
