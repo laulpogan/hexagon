@@ -1387,6 +1387,7 @@
         // Game state
         let playerDecks = { 1: [], 2: [] };
         let playerHands = { 1: [], 2: [] }; // offline mode stores both players' hands
+        let _hasActedThisTurn = false;       // for "End Turn" UX
         let gameWon = false;
         let winner = null;
         
@@ -1863,6 +1864,7 @@
         
         // Reset all tiles for new turn (untap all friendly tiles, clear justPlaced)
         function untapAllFriendlyTiles() {
+            _hasActedThisTurn = false;
             boardTiles.forEach(boardTile => {
                 if (boardTile.tile.owner === `player${currentPlayer}`) {
                     boardTile.tile.justPlaced = false; // summoning sickness wears off
@@ -2140,6 +2142,9 @@
             console.log(`Successfully placed ${tile.type} at ${col},${row}`);
             logAction(`<b>P${currentPlayer}</b> placed <b>${tile.type}</b> at (${col},${row})`, `p${currentPlayer}`);
 
+            // Mark that this player has acted this turn (used by End Turn button)
+            _hasActedThisTurn = true;
+
             // Play placement sound
             soundSystem.playTilePlace();
             
@@ -2147,9 +2152,9 @@
             if (isMultiplayer) {
                 syncGameState();
             }
-            
-            // End turn automatically after placing one tile
-            endPlayerTurn();
+
+            // Player keeps the turn — they can place more tiles if resources allow
+            // Turn ends only when they click "End Turn" or have no playable cards
         }
         
         // Handle hex click (for placed tiles)
