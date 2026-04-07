@@ -959,67 +959,82 @@
             }
         }
         
-        // Create tile graphics with resource types and influence
+        // Resource code → PIXI hex color
+        const RESOURCE_HEX = { C: 0xffd700, M: 0xb070ff, R: 0xff8844, F: 0x7fdd5f };
+
+        // Draw colored resource pips inside a tile (top portion of hex)
+        function drawResourcePips(hex, resourceTypes) {
+            const n = resourceTypes.length;
+            if (n === 0) return;
+            const pipRadius = n > 2 ? 4 : 5;
+            const spacing = pipRadius * 2 + 2;
+            const totalWidth = (n - 1) * spacing;
+            const startX = -totalWidth / 2;
+            const py = -16; // top portion of hex
+            resourceTypes.forEach((rt, i) => {
+                const color = RESOURCE_HEX[rt] || 0xcccccc;
+                const pip = new PIXI.Graphics();
+                pip.lineStyle(1, 0x000000, 0.7);
+                pip.beginFill(color);
+                pip.drawCircle(startX + i * spacing, py, pipRadius);
+                pip.endFill();
+                hex.addChild(pip);
+            });
+        }
+
+        // Create tile graphics with resource pips and influence numbers
         function createTileHex(tile, showRelativeInfluence = false) {
             const playerColor = getPlayerColor(tile);
             const hex = createHexagon(playerColor, 0xffffff, 3);
-            
-            // Show resource types as the main character(s), or special handling
-            let resourceChar;
-            if (tile.type === 'NEUTRAL') {
-                resourceChar = 'N';
-            } else if (tile.type === 'CAPITAL') {
-                resourceChar = 'K';
+
+            // Special case: capital gets a crown icon, no resource pips
+            if (tile.type === 'CAPITAL') {
+                const crown = new PIXI.Text('♛', {
+                    fontFamily: 'Arial', fontSize: 18, fill: 0xffffff, fontWeight: 'bold'
+                });
+                crown.anchor.set(0.5);
+                crown.y = -14;
+                hex.addChild(crown);
             } else {
-                resourceChar = tile.resourceTypes.length > 0 ? tile.resourceTypes.join('') : '?';
+                // Show colored pips for what this tile produces
+                drawResourcePips(hex, tile.resourceTypes);
             }
-            
-            // Add resource character (white text)
-            const charText = new PIXI.Text(resourceChar, {
-                fontFamily: 'Arial',
-                fontSize: 16,
-                fill: 0xffffff,
-                fontWeight: 'bold',
-                align: 'center'
+
+            // Type label (small, top-center)
+            const typeLabel = new PIXI.Text(tile.type.substring(0, 4), {
+                fontFamily: 'Arial', fontSize: 8, fill: 0xeeeeee, fontWeight: 'bold'
             });
-            charText.anchor.set(0.5);
-            charText.y = -12; // Position higher up
-            hex.addChild(charText);
-            
-            // Add base influence (black text on white background)
-            const baseInfluenceText = new PIXI.Text(tile.baseInfluence.toString(), {
-                fontFamily: 'Arial',
-                fontSize: 10,
-                fill: 0x000000, // Black text
-                fontWeight: 'bold',
-                align: 'center'
-            });
-            baseInfluenceText.anchor.set(0.5);
-            baseInfluenceText.y = 4; // Position below center
-            
-            // Add white background circle for base influence
+            typeLabel.anchor.set(0.5, 0);
+            typeLabel.y = -7;
+            hex.addChild(typeLabel);
+
+            // Base influence (black text in white circle, center)
             const baseBgCircle = new PIXI.Graphics();
             baseBgCircle.beginFill(0xffffff);
-            baseBgCircle.drawCircle(0, 4, 7);
+            baseBgCircle.drawCircle(0, 6, 8);
             baseBgCircle.endFill();
             hex.addChild(baseBgCircle);
+
+            const baseInfluenceText = new PIXI.Text(tile.baseInfluence.toString(), {
+                fontFamily: 'Arial', fontSize: 11, fill: 0x000000, fontWeight: 'bold'
+            });
+            baseInfluenceText.anchor.set(0.5);
+            baseInfluenceText.y = 6;
             hex.addChild(baseInfluenceText);
-            
-            // If showing relative influence (on board), also show net influence
+
+            // Relative influence (bottom, white text) if on board
             if (showRelativeInfluence) {
-                const relativeInfluence = tile.getRelativeInfluence();
-                const relativeInfluenceText = new PIXI.Text(relativeInfluence.toString(), {
-                    fontFamily: 'Arial',
-                    fontSize: 12,
-                    fill: 0xffffff, // White text
-                    fontWeight: 'bold',
-                    align: 'center'
+                const rel = tile.getRelativeInfluence();
+                const relText = new PIXI.Text(`(${rel})`, {
+                    fontFamily: 'Arial', fontSize: 10,
+                    fill: rel === 0 ? 0xff6666 : 0xffffff,
+                    fontWeight: 'bold'
                 });
-                relativeInfluenceText.anchor.set(0.5);
-                relativeInfluenceText.y = 14; // Position lower
-                hex.addChild(relativeInfluenceText);
+                relText.anchor.set(0.5);
+                relText.y = 19;
+                hex.addChild(relText);
             }
-            
+
             return hex;
         }
         
