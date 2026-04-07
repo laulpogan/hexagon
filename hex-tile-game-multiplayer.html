@@ -202,6 +202,33 @@
             margin-bottom: 10px;
             font-size: 12px;
         }
+
+        #turnIndicator {
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 15px;
+            margin-bottom: 10px;
+            transition: background 0.3s;
+        }
+        #turnIndicator.your-turn {
+            background: #1a5c1a;
+            color: #7fff7f;
+            border: 2px solid #4CAF50;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        #turnIndicator.waiting {
+            background: #3a2a00;
+            color: #ffcc44;
+            border: 2px solid #ff9800;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(76,175,80,0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(76,175,80,0); }
+        }
+
+        #debug { display: none; }
     </style>
 </head>
 <body>
@@ -209,14 +236,31 @@
     <div id="roomSetup">
         <div class="room-container">
             <h2>🎯 Hex Tile Game</h2>
-            <p>Create or join a multiplayer room!</p>
-            <input type="text" id="roomCodeInput" placeholder="Room Code (e.g. DEMO123)" maxlength="8">
-            <br>
-            <button onclick="createRoom()">Create Room</button>
-            <button onclick="joinRoom()">Join Room</button>
-            <button onclick="playOffline()">Play Offline</button>
-            <br>
-            <div id="roomStatus"></div>
+            <p style="color:#aaa; margin: 4px 0 16px 0;">Hexagonal territory conquest</p>
+
+            <div style="margin-bottom: 16px;">
+                <p style="margin: 0 0 8px 0; font-weight: bold; color: #ccc;">Create a new game:</p>
+                <input type="text" id="roomCodeInput" placeholder="Room name (optional)" maxlength="8"
+                    style="margin-bottom: 8px;">
+                <br>
+                <button onclick="createRoom()" style="background: #4CAF50;">Host Game</button>
+            </div>
+
+            <hr style="border-color: #555; margin: 16px 0;">
+
+            <div style="margin-bottom: 16px;">
+                <p style="margin: 0 0 8px 0; font-weight: bold; color: #ccc;">Join a friend's game:</p>
+                <input type="text" id="joinCodeInput" placeholder="Enter room code" maxlength="8">
+                <br>
+                <button onclick="joinRoomByInput()" style="background: #2196F3;">Join Game</button>
+            </div>
+
+            <hr style="border-color: #555; margin: 16px 0;">
+            <button onclick="playOffline()" style="background: #666; font-size: 13px; padding: 8px 16px;">
+                Play Local (2 players, 1 screen)
+            </button>
+
+            <div id="roomStatus" style="margin-top: 12px;"></div>
         </div>
     </div>
 
@@ -232,17 +276,18 @@
         <div id="sidebar">
             <h2>Hex Tile Game</h2>
             
+            <div id="turnIndicator" class="waiting">Waiting...</div>
+
             <div class="multiplayer-info">
                 <div>Room: <span id="currentRoom">-</span></div>
-                <div>You are: <span id="playerRole">Player 1</span></div>
+                <div>You: <span id="playerRole">Player 1</span> &nbsp; Turn: <span id="currentPlayerValue">1</span></div>
                 <div>Status: <span id="connectionStatus">Offline</span></div>
             </div>
-            
-            <div>Current Player: <span id="currentPlayerValue">1</span></div>
-            <div>Phase: <span id="gamePhaseValue">Capital Placement</span></div>
+
+            <div>Phase: <span id="gamePhaseValue">Normal Play</span></div>
             <div>Turn Phase: <span id="turnPhaseValue">Start</span></div>
             <div id="score">Score: <span id="scoreValue">0</span></div>
-            <div>Turn: <span id="turnValue">1</span></div>
+            <div>Turn #: <span id="turnValue">1</span></div>
             
             <h3>Resources Available</h3>
             <div id="resources">
@@ -601,18 +646,17 @@
             }
             
             // Reset player decks
-            createPlayerDecks();
-            
-            // Give initial hands
-            if (playerNumber === 1 || playerNumber === 2) {
-                giveInitialHand();
-            }
-            
+            playerDecks[1] = createPlayerDeck();
+            playerDecks[2] = createPlayerDeck();
+
+            // Start fresh game
+            startGameWithInitialHands();
+
             // Reset Supabase room state if in multiplayer
             if (isMultiplayer && gameRef) {
                 resetRoomInDatabase();
             }
-            
+
             showNotification('🔄 Room rebooted! New game starting...', 'success');
             console.log('✅ Room reboot complete!');
         }
@@ -758,6 +802,7 @@
         
         // Game state
         let playerDecks = { 1: [], 2: [] };
+        let playerHands = { 1: [], 2: [] }; // offline mode stores both players' hands
         let gameWon = false;
         let winner = null;
         
@@ -1015,8 +1060,9 @@
         
         // Check if player can afford a tile
         function canAffordTile(tile) {
+            const activePNum = getActivePlayerNumber();
             // First tile placement is always free
-            const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${playerNumber}`);
+            const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${activePNum}`);
             if (playerTiles.length === 0) {
                 return true;
             }
@@ -1043,8 +1089,9 @@
         
         // Pay for a tile by marking resources as used (only friendly tiles)
         function payForTile(tile) {
+            const activePNum = getActivePlayerNumber();
             // First tile placement is always free
-            const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${playerNumber}`);
+            const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${activePNum}`);
             if (playerTiles.length === 0) {
                 return;
             }
@@ -1131,17 +1178,17 @@
                     hexContainer.removeChild(hex);
                     hexContainer.addChild(updatedTileHex);
                     hexGrid[hex.gridCol][hex.gridRow] = updatedTileHex;
-                    
-                    // Visual feedback for tile status
-                    const influence = hex.tile.getRelativeInfluence();
-                    const isEnemyOrNeutral = hex.tile.owner !== `player${currentPlayer}`;
-                    
+
+                    // Visual feedback for tile status (use updatedTileHex, not the removed hex)
+                    const influence = updatedTileHex.tile.getRelativeInfluence();
+                    const isEnemyOrNeutral = updatedTileHex.tile.owner !== `player${currentPlayer}`;
+
                     if (influence === 0 && isEnemyOrNeutral) {
-                        hex.tint = 0x00ff00; // GREEN for capturable tiles!
+                        updatedTileHex.tint = 0x00ff00; // GREEN for capturable tiles!
                     } else if (influence === 0) {
-                        hex.tint = 0xffaaaa; // Light red for friendly tiles at 0 (shouldn't happen)
+                        updatedTileHex.tint = 0xffaaaa; // Light red for friendly tiles at 0
                     } else {
-                        hex.tint = 0xffffff; // Normal color for secure tiles
+                        updatedTileHex.tint = 0xffffff; // Normal color for secure tiles
                     }
                 }
             });
@@ -1305,9 +1352,8 @@
                 updateHand();
             }
             
-            // Draw a new tile for the current player
-            if (currentPlayer === playerNumber) {
-                console.log(`Player ${playerNumber}: Drawing new tile after placement`);
+            // Draw a replacement tile (in multiplayer, only local player draws; in offline, always draw)
+            if (!isMultiplayer || currentPlayer === playerNumber) {
                 drawTurnTile();
             }
             
@@ -1337,8 +1383,8 @@
         
         // Handle hex click (for placed tiles)
         function handleHexClick(col, row) {
-            // Check if it's actually our turn
-            if (currentPlayer !== playerNumber) {
+            // Check if it's actually our turn (only enforced in multiplayer)
+            if (isMultiplayer && currentPlayer !== playerNumber) {
                 console.log(`Not your turn! Current player: ${currentPlayer}, You are: ${playerNumber}`);
                 showNotification(`It's Player ${currentPlayer}'s turn!`, 'warning');
                 soundSystem.playError();
@@ -1501,13 +1547,19 @@
             return deck;
         }
         
+        // Get the effective player number for hand/deck operations
+        // In offline mode, the "active" player is always currentPlayer
+        function getActivePlayerNumber() {
+            return isMultiplayer ? playerNumber : currentPlayer;
+        }
+
         // Draw a tile from player's deck
         function drawTileFromDeck(player) {
             if (playerDecks[player].length === 0) {
                 console.log(`Player ${player} deck is empty!`);
                 return null;
             }
-            
+
             const tile = playerDecks[player].pop();
             tile.owner = `player${player}`;
             console.log(`Player ${player} drew ${tile.type}`);
@@ -1522,10 +1574,8 @@
             currentPlayer = 1; // Player 1 goes first
             turnPhase = 'start_phase'; // Start with start phase
             
-            // Give both players their starting hands (5 tiles + 1 capital)
-            if (playerNumber === 1 || playerNumber === 2) {
-                giveInitialHand();
-            }
+            // Give this client's starting hand
+            giveInitialHand();
             
             // Start the first turn properly
             startNewTurn();
@@ -1545,36 +1595,23 @@
 
         // Give initial hand (5 normal tiles)
         function giveInitialHand() {
-            console.log(`Player ${playerNumber}: Giving initial hand`);
-            
-            // Clear any existing hand
+            const activePlayer = getActivePlayerNumber();
             playerHand = [];
-            
-            // Draw 5 regular tiles
             for (let i = 0; i < 5; i++) {
-                const tile = drawTileFromDeck(playerNumber);
-                if (tile) {
-                    playerHand.push(tile);
-                    console.log(`Player ${playerNumber} drew initial tile ${i+1}: ${tile.type}`);
-                }
+                const tile = drawTileFromDeck(activePlayer);
+                if (tile) playerHand.push(tile);
             }
-            
             updateHand();
-            console.log(`Player ${playerNumber} initial hand:`, playerHand.map(t => t.type));
         }
 
         // Draw a single tile for the current turn
         function drawTurnTile() {
-            console.log(`drawTurnTile() called for Player ${playerNumber}, current hand length: ${playerHand.length}`);
-            console.log(`Player ${playerNumber} deck length: ${playerDecks[playerNumber] ? playerDecks[playerNumber].length : 'undefined'}`);
-            
-            const tile = drawTileFromDeck(playerNumber);
+            const activePlayer = getActivePlayerNumber();
+            const tile = drawTileFromDeck(activePlayer);
             if (tile) {
                 playerHand.push(tile);
-                console.log(`Player ${playerNumber} drew turn tile: ${tile.type}`);
                 updateHand();
             } else {
-                console.log(`Player ${playerNumber} failed to draw turn tile - deck empty`);
                 showNotification('Deck is empty!', 'warning');
             }
         }
@@ -1621,7 +1658,8 @@
                 
                 // Show cost, but mark as FREE if it's the first tile
                 let costStr = '';
-                const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${playerNumber}`);
+                const activePNum = getActivePlayerNumber();
+                const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${activePNum}`);
                 if (playerTiles.length === 0) {
                     costStr = `<div style="font-size:10px; color:#00ff00; margin-top:1px;">FREE</div>`;
                 } else if (tile.cost.length > 0) {
@@ -1711,12 +1749,29 @@
         function updateGamePhaseDisplay() {
             document.getElementById('gamePhaseValue').textContent = 'Normal Play';
             document.getElementById('instructionTitle').textContent = 'Normal Play:';
-            document.getElementById('instructionText').innerHTML = 
+            document.getElementById('instructionText').innerHTML =
                 '• Click tiles in your hand to select them<br>' +
                 '• Place your first tile anywhere (it becomes your capital)<br>' +
                 '• Then place other tiles adjacent to existing ones<br>' +
                 '• Pay costs using tile resources<br>' +
                 '• (Cost) = required resources<br>';
+        }
+
+        // Update the turn indicator banner
+        function updateTurnIndicator() {
+            const indicator = document.getElementById('turnIndicator');
+            if (!indicator) return;
+            if (!isMultiplayer) {
+                // Offline: show who should be playing now
+                indicator.textContent = `⚡ Player ${currentPlayer}'s Turn`;
+                indicator.className = 'your-turn';
+            } else if (currentPlayer === playerNumber) {
+                indicator.textContent = '⚡ YOUR TURN';
+                indicator.className = 'your-turn';
+            } else {
+                indicator.textContent = `⏳ Player ${currentPlayer}'s turn...`;
+                indicator.className = 'waiting';
+            }
         }
         
         // Update turn phase display
@@ -1741,22 +1796,26 @@
                 setTimeout(() => {
                     const oldPlayer = currentPlayer;
                     currentPlayer = currentPlayer === 1 ? 2 : 1;
-                    
-                    console.log(`Turn switching: ${oldPlayer} → ${currentPlayer}`);
-                    showNotification(`Player ${currentPlayer}'s turn!`, 'info');
+
                     soundSystem.playTurnSwitch();
-                    
-                    // Start new turn with start phase
+
+                    // In offline mode, swap hands between players
+                    if (!isMultiplayer) {
+                        playerHands[oldPlayer] = [...playerHand];
+                        playerHand = [...(playerHands[currentPlayer] || [])];
+                    }
+
+                    // Start new turn (draws a card for the active player)
                     startNewTurn();
-                    
+
                     updateGamePhaseDisplay();
                     updateTurnPhaseDisplay();
-                    
-                    // Sync to multiplayer if connected
+                    updateTurnIndicator();
+
                     if (isMultiplayer) {
                         syncGameState();
                     }
-                }, 500); // Small delay for visual feedback
+                }, 500);
             }
         }
         
@@ -1764,20 +1823,18 @@
             if (gamePhase === 'normal_play') {
                 turnPhase = 'start_phase';
                 updateTurnPhaseDisplay();
-                
-                console.log(`Starting new turn for Player ${currentPlayer} - Start Phase`);
-                
-                // Always draw a card at the start of each turn
-                if (currentPlayer === playerNumber) {
-                    console.log(`Player ${playerNumber}: Drawing card for start phase`);
+
+                // Draw a card if it's our turn:
+                //   - Offline: always draw (we control all players)
+                //   - Multiplayer: only draw when it's our player's turn
+                const shouldDraw = !isMultiplayer || currentPlayer === playerNumber;
+                if (shouldDraw) {
                     drawTurnTile();
                 }
-                
-                // Move to placement phase after card draw
+
                 setTimeout(() => {
                     turnPhase = 'placement_phase';
                     updateTurnPhaseDisplay();
-                    console.log(`Player ${currentPlayer} - Placement Phase`);
                 }, 1000);
             }
         }
@@ -1862,45 +1919,63 @@
             
             updateScore();
             updateResourceDisplay();
-            
-            console.log('PixiJS Hex Tile Game initialized! Place your capital tile from your hand.');
+            updateTurnIndicator();
+
+            console.log('PixiJS Hex Tile Game initialized! Place your first tile from your hand.');
             console.log(`Player decks created: P1=${playerDecks[1].length} tiles, P2=${playerDecks[2].length} tiles`);
         }
         
         // Multiplayer functions
         function createRoom() {
-            roomCode = document.getElementById('roomCodeInput').value.toUpperCase() || 'DEMO' + Math.floor(Math.random() * 1000);
+            const input = document.getElementById('roomCodeInput').value.toUpperCase().trim();
+            roomCode = input || generateRoomCode();
             playerNumber = 1;
             isHost = true;
             isMultiplayer = true;
-            
-            document.getElementById('roomStatus').innerHTML = 
-                `<div class="status-message status-waiting">Room ${roomCode} created! Share this code with your opponent.</div>`;
-            
-            // Set up Supabase room
+
+            document.getElementById('roomStatus').innerHTML =
+                `<div class="status-message status-waiting">Creating room <strong>${roomCode}</strong>...</div>`;
+
             setupSupabaseRoom();
         }
-        
-        function joinRoom() {
-            roomCode = document.getElementById('roomCodeInput').value.toUpperCase();
+
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+            return code;
+        }
+
+        function joinRoomByInput() {
+            const input = document.getElementById('joinCodeInput') || document.getElementById('roomCodeInput');
+            roomCode = input.value.toUpperCase().trim();
             if (!roomCode) {
                 alert('Please enter a room code!');
                 return;
             }
-            
+            joinRoomWithCode(roomCode);
+        }
+
+        // Keep old joinRoom for backward compat
+        function joinRoom() {
+            joinRoomByInput();
+        }
+
+        function joinRoomWithCode(code) {
+            roomCode = code.toUpperCase();
             playerNumber = 2;
             isHost = false;
             isMultiplayer = true;
-            
-            document.getElementById('roomStatus').innerHTML = 
-                `<div class="status-message status-waiting">Joining room ${roomCode}...</div>`;
-            
-            // Set up Supabase room
+
+            document.getElementById('roomStatus').innerHTML =
+                `<div class="status-message status-waiting">Joining room <strong>${roomCode}</strong>...</div>`;
+
             setupSupabaseRoom();
         }
         
         function playOffline() {
             isMultiplayer = false;
+            playerNumber = 1; // Offline: you control player 1; End Turn to switch
             hideRoomSetup();
             startGame();
         }
@@ -1951,8 +2026,21 @@
                     
                     gameRef = roomData.id;
                     console.log('Room created successfully:', roomData);
-                    showNotification(`Room ${roomCode} created! Waiting for Player 2...`, 'success');
-                    
+
+                    // Show shareable room code with copy button
+                    document.getElementById('roomStatus').innerHTML = `
+                        <div class="status-message status-connected" style="font-size:14px;">
+                            Room created! Share this code with your friend:<br>
+                            <span style="font-size:28px; font-family:monospace; letter-spacing:4px; color:#ffd700;">
+                                ${roomCode}
+                            </span><br>
+                            <button onclick="navigator.clipboard.writeText('${roomCode}').then(()=>this.textContent='✅ Copied!')"
+                                style="margin-top:8px; padding:6px 14px; background:#555; color:white; border:none; border-radius:6px; cursor:pointer;">
+                                📋 Copy Code
+                            </button>
+                            <p style="color:#aaa; margin:8px 0 0 0; font-size:12px;">Waiting for Player 2 to join...</p>
+                        </div>`;
+
                     // Small delay to ensure room is fully created
                     await new Promise(resolve => setTimeout(resolve, 500));
                 } else {
@@ -2011,15 +2099,35 @@
                     console.log('Successfully joined room:', roomData);
                     showNotification(`Joined room ${roomCode} as Player 2!`, 'success');
                 }
-                
-                // Set up real-time subscription
-                setupRealtimeSubscription();
-                
-                hideRoomSetup();
-                startGame();
-                
-                document.getElementById('roomStatus').innerHTML = 
-                    `<div class="status-message status-connected">Connected to room ${roomCode}!</div>`;
+
+                if (isHost) {
+                    // Host waits on setup screen until player 2 joins
+                    // The real-time subscription will dismiss and start game when player 2 arrives
+                    setupRealtimeSubscription(/* onPlayer2Join: */ () => {
+                        hideRoomSetup();
+                        startGame();
+                    });
+                } else {
+                    // Player 2: set up subscription then immediately start game
+                    setupRealtimeSubscription();
+                    hideRoomSetup();
+                    startGame();
+
+                    // Fetch and apply the current board state in case host already placed tiles
+                    try {
+                        const { data: currentRoom } = await supabase
+                            .from('rooms')
+                            .select('game_state')
+                            .eq('id', gameRef)
+                            .single();
+                        if (currentRoom?.game_state) {
+                            const forcedState = { game_state: { ...currentRoom.game_state, lastUpdatedBy: null } };
+                            handleRoomUpdate(forcedState);
+                        }
+                    } catch (e) {
+                        console.warn('Could not load initial game state:', e);
+                    }
+                }
                     
             } catch (error) {
                 console.error('Error setting up room:', error);
@@ -2028,15 +2136,20 @@
             }
         }
         
-        function setupRealtimeSubscription() {
+        function setupRealtimeSubscription(onPlayer2Join) {
             if (!gameRef) return;
-            
+
             gameChannel = supabase
                 .channel(`room-${gameRef}`)
-                .on('postgres_changes', 
+                .on('postgres_changes',
                     { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${gameRef}` },
                     (payload) => {
                         console.log('Room updated:', payload);
+                        // Detect when player 2 joins (host side)
+                        if (isHost && payload.new.player2_id && !payload.old.player2_id) {
+                            showNotification('Player 2 has joined! Game on!', 'success');
+                            if (onPlayer2Join) onPlayer2Join();
+                        }
                         handleRoomUpdate(payload.new);
                     }
                 )
@@ -2045,42 +2158,60 @@
         
         function handleRoomUpdate(roomData) {
             if (!roomData.game_state) return;
-            
+
             const gameState = roomData.game_state;
-            const oldCurrentPlayer = currentPlayer;
-            
-            console.log('Handling room update:', gameState);
-            console.log('Current player before update:', currentPlayer, 'Player number:', playerNumber);
-            
-            // Update local game state
-            const newCurrentPlayer = gameState.currentPlayer || currentPlayer;
-            const newGamePhase = gameState.gamePhase || gamePhase;
-            const newCurrentTurn = gameState.currentTurn || currentTurn;
-            const newTurnPhase = gameState.turnPhase || turnPhase;
-            
-            // Force update these values
-            currentPlayer = newCurrentPlayer;
-            gamePhase = newGamePhase;
-            currentTurn = newCurrentTurn;
-            turnPhase = newTurnPhase;
-            
-            console.log('Current player after update:', currentPlayer, 'Player number:', playerNumber);
-            
-            // Show notifications for important changes
-            if (oldCurrentPlayer !== currentPlayer) {
-                showNotification(`Player ${currentPlayer}'s turn!`, 'info');
+
+            // Skip updates we sent ourselves — we already have the correct local state
+            if (gameState.lastUpdatedBy && gameState.lastUpdatedBy === playerId) {
+                console.log('Skipping own update');
+                return;
             }
-            
+
+            const oldCurrentPlayer = currentPlayer;
+
+            console.log('Handling room update from opponent:', gameState);
+
+            // Update local game state
+            currentPlayer = gameState.currentPlayer || currentPlayer;
+            gamePhase = gameState.gamePhase || gamePhase;
+            currentTurn = gameState.currentTurn || currentTurn;
+            turnPhase = gameState.turnPhase || turnPhase;
+
             // Reconstruct board tiles from game state
             if (gameState.boardTiles && Array.isArray(gameState.boardTiles)) {
-                // Clear existing board
+                // Clear existing board visuals before rebuilding
                 boardTiles = [];
-                
-                // Recreate all tiles on the board
+                for (let c = 0; c < GRID_WIDTH; c++) {
+                    for (let r = 0; r < GRID_HEIGHT; r++) {
+                        const oldHex = hexGrid[c][r];
+                        if (oldHex && !oldHex.isEmpty) {
+                            // Replace with a fresh empty hex
+                            const emptyHex = createHexagon();
+                            const pos = gridToPixel(c, r);
+                            emptyHex.x = pos.x;
+                            emptyHex.y = pos.y;
+                            emptyHex.interactive = true;
+                            emptyHex.buttonMode = true;
+                            emptyHex.gridCol = c;
+                            emptyHex.gridRow = r;
+                            emptyHex.isEmpty = true;
+                            emptyHex.tile = null;
+                            emptyHex.on('pointerover', () => handleHexHover(c, r));
+                            emptyHex.on('pointerout', () => {
+                                emptyHex.tint = 0xffffff;
+                                document.getElementById('hover').textContent = '-';
+                            });
+                            emptyHex.on('pointerdown', () => handleHexClick(c, r));
+                            hexContainer.removeChild(oldHex);
+                            hexContainer.addChild(emptyHex);
+                            hexGrid[c][r] = emptyHex;
+                        }
+                    }
+                }
+
+                // Place all tiles from the synced board state
                 gameState.boardTiles.forEach(boardTileData => {
                     const { col, row, tile: tileData } = boardTileData;
-                    
-                    // Create tile object
                     const tile = new Tile(
                         tileData.type,
                         tileData.baseInfluence,
@@ -2089,78 +2220,41 @@
                         tileData.resourceTypes || [],
                         tileData.cost || []
                     );
-                    
-                    // Set tile properties
                     tile.col = col;
                     tile.row = row;
                     tile.owner = tileData.owner;
                     tile.usedThisTurn = tileData.usedThisTurn || false;
-                    
-                    // Place tile on board
                     placeTileDirectly(col, row, tile);
                 });
-                
-                // Update all tile displays
+
                 updateAllTileDisplays();
             }
-            
+
             // Update players ready state
             if (gameState.playersReady) {
-                const oldPlayersReady = { ...playersReady };
                 playersReady = gameState.playersReady;
-                console.log(`Player ${playerNumber}: Updated playersReady:`, playersReady);
-                
-                // Check for new player ready
-                for (let playerNum = 1; playerNum <= 2; playerNum++) {
-                    if (!oldPlayersReady[playerNum] && playersReady[playerNum]) {
-                        showNotification(`Player ${playerNum} is ready!`, 'success');
-                    }
-                }
             }
-            
-            // Give capital tile to current player if it's capital placement phase
-            if (gamePhase === 'capital_placement' && currentPlayer === playerNumber && playerHand.length === 0) {
-                giveCapitalTile();
-            }
-            
-            // Handle transition to normal play if both players are ready
-            console.log(`Player ${playerNumber}: Checking transition - gamePhase: ${gamePhase}, playersReady:`, playersReady);
-            if (gamePhase === 'capital_placement' && playersReady[1] && playersReady[2]) {
-                console.log(`Player ${playerNumber}: Both players ready, transitioning to normal play via room update`);
-                console.log(`Player ${playerNumber}: Current hand length before transition: ${playerHand.length}`);
-                
-                // Use the same transition function to ensure consistency
-                transitionToNormalPlay();
-            } else if (gamePhase === 'normal_play' && playersReady[1] && playersReady[2] && playerHand.length === 0) {
-                // Game is in normal play but this player doesn't have any tiles yet
-                console.log(`Player ${playerNumber}: Game in normal play but no tiles, drawing first turn tile`);
-                drawTurnTile();
-            } else {
-                console.log(`Player ${playerNumber}: Not transitioning - gamePhase: ${gamePhase}, playersReady[1]: ${playersReady[1]}, playersReady[2]: ${playersReady[2]}, handLength: ${playerHand.length}`);
-            }
-            
+
             // Update UI
             updateGamePhaseDisplay();
             updateTurnPhaseDisplay();
             updateResourceDisplay();
-            
-            // If it's not our turn, disable interactions
+            updateTurnIndicator();
+
+            const turnJustSwitchedToUs = oldCurrentPlayer !== currentPlayer && currentPlayer === playerNumber;
+
             if (currentPlayer !== playerNumber) {
-                // Disable tile selection and placement
                 selectedTile = null;
                 updateSelectedDisplay();
-                showNotification(`Waiting for Player ${currentPlayer}...`, 'warning');
-            } else {
-                showNotification(`Your turn!`, 'success');
-                
-                // Draw a tile if it's this player's turn and they don't have one
-                if (gamePhase === 'normal_play' && playerHand.length === 0) {
-                    console.log(`Player ${playerNumber}: It's my turn but no tiles, drawing turn tile`);
-                    drawTurnTile();
-                }
+            } else if (turnJustSwitchedToUs && gamePhase === 'normal_play') {
+                // Opponent ended their turn — draw our start-of-turn card
+                showNotification('Your turn! Drawing a card...', 'success');
+                drawTurnTile();
+            } else if (gamePhase === 'normal_play' && playerHand.length === 0) {
+                drawTurnTile();
             }
-            
-            console.log('Room update handled successfully');
+
+            console.log('Room update applied successfully');
         }
         
         async function syncGameState() {
@@ -2193,7 +2287,8 @@
                         })),
                         playersReady,
                         currentTurn,
-                        score: { 1: 0, 2: 0 } // Add score tracking
+                        score: { 1: 0, 2: 0 },
+                        lastUpdatedBy: playerId  // Track who sent this update
                     };
                     
                     console.log('Syncing game state:', gameState);
