@@ -331,6 +331,34 @@
             justify-content: center;
             flex-wrap: wrap;
         }
+
+        /* Keyword badges */
+        .kw-badges {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2px;
+            margin-top: 3px;
+        }
+        .kw-badge {
+            display: inline-block;
+            font-size: 8px;
+            font-weight: bold;
+            padding: 1px 3px;
+            background: #4a3c8e;
+            border: 1px solid #6a5cae;
+            color: #ffe;
+            border-radius: 3px;
+            text-transform: uppercase;
+        }
+        #boardTooltip .kw-list { margin-top: 4px; }
+        #boardTooltip .kw-line {
+            font-size: 11px;
+            color: #c4b6ff;
+            line-height: 1.3;
+            margin-top: 2px;
+        }
+        #boardTooltip .kw-line b { color: #fff; }
     </style>
 </head>
 <body>
@@ -939,31 +967,44 @@
         }
         
         // Tile deck definitions - balanced by cost vs influence
+        // TILE_DECK: master card pool. Counts are per-player default deck.
+        // The deckbuilder (later iter) will let players construct custom decks from this pool.
         const TILE_DECK = [
-            // FREE TILES (0 cost) - Low influence
-            { type: 'VILLAGE', influence: 1, char: 'V', resources: ['C'], cost: [], count: 8 },
-            { type: 'CAMP', influence: 1, char: 'A', resources: ['R'], cost: [], count: 8 },
-            { type: 'FARM', influence: 1, char: 'F', resources: ['F'], cost: [], count: 8 },
-            { type: 'SHRINE', influence: 1, char: 'S', resources: ['M'], cost: [], count: 8 },
-            
-            // LOW COST TILES (1 resource) - Medium influence
-            { type: 'TOWN', influence: 2, char: 'T', resources: ['C'], cost: ['C'], count: 6 },
-            { type: 'ROAD', influence: 2, char: 'R', resources: ['R'], cost: ['R'], count: 6 },
-            { type: 'FIELD', influence: 2, char: 'D', resources: ['F'], cost: ['F'], count: 6 },
-            { type: 'TEMPLE', influence: 2, char: 'E', resources: ['M'], cost: ['M'], count: 6 },
-            
-            // MEDIUM COST TILES (2 resources) - High influence
-            { type: 'CITY', influence: 3, char: 'C', resources: ['C', 'C'], cost: ['C', 'C'], count: 4 },
-            { type: 'FORTRESS', influence: 3, char: 'X', resources: ['R', 'M'], cost: ['R', 'M'], count: 4 },
-            { type: 'GRANARY', influence: 3, char: 'G', resources: ['F', 'C'], cost: ['F', 'C'], count: 4 },
-            { type: 'CATHEDRAL', influence: 3, char: 'H', resources: ['M', 'C'], cost: ['M', 'C'], count: 4 },
-            
-            // HIGH COST TILES (3 resources) - Very high influence
-            { type: 'CAPITAL', influence: 4, char: 'K', resources: ['C', 'M', 'R'], cost: ['C', 'M', 'R'], count: 2 },
-            { type: 'STRONGHOLD', influence: 4, char: 'L', resources: ['R', 'M', 'F'], cost: ['R', 'M', 'F'], count: 2 },
-            
-            // LEGENDARY TILES (4 resources) - Extremely high influence
-            { type: 'METROPOLIS', influence: 5, char: 'P', resources: ['C', 'M', 'R', 'F'], cost: ['C', 'M', 'R', 'F'], count: 1 }
+            // ─── FREE / TIER 0 ──────────────────────────────────────────────
+            { type: 'VILLAGE',    influence: 1, char: 'V', resources: ['C'], cost: [], count: 6, keywords: [] },
+            { type: 'CAMP',       influence: 1, char: 'A', resources: ['R'], cost: [], count: 6, keywords: [] },
+            { type: 'FARM',       influence: 1, char: 'F', resources: ['F'], cost: [], count: 6, keywords: [] },
+            { type: 'SHRINE',     influence: 1, char: 'S', resources: ['M'], cost: [], count: 6, keywords: [] },
+            { type: 'OUTPOST',    influence: 1, char: 'O', resources: ['R'], cost: [], count: 3, keywords: ['SCOUT'] },        // free recon — place anywhere
+            { type: 'WATCHTOWER', influence: 2, char: 'W', resources: [],    cost: [], count: 2, keywords: ['FORTIFIED'] },    // free wall, no resources
+
+            // ─── TIER 1: 1 RESOURCE ─────────────────────────────────────────
+            { type: 'TOWN',       influence: 2, char: 'T', resources: ['C'], cost: ['C'], count: 4, keywords: [] },
+            { type: 'ROAD',       influence: 2, char: 'R', resources: ['R'], cost: ['R'], count: 4, keywords: [] },
+            { type: 'FIELD',      influence: 2, char: 'D', resources: ['F'], cost: ['F'], count: 4, keywords: [] },
+            { type: 'TEMPLE',     influence: 2, char: 'E', resources: ['M'], cost: ['M'], count: 4, keywords: [] },
+            { type: 'BAZAAR',     influence: 1, char: 'B', resources: ['C'], cost: ['C'], count: 3, keywords: ['MERCHANT'] }, // produces +1 commerce
+            { type: 'BARRACKS',   influence: 3, char: 'X', resources: ['R'], cost: ['F'], count: 3, keywords: [] },           // food → muscle
+            { type: 'WARDPOST',   influence: 1, char: 'Y', resources: ['M'], cost: ['M'], count: 3, keywords: ['WARD'] },     // first capture absorbed
+            { type: 'STABLES',    influence: 2, char: 'H', resources: ['F'], cost: ['F'], count: 3, keywords: ['HASTE'] },    // can act same turn
+
+            // ─── TIER 2: 2 RESOURCES ────────────────────────────────────────
+            { type: 'CITY',       influence: 3, char: 'C', resources: ['C', 'C'], cost: ['C', 'C'], count: 3, keywords: [] },
+            { type: 'FORTRESS',   influence: 4, char: 'X', resources: ['R', 'M'], cost: ['R', 'M'], count: 3, keywords: ['FORTIFIED'] },
+            { type: 'GRANARY',    influence: 3, char: 'G', resources: ['F', 'C'], cost: ['F', 'C'], count: 3, keywords: ['VIGILANT'] }, // never taps
+            { type: 'CATHEDRAL',  influence: 3, char: 'H', resources: ['M', 'C'], cost: ['M', 'C'], count: 3, keywords: ['RALLY'] },   // boosts neighbors
+            { type: 'WARCAMP',    influence: 4, char: 'K', resources: ['R', 'F'], cost: ['R', 'F'], count: 3, keywords: ['SIEGE'] },   // anti-enemy
+            { type: 'KNIGHT',     influence: 3, char: 'N', resources: ['R'],      cost: ['R', 'C'], count: 3, keywords: ['HASTE', 'DOUBLESTRIKE'] }, // expensive but flexible
+            { type: 'WIZARDTOWER',influence: 3, char: 'Z', resources: ['M', 'M'], cost: ['M', 'M'], count: 2, keywords: ['MERCHANT'] },
+
+            // ─── TIER 3: 3 RESOURCES ────────────────────────────────────────
+            { type: 'STRONGHOLD', influence: 5, char: 'L', resources: ['R', 'M', 'F'], cost: ['R', 'M', 'F'], count: 2, keywords: ['FORTIFIED', 'SIEGE'] },
+            { type: 'COLOSSEUM',  influence: 4, char: 'Q', resources: ['C', 'C', 'F'], cost: ['C', 'F', 'F'], count: 2, keywords: ['RALLY', 'DOUBLESTRIKE'] },
+            { type: 'PALADIN',    influence: 5, char: 'P', resources: ['M', 'R'],      cost: ['M', 'R', 'C'], count: 2, keywords: ['WARD', 'HASTE'] },
+
+            // ─── LEGENDARY: 4 RESOURCES ─────────────────────────────────────
+            { type: 'METROPOLIS', influence: 6, char: 'M', resources: ['C', 'M', 'R', 'F'], cost: ['C', 'M', 'R', 'F'], count: 1, keywords: ['RALLY', 'MERCHANT'] },
+            { type: 'DRAGON',     influence: 7, char: 'D', resources: ['M', 'R'],          cost: ['M', 'M', 'R', 'F'], count: 1, keywords: ['HASTE', 'SIEGE', 'DOUBLESTRIKE'] }
         ];
         
         // Game state
@@ -1741,6 +1782,11 @@
             const tappedTag = tile.usedThisTurn
                 ? '<div style="color:#ffaa44; font-size:11px; font-style:italic;">⟲ tapped</div>'
                 : '';
+            const keywordsList = tile.keywords && tile.keywords.length
+                ? `<div class="tt-divider"></div><div class="kw-list">${tile.keywords.map(k =>
+                    `<div class="kw-line"><b>${KEYWORDS[k]?.name || k}</b>: ${KEYWORDS[k]?.desc || ''}</div>`
+                  ).join('')}</div>`
+                : '';
             tip.innerHTML = `
                 <div class="tt-title">${tile.type}</div>
                 <div class="tt-row"><span>Owner</span> <b>${ownerLabel}</b></div>
@@ -1748,6 +1794,7 @@
                 <div class="tt-row"><span>Produces</span> <b>${producesPips}</b></div>
                 <div class="tt-row"><span>Cost</span> <b>${costPips}</b></div>
                 ${tappedTag}
+                ${keywordsList}
             `;
             tip.style.display = 'block';
         }
@@ -2030,11 +2077,19 @@
                     costHTML = `<div class="cost-pips" style="margin-top:2px;">${tile.cost.map(r => resPip(r, null, {size:11})).join('')}</div>`;
                 }
 
+                // Keyword badges (compact)
+                const keywordsHTML = tile.keywords && tile.keywords.length
+                    ? `<div class="kw-badges">${tile.keywords.map(k =>
+                        `<span class="kw-badge" title="${KEYWORDS[k]?.desc || ''}">${(KEYWORDS[k]?.name || k).toUpperCase().substring(0,4)}</span>`
+                      ).join('')}</div>`
+                    : '';
+
                 tileDiv.innerHTML = `
-                    <div style="font-size:11px; color:#bbb; text-transform:uppercase; letter-spacing:0.5px;">${tile.type}</div>
+                    <div style="font-size:10px; color:#bbb; text-transform:uppercase; letter-spacing:0.5px;">${tile.type}</div>
                     <div style="font-size:14px; color:#fff; font-weight:bold;">⚔ ${tile.baseInfluence}</div>
                     ${producesPips}
                     ${costHTML}
+                    ${keywordsHTML}
                 `;
 
                 if (!canAffordTile(tile)) {
@@ -2044,7 +2099,10 @@
                 } else {
                     tileDiv.style.opacity = '1';
                     tileDiv.style.cursor = 'pointer';
-                    tileDiv.title = `${tile.type}: influence ${tile.baseInfluence}, cost ${tile.cost.join('') || 'free'}, produces ${tile.resourceTypes.join('') || '—'}`;
+                    const kwTip = tile.keywords && tile.keywords.length
+                        ? '\n' + tile.keywords.map(k => `${KEYWORDS[k]?.name}: ${KEYWORDS[k]?.desc}`).join('\n')
+                        : '';
+                    tileDiv.title = `${tile.type} — influence ${tile.baseInfluence}, cost ${tile.cost.join('') || 'free'}, produces ${tile.resourceTypes.join('') || '—'}${kwTip}`;
                 }
 
                 // Hover: highlight which resources will be tapped + which board tiles
