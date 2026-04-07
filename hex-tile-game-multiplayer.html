@@ -1213,6 +1213,52 @@
             requestAnimationFrame(tick);
         }
 
+        // Compute which board tiles would tap to pay for the given tile
+        // (greedy match, matches the order payForTile uses). Returns array of {col,row}.
+        function getPaymentPreview(tile) {
+            if (!tile || !tile.cost || tile.cost.length === 0) return [];
+            const activePNum = getActivePlayerNumber();
+            const playerTiles = boardTiles.filter(bt => bt.tile.owner === `player${activePNum}`);
+            if (playerTiles.length === 0) return [];
+
+            const costCopy = [...tile.cost];
+            const tapped = [];
+            boardTiles.forEach(bt => {
+                if (costCopy.length === 0) return;
+                if (bt.tile.owner !== `player${currentPlayer}` || bt.tile.usedThisTurn) return;
+                let usedThisTile = false;
+                bt.tile.resourceTypes.forEach(resource => {
+                    const idx = costCopy.indexOf(resource);
+                    if (idx !== -1) {
+                        costCopy.splice(idx, 1);
+                        usedThisTile = true;
+                    }
+                });
+                if (usedThisTile) tapped.push({ col: bt.col, row: bt.row });
+            });
+            return tapped;
+        }
+
+        // Track payment preview by col/row so it survives hexGrid rebuilds
+        let _paymentPreviewCells = []; // [{col,row}, ...]
+        function applyPaymentPreviewTints() {
+            _paymentPreviewCells.forEach(({col, row}) => {
+                const hex = hexGrid[col]?.[row];
+                if (hex) hex.tint = 0xffff66;
+            });
+        }
+        function showPaymentPreview(tile) {
+            _paymentPreviewCells = getPaymentPreview(tile);
+            applyPaymentPreviewTints();
+        }
+        function clearPaymentPreview() {
+            _paymentPreviewCells.forEach(({col, row}) => {
+                const hex = hexGrid[col]?.[row];
+                if (hex) hex.tint = 0xffffff;
+            });
+            _paymentPreviewCells = [];
+        }
+
         // Pay for a tile by tapping friendly resource tiles
         function payForTile(tile) {
             const activePNum = getActivePlayerNumber();
@@ -1316,6 +1362,9 @@
                     }
                 }
             });
+
+            // Re-apply payment preview highlights so they survive any rebuild
+            applyPaymentPreviewTints();
         }
         
         // Get neighboring hexes
@@ -1811,14 +1860,17 @@
                     tileDiv.title = `${tile.type}: influence ${tile.baseInfluence}, cost ${tile.cost.join('') || 'free'}, produces ${tile.resourceTypes.join('') || '—'}`;
                 }
 
-                // Hover: highlight which resources will be tapped to pay for this tile
+                // Hover: highlight which resources will be tapped + which board tiles
                 tileDiv.onmouseenter = () => {
                     if (canAffordTile(tile) && !isFirstTile) {
                         updateResourceDisplay(tile.cost);
+                        showPaymentPreview(tile);
                     }
                 };
                 tileDiv.onmouseleave = () => {
                     updateResourceDisplay(selectedTile ? selectedTile.cost : null);
+                    clearPaymentPreview();
+                    if (selectedTile && !isFirstTile) showPaymentPreview(selectedTile);
                 };
 
                 tileDiv.onclick = () => {
@@ -1826,6 +1878,7 @@
                         selectedTile = tile;
                         updateSelectedDisplay();
                         updateResourceDisplay(tile.cost);
+                        if (!isFirstTile) showPaymentPreview(tile);
                         document.querySelectorAll('.hand-tile').forEach(t => t.classList.remove('selected'));
                         tileDiv.classList.add('selected');
                     }
