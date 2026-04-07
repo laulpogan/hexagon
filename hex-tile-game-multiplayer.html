@@ -1355,7 +1355,18 @@
 
             // ─── LEGENDARY: 4 RESOURCES ─────────────────────────────────────
             { type: 'METROPOLIS', influence: 5, char: 'M', resources: ['C', 'M', 'R', 'F'], cost: ['C', 'M', 'R', 'F'], count: 1, keywords: ['RALLY', 'MERCHANT'] },
-            { type: 'DRAGON',     influence: 5, char: 'D', resources: ['M', 'R'],          cost: ['M', 'M', 'R', 'F'], count: 1, keywords: ['HASTE', 'SIEGE'] } // removed DOUBLESTRIKE — was oppressive
+            { type: 'DRAGON',     influence: 5, char: 'D', resources: ['M', 'R'],          cost: ['M', 'M', 'R', 'F'], count: 1, keywords: ['HASTE', 'SIEGE'] },
+
+            // ─── FILLER / NICHE PICKS ───────────────────────────────────────
+            // These broaden the deckbuilder's strategic space without adding power-creep.
+            { type: 'TRADER',     influence: 1, char: 't', resources: ['C', 'F'], cost: ['C'],      count: 2, keywords: ['MERCHANT'] },
+            { type: 'INFIRMARY',  influence: 2, char: 'i', resources: ['F', 'M'], cost: ['F'],      count: 2, keywords: ['VIGILANT'] },
+            { type: 'SCOUTPARTY', influence: 1, char: 'p', resources: ['F'],      cost: ['F'],      count: 3, keywords: ['SCOUT', 'HASTE'] },
+            { type: 'MOAT',       influence: 1, char: 'o', resources: [],         cost: ['R'],      count: 2, keywords: ['FORTIFIED', 'WARD'] },
+            { type: 'ARCHER',     influence: 2, char: 'a', resources: ['R'],      cost: ['R', 'F'], count: 2, keywords: ['SIEGE'] },
+            { type: 'PRIEST',     influence: 1, char: 'r', resources: ['M', 'C'], cost: ['M'],      count: 2, keywords: ['RALLY'] },
+            { type: 'SMITHY',     influence: 2, char: 's', resources: ['R'],      cost: ['R', 'C'], count: 2, keywords: ['VIGILANT'] },
+            { type: 'OBELISK',    influence: 2, char: 'b', resources: ['M'],      cost: ['M', 'R'], count: 2, keywords: ['FORTIFIED', 'RALLY'] }
         ];
         
         // ─── Action log ──────────────────────────────────────────────────────
