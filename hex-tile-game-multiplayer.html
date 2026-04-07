@@ -1786,6 +1786,37 @@
             return true;
         }
         
+        // Animate a freshly placed tile dropping in (scale + alpha)
+        function animatePlacement(hex) {
+            if (!hex || !app) return;
+            const startScale = 1.6;
+            const targetScale = 1.0;
+            hex.scale.set(startScale);
+            hex.alpha = 0;
+            const duration = 280;
+            const t0 = performance.now();
+            const tick = () => {
+                const t = Math.min(1, (performance.now() - t0) / duration);
+                const e = 1 - Math.pow(1 - t, 3); // ease out cubic
+                const s = startScale + (targetScale - startScale) * e;
+                hex.scale.set(s);
+                hex.alpha = e;
+                if (t < 1) requestAnimationFrame(tick);
+                else { hex.scale.set(1); hex.alpha = 1; }
+            };
+            requestAnimationFrame(tick);
+        }
+
+        // Brief flash on a hex (e.g., capture)
+        function animateFlash(hex, color = 0xff4444) {
+            if (!hex || !app) return;
+            const original = hex.tint;
+            hex.tint = color;
+            setTimeout(() => {
+                if (hex.tint === color) hex.tint = original || 0xffffff;
+            }, 280);
+        }
+
         // Animate a hex tile being tapped (MTG-style rotation)
         function animateTap(hex, tapped = true) {
             if (!hex || !app) return;
@@ -2108,6 +2139,7 @@
 
                 console.log(`Capturing tile at ${col},${row}! Was: ${capturedTile.type}, Now: ${tile.type}`);
                 logAction(`<b>P${currentPlayer}</b> captured enemy <b>${capturedTile.type}</b> with ${tile.type}`, `p${currentPlayer}`);
+                animateFlash(hex, 0xff4444); // red flash on the dying tile
                 soundSystem.playTileCapture();
             }
             
@@ -2146,7 +2178,8 @@
             
             hexContainer.addChild(tileHex);
             hexGrid[col][row] = tileHex;
-            
+            animatePlacement(tileHex); // satisfying drop-in
+
             // Update game state
             tile.justPlaced = true; // cleared at start of next turn (HASTE bypasses this check)
             boardTiles.push({ col, row, tile: tile });
