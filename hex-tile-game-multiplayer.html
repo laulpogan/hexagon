@@ -485,6 +485,42 @@
             font-weight: bold;
         }
 
+        /* End Turn button */
+        #endTurnBtn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: linear-gradient(180deg, #4caf50, #388e3c);
+            color: #fff;
+            border: 2px solid #66bb6a;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.18s;
+        }
+        #endTurnBtn:hover:not(:disabled) {
+            background: linear-gradient(180deg, #5cbf60, #4a9e4e);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(76,175,80,0.4);
+        }
+        #endTurnBtn:disabled {
+            background: #333;
+            border-color: #444;
+            color: #777;
+            cursor: not-allowed;
+        }
+        #endTurnBtn.has-acted {
+            animation: endturn-pulse 1.6s ease-in-out infinite;
+        }
+        @keyframes endturn-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(76,175,80,0.5); }
+            50% { box-shadow: 0 0 0 8px rgba(76,175,80,0); }
+        }
+
         /* Action log */
         #actionLog {
             background: #161619;
@@ -632,7 +668,7 @@
                 <!-- populated by updateResourceDisplay() -->
             </div>
             
-            <button id="endTurnBtn" onclick="endPlayerTurn()" style="margin: 10px 0; padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">End Turn</button>
+            <button id="endTurnBtn" onclick="endPlayerTurn()">End Turn ⏭</button>
             
             <button id="soundToggle" onclick="toggleSound()" style="margin: 10px 0; padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">🔊 Sound On</button>
             
@@ -2142,6 +2178,7 @@
 
             // Mark that this player has acted this turn (used by End Turn button)
             _hasActedThisTurn = true;
+            updateTurnIndicator();
 
             // Play placement sound
             soundSystem.playTilePlace();
@@ -2656,20 +2693,26 @@
                 '• (Cost) = required resources<br>';
         }
 
-        // Update the turn indicator banner
+        // Update the turn indicator banner + End Turn button state
         function updateTurnIndicator() {
             const indicator = document.getElementById('turnIndicator');
-            if (!indicator) return;
-            if (!isMultiplayer) {
-                // Offline: show who should be playing now
-                indicator.textContent = `⚡ Player ${currentPlayer}'s Turn`;
-                indicator.className = 'your-turn';
-            } else if (currentPlayer === playerNumber) {
-                indicator.textContent = '⚡ YOUR TURN';
-                indicator.className = 'your-turn';
-            } else {
-                indicator.textContent = `⏳ Player ${currentPlayer}'s turn...`;
-                indicator.className = 'waiting';
+            const endBtn = document.getElementById('endTurnBtn');
+            const isMyTurn = !isMultiplayer || currentPlayer === playerNumber;
+            if (indicator) {
+                if (!isMultiplayer) {
+                    indicator.textContent = `⚡ Player ${currentPlayer}'s Turn`;
+                    indicator.className = 'your-turn';
+                } else if (isMyTurn) {
+                    indicator.textContent = '⚡ YOUR TURN';
+                    indicator.className = 'your-turn';
+                } else {
+                    indicator.textContent = `⏳ Player ${currentPlayer}'s turn...`;
+                    indicator.className = 'waiting';
+                }
+            }
+            if (endBtn) {
+                endBtn.disabled = !isMyTurn;
+                endBtn.classList.toggle('has-acted', isMyTurn && _hasActedThisTurn);
             }
         }
         
