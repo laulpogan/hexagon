@@ -497,6 +497,33 @@
         .db-filter-btn:hover { background: #3a3a40; color: #fff; }
         .db-filter-btn.active { background: #6a5cae; border-color: #8a7ccf; color: #fff; }
 
+        /* Phase indicator strip */
+        #phaseStrip {
+            display: flex;
+            gap: 4px;
+            margin: 6px 0;
+            font-size: 10px;
+        }
+        .phase-pip {
+            flex: 1;
+            text-align: center;
+            padding: 4px 2px;
+            background: #1a1a20;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+        }
+        .phase-pip.active {
+            background: #2a4a2a;
+            border-color: #4caf50;
+            color: #7fff7f;
+            font-weight: bold;
+            box-shadow: 0 0 6px rgba(76,175,80,0.4);
+        }
+
         /* End Turn button */
         #endTurnBtn {
             display: block;
@@ -715,7 +742,15 @@
                     <div class="score-sub"><span id="scoreP2Tiles">0</span> tiles</div>
                 </div>
             </div>
-            <div style="font-size:11px; color:#888;">Phase: <span id="gamePhaseValue">Normal Play</span> · Turn <span id="turnValue">1</span> · <span id="turnPhaseValue">Start</span></div>
+            <div id="phaseStrip">
+                <div class="phase-pip" data-phase="start_phase">Untap·Draw</div>
+                <div class="phase-pip" data-phase="placement_phase">Main</div>
+                <div class="phase-pip" data-phase="cleanup_phase">End</div>
+            </div>
+            <div style="font-size:11px; color:#888;">
+                <span id="gamePhaseValue">Normal Play</span> · Turn <span id="turnValue">1</span>
+                <span id="turnPhaseValue" style="display:none;"></span>
+            </div>
             
             <h3 style="margin-bottom:4px;">Resources <span style="font-size:11px;color:#888;font-weight:normal;">(untapped / total)</span></h3>
             <div id="resourcesPanel">
@@ -3032,8 +3067,12 @@
                 'placement_phase': 'Placement',
                 'cleanup_phase': 'Cleanup'
             };
-            
-            document.getElementById('turnPhaseValue').textContent = phaseNames[turnPhase] || turnPhase;
+            const el = document.getElementById('turnPhaseValue');
+            if (el) el.textContent = phaseNames[turnPhase] || turnPhase;
+            // Update phase strip pips
+            document.querySelectorAll('#phaseStrip .phase-pip').forEach(pip => {
+                pip.classList.toggle('active', pip.dataset.phase === turnPhase);
+            });
         }
         
         // End player turn
