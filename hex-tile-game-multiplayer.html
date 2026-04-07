@@ -1424,6 +1424,7 @@
         let playerDecks = { 1: [], 2: [] };
         let playerHands = { 1: [], 2: [] }; // offline mode stores both players' hands
         let _hasActedThisTurn = false;       // for "End Turn" UX
+        let _discardUsedThisTurn = false;    // once-per-turn discard-and-redraw
         let gameWon = false;
         let winner = null;
         
@@ -1899,6 +1900,7 @@
         // Reset all tiles for new turn (untap all friendly tiles, clear justPlaced)
         function untapAllFriendlyTiles() {
             _hasActedThisTurn = false;
+            _discardUsedThisTurn = false;
             boardTiles.forEach(boardTile => {
                 if (boardTile.tile.owner === `player${currentPlayer}`) {
                     boardTile.tile.justPlaced = false; // summoning sickness wears off
@@ -2489,6 +2491,22 @@
             }
         }
 
+        // Discard a tile from hand and draw a replacement (once per turn)
+        function discardAndRedraw(tile) {
+            if (_discardUsedThisTurn) {
+                showNotification('Discard already used this turn', 'warning');
+                soundSystem.playError();
+                return;
+            }
+            const idx = playerHand.indexOf(tile);
+            if (idx === -1) return;
+            playerHand.splice(idx, 1);
+            _discardUsedThisTurn = true;
+            logAction(`<b>P${currentPlayer}</b> discarded <b>${tile.type}</b>`, `p${currentPlayer}`);
+            drawTurnTile();
+            updateHand();
+        }
+
         // Draw tiles for hand (used for initial setup)
         function drawTiles() {
             console.log(`drawTiles() called for Player ${playerNumber}, current hand length: ${playerHand.length}`);
@@ -2594,6 +2612,11 @@
                         tileDiv.classList.add('selected');
                     }
                 };
+                tileDiv.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    discardAndRedraw(tile);
+                    return false;
+                };
 
                 handDiv.appendChild(tileDiv);
             });
@@ -2684,13 +2707,15 @@
         // Update game phase display
         function updateGamePhaseDisplay() {
             document.getElementById('gamePhaseValue').textContent = 'Normal Play';
-            document.getElementById('instructionTitle').textContent = 'Normal Play:';
+            document.getElementById('instructionTitle').textContent = 'How to Play:';
             document.getElementById('instructionText').innerHTML =
-                '• Click tiles in your hand to select them<br>' +
-                '• Place your first tile anywhere (it becomes your capital)<br>' +
-                '• Then place other tiles adjacent to existing ones<br>' +
-                '• Pay costs using tile resources<br>' +
-                '• (Cost) = required resources<br>';
+                '• Click hand tile → click board to place<br>' +
+                '• First tile becomes your capital<br>' +
+                '• Tiles cost resources from tapping friendly tiles<br>' +
+                '• <b>Right-click a hand tile</b> to discard + redraw (1×/turn)<br>' +
+                '• Place as many tiles as resources allow<br>' +
+                '• Click <b>End Turn</b> when done<br>' +
+                '• Capture enemy capital (♛) to win!<br>';
         }
 
         // Update the turn indicator banner + End Turn button state
