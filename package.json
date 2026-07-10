@@ -1,0 +1,9 @@
+{
+  "name": "limen",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/core.test.js",
+    "sim": "node tools/sim.js"
+  }
+}
