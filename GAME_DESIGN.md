@@ -66,6 +66,9 @@ Costs were the brake on strong tiles. Replacement, simplest first:
   `net/` (Supabase, ported as-is), `ui/` (hand, deckbuilder, HUD), `data/tiles.js`.
   `core/` headless = balance simulator comes free.
 - **Multiplayer:** keep Supabase realtime; same sync model, new payload shape.
+  Project: `limen` (ref `kghzdnspdsxrheuckizp`, us-west-1, free tier, created 2026-07-10).
+  URL `https://kghzdnspdsxrheuckizp.supabase.co`, publishable key
+  `sb_publishable_TTNv39Gsg8o20dmCOj2lfQ_rttaEvPR` (client-safe by design).
 
 ## Asset pipeline
 
@@ -83,12 +86,14 @@ Costs were the brake on strong tiles. Replacement, simplest first:
   **Hunyuan3D-2.1** fallback for multi-view/text-to-3D and max-detail hero pieces
   (40K–1.5M face control) — note: Hunyuan3D 3.x is hosted-API only, NOT open weights;
   the open line stops at 2.x [P, hunyuan3d.cc + Replicate, 80].
-- **Music:** Suno free tier, MANUAL gen — confirmed no public API as of 2026-07;
-  partner-program intake only opened 2026-07-01 [P, MBW/DMN, 85]. 4 tracks: theme,
-  build, rift tension, win sting. Third-party Suno APIs exist but legally dicey — skip.
+- **Music:** CUT from v1 (decided 2026-07-10). Existing WebAudio synth sounds carry the
+  game; revisit post-ship. (Context: Suno has no public API — partner intake only opened
+  2026-07-01 [P, MBW/DMN, 85] — so music was manual-labor anyway.)
 - **SFX:** ElevenLabs SFX v2 (key in vault): 0.5–30s clips, seamless looping, 48kHz
-  [P, elevenlabs.io docs, 90]. Place, capture, rift pulse, win. Commercial royalty-free
-  requires PAID plan — verify plan tier before ship.
+  [P, elevenlabs.io docs, 90]. Place, capture, rift pulse, win.
+  ⚠️ **PRE-SHIP GATE:** account is FREE tier (confirmed 2026-07-10) = non-commercial
+  license only. Before public ship: upgrade to Starter (~$5/mo) or regenerate SFX
+  with WebAudio synth.
 - **Video:** slancha-studio for trailer at ship time.
 
 ## Model routing (ease Claude strain)
@@ -115,7 +120,7 @@ Costs were the brake on strong tiles. Replacement, simplest first:
 | 4 | Port Supabase MP onto new core | 3D multiplayer |
 | 5 | Asset pipeline batch (art → 3D → audio) | real look + sound |
 | 6 | Balance sim + daily play loop | tuned tiers/rift |
-| 7 | Ship: GH Pages, trailer, thumbnail | public URL |
+| 7 | Ship: GH Pages (only — no itch.io, decided 2026-07-10), trailer, thumbnail | public URL |
 
 Parallel sessions valid from phase 2 (disjoint modules). Balance knobs live in
 `data/tiles.js` + `core/config.js` only — never scattered.
