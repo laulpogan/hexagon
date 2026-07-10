@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Limen — a hex-tile duel across the threshold</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; overflow: hidden; background: #101218; color: #e8e8ee;
+    font-family: 'Avenir Next', 'Segoe UI', Arial, sans-serif;
+  }
+  #board { position: fixed; inset: 0; }
+  #hud { position: fixed; inset: 0; pointer-events: none; }
+  #hud > * { pointer-events: auto; }
+  .hidden { display: none !important; }
+  .p1name { color: #6fe09a; font-weight: bold; }
+  .p2name { color: #b18aff; font-weight: bold; }
+
+  /* Menu */
+  #menu {
+    position: fixed; inset: 0; z-index: 100; display: flex;
+    justify-content: center; align-items: center; flex-direction: column;
+    background: radial-gradient(ellipse at 30% 20%, #16241c 0%, #101218 45%, #191026 100%);
+  }
+  #menu h1 {
+    font-size: 72px; letter-spacing: 18px; margin: 0; font-weight: 300;
+    background: linear-gradient(90deg, #6fe09a 0%, #e8e8ee 48%, #b18aff 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  #menu p { color: #9aa; margin: 10px 0 40px 0; letter-spacing: 2px; }
+  #menu button {
+    width: 260px; padding: 14px; margin: 6px; font-size: 16px; letter-spacing: 1px;
+    background: #1d222e; color: #e8e8ee; border: 1px solid #3a4152; border-radius: 10px;
+    cursor: pointer; transition: all .18s;
+  }
+  #menu button:hover:not(:disabled) { border-color: #6fe09a; transform: translateY(-2px); }
+  #menu button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* Turn banner */
+  #turnBanner {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    padding: 10px 22px; border-radius: 10px; font-size: 15px;
+    background: rgba(18,20,28,0.85); border: 1px solid #3a4152;
+    white-space: nowrap;
+  }
+  #turnBanner.turn-p1 { border-color: #3fae6a; box-shadow: 0 0 14px rgba(63,174,106,0.35); }
+  #turnBanner.turn-p2 { border-color: #7c4dcc; box-shadow: 0 0 14px rgba(124,77,204,0.35); }
+
+  /* Log */
+  #hudLog {
+    position: absolute; top: 14px; right: 14px; width: 300px; max-height: 30vh;
+    overflow: hidden; font-size: 11.5px; line-height: 1.55; color: #aab;
+    background: rgba(14,16,22,0.7); border: 1px solid #2a2f3c; border-radius: 8px; padding: 8px 10px;
+  }
+  .log-line { border-bottom: 1px solid rgba(255,255,255,0.05); padding: 2px 0; }
+  .log-p1 { color: #8fd8ac; } .log-p2 { color: #c3a6ff; }
+
+  /* Hand */
+  #handStrip {
+    position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 10px;
+  }
+  .card {
+    width: 108px; min-height: 130px; padding: 9px 8px; border-radius: 10px;
+    background: linear-gradient(180deg, #232836, #171b26);
+    border: 2px solid #555; cursor: pointer; text-align: center;
+    transition: all .15s; position: relative;
+  }
+  .card:hover { transform: translateY(-6px); }
+  .card.selected { transform: translateY(-12px); box-shadow: 0 6px 22px rgba(255,255,255,0.18); }
+  .card.selected.owner-p1 { box-shadow: 0 6px 22px rgba(63,174,106,0.5); }
+  .card.selected.owner-p2 { box-shadow: 0 6px 22px rgba(124,77,204,0.5); }
+  .card-name { font-size: 11px; font-weight: bold; letter-spacing: 1px; color: #fff; }
+  .card-inf { font-size: 30px; font-weight: bold; margin: 6px 0; }
+  .card-kws { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; min-height: 18px; }
+  .kw {
+    font-size: 8.5px; font-weight: bold; text-transform: uppercase; letter-spacing: .5px;
+    background: #383052; border: 1px solid #59498a; color: #d9ccff;
+    padding: 1px 5px; border-radius: 4px;
+  }
+  .card-rarity { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
+
+  /* Controls + hint */
+  #hudControls { position: absolute; bottom: 16px; right: 16px; display: flex; gap: 8px; }
+  #hudControls button {
+    padding: 10px 18px; font-size: 14px; background: #1d222e; color: #e8e8ee;
+    border: 1px solid #3a4152; border-radius: 8px; cursor: pointer;
+  }
+  #hudControls button:hover { border-color: #6fe09a; }
+  #hintBar {
+    position: absolute; bottom: 170px; left: 50%; transform: translateX(-50%);
+    font-size: 13px; color: #ffcf7a; text-shadow: 0 1px 4px #000;
+  }
+
+  /* Win overlay */
+  #winOverlay {
+    position: fixed; inset: 0; z-index: 90; display: flex;
+    justify-content: center; align-items: center; background: rgba(8,9,14,0.85);
+  }
+  .win-box {
+    background: #171b26; border: 1px solid #f2c14e; border-radius: 14px;
+    padding: 36px 48px; text-align: center; box-shadow: 0 18px 60px rgba(0,0,0,0.7);
+  }
+  .win-box h1 { margin: 0 0 8px 0; font-weight: 400; letter-spacing: 2px; }
+  .win-box table { margin: 18px auto; border-collapse: collapse; font-size: 14px; }
+  .win-box td, .win-box th { padding: 4px 16px; color: #cbd; }
+  .win-box button {
+    margin-top: 10px; padding: 12px 28px; font-size: 15px; background: #2a5c3c;
+    color: #fff; border: 1px solid #3fae6a; border-radius: 8px; cursor: pointer;
+  }
+</style>
+<script type="importmap">
+  { "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+</head>
+<body>
+  <div id="board"></div>
+  <div id="hud"></div>
+
+  <div id="menu">
+    <h1>LIMEN</h1>
+    <p>a hex-tile duel across the threshold</p>
+    <button id="hotseatBtn">Hotseat — 2 players, 1 screen</button>
+    <button id="botBtn" disabled>vs Bot — coming soon</button>
+    <button id="mpBtn" disabled>Multiplayer — coming soon</button>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
