@@ -263,6 +263,36 @@ test('pass hands the turn over', () => {
   assert.equal(g.turn, 2);
 });
 
+test('ward-blocked attack resets the pass counter (no premature endgame)', () => {
+  const g = new Game({ seed: 'ward-pass' });
+  g.phase = 'play'; g.currentPlayer = 1; g.turn = 1;
+  g.placementsLeft = 1; g.discardsLeft = 1;
+  g.board[3][0].tile = g._makeTile('WARDSTONE', 2);
+  const [nc, nr] = neighborCoords(3, 0).find(([c, r]) => !g.board[c][r].rift);
+  g.board[nc][nr].tile = g._makeTile('COLOSSUS', 1);
+  g.consecutivePasses = 1; // P2 passed last turn
+  g.hands[1] = [g._makeTile('THICKET', 1)];
+  const res = g.placeFromHand(1, 0, 3, 0);
+  assert.equal(res.wardBlocked, true);
+  assert.equal(g.consecutivePasses, 0, 'card-spending action must reset the counter');
+  assert.equal(g.phase, 'play');
+});
+
+test('deck shuffle is canonical: composition key order cannot desync clients', () => {
+  const comp1 = { THICKET: 3, OUTCROP: 3, LANTERN: 2, PALISADE: 2, ALTAR: 2, SKIRMISHER: 2,
+    WARDSTONE: 1, ECHO: 1, HERALD: 1, REAVER: 1, RIFTWALKER: 1, COLOSSUS: 1 };
+  const comp2 = Object.fromEntries(Object.entries(comp1).reverse());
+  const a = new Game({ seed: 'order', decks: { 1: comp1, 2: comp1 } });
+  const b = new Game({ seed: 'order', decks: { 1: comp2, 2: comp2 } });
+  assert.deepEqual(a.decks[1].map(t => t.type), b.decks[1].map(t => t.type));
+});
+
+test('invalid deck composition falls back to the starter deck', () => {
+  const g = new Game({ seed: 'cheat', decks: { 1: { COLOSSUS: 20 } } });
+  assert.equal(g.decks[1].length, CONFIG.DECK_SIZE);
+  assert.ok(g.decks[1].filter(t => t.type === 'COLOSSUS').length <= 1, 'rare cap enforced via fallback');
+});
+
 test('two consecutive passes resolve an influence victory', () => {
   const { g } = startedGame();
   // Give P1 a supporting tile so influence differs.

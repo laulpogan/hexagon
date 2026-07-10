@@ -58,8 +58,10 @@ function scoreMove(game, player, move, rand) {
 }
 
 // Decide the bot's whole turn. Returns the action it took.
-export function botTakeTurn(game, player, rand = Math.random) {
+// rand is required — no Math.random fallback, core stays deterministic.
+export function botTakeTurn(game, player, rand) {
   if (game.phase === 'capital') {
+    if (game.currentPlayer !== player) return { kind: 'not-my-turn' };
     // Aggressive-but-sane: middle column, closest legal row to the seam.
     const mid = midRow();
     const row = player === 1 ? mid - CONFIG.CAPITAL_MIN_DIST_FROM_SEAM : mid + CONFIG.CAPITAL_MIN_DIST_FROM_SEAM;
@@ -67,8 +69,8 @@ export function botTakeTurn(game, player, rand = Math.random) {
     for (const col of cols) {
       for (const r of player === 1 ? [row, row - 1, row - 2] : [row, row + 1, row + 2]) {
         if (game.isLegalCapitalCell(player, col, r)) {
-          game.placeCapital(player, col, r);
-          return { kind: 'capital', col, row: r };
+          const res = game.placeCapital(player, col, r);
+          if (res.ok) return { kind: 'capital', col, row: r };
         }
       }
     }

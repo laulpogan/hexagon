@@ -1,11 +1,13 @@
 // Limen — entry point. Wires core (rules) + render (Three.js) + ui (HUD).
 import { Game } from './core/game.js';
 import { botTakeTurn } from './core/bot.js';
+import { mulberry32, hashSeed } from './core/rng.js';
 import { BoardRenderer } from './render/scene.js';
 import { Hud } from './ui/hud.js';
 import { sound } from './ui/sound.js';
+import { initDeckbuilder, loadSavedDeck } from './ui/deckbuilder.js';
 
-let game, renderer, hud, botMode = false;
+let game, renderer, hud, botMode = false, botRand = null;
 
 // Bot plays Umbral (P2) after a short beat, so moves read as deliberate.
 function scheduleBot() {
@@ -13,7 +15,7 @@ function scheduleBot() {
   if (game.phase === 'play' && game.currentPlayer !== 2) return;
   if (game.phase === 'capital' && game.currentPlayer !== 2) return;
   setTimeout(() => {
-    const action = botTakeTurn(game, 2);
+    const action = botTakeTurn(game, 2, botRand);
     if (action.kind === 'place') {
       if (action.result?.captured) sound.capture();
       else if (action.result?.wardBlocked) sound.ward();
@@ -100,7 +102,10 @@ function handleClick({ col, row }) {
   else sound.place();
 
   if (checkGameOver()) return;
-  if (g.currentPlayer !== before) sound.turnSwitch();
+  if (g.currentPlayer !== before) {
+    sound.turnSwitch();
+    if (!botMode) hud.showHandover(g.currentPlayer);
+  }
   update();
   scheduleBot();
 }
@@ -116,21 +121,27 @@ function checkGameOver() {
 
 function handleHover(hit) {
   const g = game;
-  renderer.clearGhost();
-  if (!hit || g.phase !== 'play' || hud.selectedIndex === null) return;
-  const tile = g.hands[g.currentPlayer][hud.selectedIndex];
-  if (!tile) return;
-  const cell = g.board[hit.col][hit.row];
-  if (!cell.tile && g.canPlace(g.currentPlayer, tile, hit.col, hit.row)) {
-    renderer.showGhost(hit.col, hit.row, projectedInfluence(g, tile, hit.col, hit.row));
+  if (hit && g.phase === 'play' && hud.selectedIndex !== null) {
+    const tile = g.hands[g.currentPlayer][hud.selectedIndex];
+    const cell = tile && g.board[hit.col][hit.row];
+    if (cell && !cell.tile && g.canPlace(g.currentPlayer, tile, hit.col, hit.row)) {
+      // showGhost dedupes same-cell hovers internally — no rebuild churn
+      renderer.showGhost(hit.col, hit.row, projectedInfluence(g, tile, hit.col, hit.row));
+      return;
+    }
   }
+  renderer.clearGhost();
 }
 
 function startGame(vsBot = false) {
   botMode = vsBot;
   document.getElementById('menu').classList.add('hidden');
   const seed = `local-${Math.random().toString(36).slice(2, 10)}`;
-  game = new Game({ seed });
+  // Custom deck: humans use the saved build; the bot plays the starter deck.
+  const saved = loadSavedDeck();
+  const decks = saved ? { 1: saved, 2: vsBot ? null : saved } : null;
+  game = new Game({ seed, decks });
+  botRand = mulberry32(hashSeed(seed + '-bot'));
 
   const boardEl = document.getElementById('board');
   boardEl.innerHTML = '';
@@ -156,6 +167,7 @@ function startGame(vsBot = false) {
     hud.selectedIndex = null;
     if (checkGameOver()) return;
     sound.turnSwitch();
+    if (!botMode) hud.showHandover(game.currentPlayer);
     update();
     scheduleBot();
   };
@@ -167,3 +179,8 @@ function startGame(vsBot = false) {
 
 document.getElementById('hotseatBtn').onclick = () => startGame(false);
 document.getElementById('botBtn').onclick = () => startGame(true);
+
+const deckbuilder = initDeckbuilder(document.getElementById('deckOverlay'));
+document.getElementById('deckBtn').onclick = () => deckbuilder.open();
+document.getElementById('helpBtn').onclick = () => document.getElementById('helpOverlay').classList.remove('hidden');
+document.getElementById('helpCloseBtn').onclick = () => document.getElementById('helpOverlay').classList.add('hidden');

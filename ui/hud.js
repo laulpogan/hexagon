@@ -27,6 +27,7 @@ export class Hud {
       </div>
       <div id="hintBar"></div>
       <div id="winOverlay" class="hidden"></div>
+      <div id="handoverOverlay" class="hidden"></div>
     `;
     root.querySelector('#passBtn').onclick = () => this.onPass && this.onPass();
   }
@@ -79,7 +80,7 @@ export class Hud {
       card.className = 'card' + (i === this.selectedIndex ? ' selected' : '') + ` owner-p${viewP}`;
       card.style.borderColor = RARITY_COLOR[tile.rarity];
       const kws = tile.keywords.map(k =>
-        `<span class="kw" title="${KEYWORDS[k]?.desc || ''}">${KEYWORDS[k]?.name || k}</span>`).join('');
+        `<span class="kw" title="${(KEYWORDS[k]?.desc || '').replace(/"/g, '&quot;')}">${KEYWORDS[k]?.name || k}</span>`).join('');
       card.innerHTML = `
         <div class="card-name">${tile.type}</div>
         <div class="card-inf">${tile.influence}</div>
@@ -130,5 +131,22 @@ export class Hud {
 
   hideWin() {
     this.root.querySelector('#winOverlay').classList.add('hidden');
+  }
+
+  // Hotseat hidden-information gate: opaque screen between turns so the
+  // outgoing player never sees the incoming player's hand.
+  showHandover(player, onReady) {
+    const el = this.root.querySelector('#handoverOverlay');
+    el.classList.remove('hidden');
+    el.innerHTML = `
+      <div class="win-box">
+        <h1>${player === 1 ? '🌿 Verdant' : '🌌 Umbral'}'s turn</h1>
+        <p>Pass the device. Tap when ready — your hand is hidden until then.</p>
+        <button id="handoverBtn">I'm ${player === 1 ? 'Verdant' : 'Umbral'} — show my hand</button>
+      </div>`;
+    el.querySelector('#handoverBtn').onclick = () => {
+      el.classList.add('hidden');
+      if (onReady) onReady();
+    };
   }
 }

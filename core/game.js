@@ -1,7 +1,7 @@
 // Limen rules engine — renderer-free, headless-runnable. No DOM, no
 // Math.random (seeded PRNG only), no network. Everything the board game IS.
 import { CONFIG } from './config.js';
-import { tileTemplate, defaultDeckComposition } from '../data/tiles.js';
+import { TILE_POOL, tileTemplate, defaultDeckComposition } from '../data/tiles.js';
 import { createBoard, neighborCoords, isEdge, midRow, riftNeighborCount } from './board.js';
 import { hashSeed, mulberry32, shuffleInPlace } from './rng.js';
 
@@ -30,7 +30,10 @@ export class Game {
     this.log = [];
     this._tileId = 1;
     for (const p of [1, 2]) {
-      const comp = (decks && decks[p]) || defaultDeckComposition();
+      // Tier caps enforced at the choke point: an invalid composition
+      // (hand-edited localStorage, hostile MP peer) falls back to default.
+      let comp = (decks && decks[p]) || defaultDeckComposition();
+      if (decks && decks[p] && !validateDeck(comp).valid) comp = defaultDeckComposition();
       this.decks[p] = this._buildDeck(comp, p);
     }
   }
@@ -38,11 +41,14 @@ export class Game {
   // ─── Setup ────────────────────────────────────────────────────────────
 
   _buildDeck(composition, owner) {
+    // Iterate TILE_POOL (canonical order), NOT the composition object — the
+    // Fisher-Yates result depends on input order, so two multiplayer clients
+    // with the same seed but differently-ordered composition keys would
+    // otherwise build divergent decks and silently desync.
     const deck = [];
-    for (const [type, count] of Object.entries(composition)) {
-      const tpl = tileTemplate(type);
-      if (!tpl) continue;
-      for (let i = 0; i < count; i++) deck.push(this._makeTile(type, owner));
+    for (const tpl of TILE_POOL) {
+      const count = composition[tpl.type] || 0;
+      for (let i = 0; i < count; i++) deck.push(this._makeTile(tpl.type, owner));
     }
     return shuffleInPlace(deck, this.rand);
   }
@@ -232,6 +238,7 @@ export class Game {
     const target = cell.tile;
     this.hands[player].splice(handIndex, 1);
     this.placementsLeft--;
+    this.consecutivePasses = 0; // any card-spending action is a real action (incl. ward-blocked attacks)
 
     // WARD: the defender absorbs the attack; attacker's tile is spent.
     if (target && this.hasKeyword(target, 'WARD') && !target.wardConsumed) {
@@ -256,7 +263,6 @@ export class Game {
 
     const captured = target || null;
     cell.tile = tile;
-    this.consecutivePasses = 0;
     this.stats[player].placed++;
     if (captured) {
       this.stats[player].captured++;

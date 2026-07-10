@@ -188,13 +188,14 @@ export class BoardRenderer {
         new THREE.MeshStandardMaterial({ color: 0xffe08a, metalness: 0.7, roughness: 0.3, emissive: 0xffd700, emissiveIntensity: 0.25 })
       );
       crown.position.y = h + 0.32;
+      crown.userData = { col, row, kind: 'cell' }; // crown clicks pick the capital's cell
       group.add(crown);
     }
 
     const sprite = makeTextSprite({ num: '', label: '' });
     sprite.position.y = h + (tile.capital ? 1.15 : 0.95);
     group.add(sprite);
-    group.userData = { tileId: tile.id, sprite, prism, mat, baseH: h };
+    group.userData = { tileId: tile.id, sprite, prism, mat, baseH: h, baseColor: this._tileColor(tile) };
 
     const { x, z } = worldPos(col, row);
     group.position.set(x, 0, z);
@@ -204,6 +205,14 @@ export class BoardRenderer {
   _updateTileSprite(group, tile, col, row) {
     const rel = this.game.relativeInfluence(col, row);
     const capturable = rel === 0;
+    // Only rebuild the canvas texture when the displayed value changed —
+    // syncBoard runs for every tile after every move.
+    const key = `${rel}|${capturable}`;
+    if (group.userData.spriteKey === key) {
+      group.userData.capturable = capturable;
+      return;
+    }
+    group.userData.spriteKey = key;
     const fresh = makeTextSprite(
       { num: String(rel), label: tile.capital ? '♛ CAPITAL' : tile.type },
       { numColor: capturable ? '#ff5555' : '#ffffff' }
@@ -216,6 +225,17 @@ export class BoardRenderer {
     group.userData.sprite = fresh;
     // capturable tiles pulse dark
     group.userData.capturable = capturable;
+  }
+
+  // Dispose every GPU resource under a group (geometry, materials, textures).
+  _disposeGroup(group) {
+    group.traverse((obj) => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) {
+        if (obj.material.map) obj.material.map.dispose();
+        obj.material.dispose();
+      }
+    });
   }
 
   // Rebuild/diff tile meshes from game state. New tiles drop in.
@@ -243,6 +263,7 @@ export class BoardRenderer {
     for (const [id, group] of this.tileMeshes) {
       if (!seen.has(id)) {
         this.scene.remove(group);
+        this._disposeGroup(group); // captures happen constantly — never leak the dead tile
         this.tileMeshes.delete(id);
       }
     }
@@ -269,6 +290,9 @@ export class BoardRenderer {
   }
 
   showGhost(col, row, projectedInfluence) {
+    // Hover fires this every pointermove — skip rebuild when nothing changed.
+    if (this.ghost && this.ghost.col === col && this.ghost.row === row &&
+        this.ghost.influence === projectedInfluence) return;
     this.clearGhost();
     const geo = hexGeometry(TILE_H);
     const mat = new THREE.MeshStandardMaterial({
@@ -283,13 +307,17 @@ export class BoardRenderer {
     sprite.position.set(x, TILE_H + 1.0, z);
     this.scene.add(mesh);
     this.scene.add(sprite);
-    this.ghost = { mesh, sprite };
+    this.ghost = { mesh, sprite, col, row, influence: projectedInfluence };
   }
 
   clearGhost() {
     if (!this.ghost) return;
     this.scene.remove(this.ghost.mesh);
     this.scene.remove(this.ghost.sprite);
+    this.ghost.mesh.geometry.dispose();
+    this.ghost.mesh.material.dispose();
+    this.ghost.sprite.material.map.dispose();
+    this.ghost.sprite.material.dispose();
     this.ghost = null;
   }
 
@@ -300,7 +328,11 @@ export class BoardRenderer {
     this._raycaster.setFromCamera(this._pointer, this.camera);
     const targets = [];
     for (const col of this.cellMeshes) for (const m of col) targets.push(m);
-    for (const g of this.tileMeshes.values()) targets.push(g.userData.prism);
+    for (const g of this.tileMeshes.values()) {
+      for (const child of g.children) {
+        if (child.isMesh && child.userData.kind === 'cell') targets.push(child);
+      }
+    }
     const hits = this._raycaster.intersectObjects(targets, false);
     if (!hits.length) return null;
     const u = hits[0].object.userData;
@@ -356,11 +388,14 @@ export class BoardRenderer {
     // rift glitch pulse
     const pulse = 0.45 + 0.3 * Math.sin(t * 2.4) + 0.08 * Math.sin(t * 13.7);
     for (const m of this._riftMats) m.emissiveIntensity = pulse;
-    // capturable tiles breathe red
+    // capturable tiles breathe red; everything else back to its base glow
     for (const g of this.tileMeshes.values()) {
       if (g.userData.capturable) {
-        g.userData.mat.emissive = new THREE.Color(0xff2222);
+        g.userData.mat.emissive.setHex(0xff2222);
         g.userData.mat.emissiveIntensity = 0.25 + 0.2 * Math.sin(t * 5);
+      } else if (g.userData.mat.emissiveIntensity !== 0.08) {
+        g.userData.mat.emissive.setHex(g.userData.baseColor);
+        g.userData.mat.emissiveIntensity = 0.08;
       }
     }
     // drop-in animations (time-based so frame rate never changes duration)

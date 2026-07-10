@@ -11,14 +11,27 @@ Decisions here override the README.
 - **Theme:** two realities crashed together. Each player champions one reality; a volatile
   rift seam runs between them. Visual split: lush/verdant vs arcane/dark, glitch zone at the seam.
 - **Format:** 1v1, ~10–15 min matches. 3D (Three.js), browser, static hosting, Supabase multiplayer.
+- **Platform target v1:** desktop browser first. Narrow screens get scrollable hand +
+  trimmed HUD; full touch controls (pinch zoom, tap-discard) are post-ship.
 
 ## Core loop (carried from hexagon)
 
-1. Capital placement phase — each player places capital (unchanged).
+1. Capital placement phase — each player places capital (own half, ≥2 rows off the
+   seam, never on a rift hex).
 2. Turns: draw 1 → place 1 tile from hand → influence resolves → captures resolve.
+   Once per turn a card may be discarded and redrawn (right-click; carried from
+   hexagon iteration 14 — kept, it's the hand-smoothing valve).
 3. Influence system unchanged: base influence ± friendly/enemy neighbors; tile at ≤0
-   relative influence is capturable.
-4. **Win:** capture the enemy capital (current mechanic, unchanged).
+   relative influence is capturable. **Captures do not require adjacency** (carried
+   from hexagon; a revolting tile anywhere can be taken — rift-drained tiles are
+   deliberately snipeable, the rift is dangerous ground).
+4. **Win (knockout):** capture the enemy capital.
+5. **Win (decision, added 2026-07-10 after the first 100-match sim ran 100% stalls):**
+   two consecutive passes, or all cards spent on both sides, ends the game — higher
+   total board influence wins (tiebreak: tile count, then draw). With 1 placement/turn,
+   turtled blobs never break; this makes every game terminate (~33 turns avg,
+   30% capital KOs / 70% influence wins in sim). Known knob: P2 wins 59% of bot
+   mirrors — second-player tempo; revisit in phase 6.
 
 ## Stripped (the resource economy dies whole)
 

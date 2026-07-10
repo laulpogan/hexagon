@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "python3 -m http.server 8931 --bind 127.0.0.1",
     "test": "node tests/core.test.js && node tests/bot.test.js",
     "sim": "node tools/sim.js"
   }

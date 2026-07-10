@@ -39,6 +39,7 @@ export function createBoard(rand) {
   for (let c = 0; c < CONFIG.GRID_W; c++) {
     let r = mid;
     if (rand() < CONFIG.RIFT_JITTER_CHANCE) r += rand() < 0.5 ? -1 : 1;
+    r = Math.max(0, Math.min(CONFIG.GRID_H - 1, r)); // guard against small-board configs
     cells[c][r].rift = true;
   }
   return cells;
