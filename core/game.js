@@ -307,7 +307,6 @@ export class Game {
   _resolveInfluenceVictory() {
     const s = this.boardSummary();
     this.phase = 'over';
-    s[1].influence += 6; // EXPERIMENT: P1 tiebreak equalizer
     if (s[1].influence !== s[2].influence) {
       this.winner = s[1].influence > s[2].influence ? 1 : 2;
       this.winReason = 'influence';
