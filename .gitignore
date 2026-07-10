@@ -9,3 +9,5 @@ js/tictactoe.js
 js/draw-hexagon-stage.js
 js/asteroids.js
 js/hexagon.js
+# generated source art (web-size .jpg files are committed instead)
+assets/tiles/*.png

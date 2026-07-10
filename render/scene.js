@@ -61,6 +61,19 @@ function hexGeometry(height) {
   return g;
 }
 
+// Tile art on prism tops — lazy-loaded, cached per type, shared across meshes.
+const _texLoader = new THREE.TextureLoader();
+const _tileTex = new Map();
+function tileTexture(name) {
+  if (!_tileTex.has(name)) {
+    const tex = _texLoader.load(`./assets/tiles/${name}.jpg`);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 4;
+    _tileTex.set(name, tex);
+  }
+  return _tileTex.get(name);
+}
+
 export class BoardRenderer {
   constructor(container, game) {
     this.game = game;
@@ -177,7 +190,19 @@ export class BoardRenderer {
       emissive: this._tileColor(tile),
       emissiveIntensity: 0.08,
     });
-    const prism = new THREE.Mesh(geo, mat);
+    // Cylinder material groups: [side, top cap, bottom cap]. Art rides the top;
+    // the side keeps the owner color (and the capturable pulse). Before the
+    // texture loads (or if missing) the top renders as plain owner color.
+    const texName = tile.capital
+      ? (tile.owner === 1 ? 'CAPITAL_VERDANT' : 'CAPITAL_UMBRAL')
+      : tile.type;
+    const topMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      map: tileTexture(texName),
+      roughness: 0.8,
+      metalness: 0.05,
+    });
+    const prism = new THREE.Mesh(geo, [mat, topMat, mat]);
     prism.position.y = h / 2;
     prism.userData = { col, row, kind: 'cell' }; // picking maps back to the cell
     group.add(prism);
@@ -228,12 +253,16 @@ export class BoardRenderer {
   }
 
   // Dispose every GPU resource under a group (geometry, materials, textures).
+  // Shared tile-art textures (tileTexture cache) are NOT disposed — they
+  // outlive individual meshes by design.
   _disposeGroup(group) {
+    const shared = new Set(_tileTex.values());
     group.traverse((obj) => {
       if (obj.geometry) obj.geometry.dispose();
-      if (obj.material) {
-        if (obj.material.map) obj.material.map.dispose();
-        obj.material.dispose();
+      const mats = Array.isArray(obj.material) ? obj.material : (obj.material ? [obj.material] : []);
+      for (const m of new Set(mats)) {
+        if (m.map && !shared.has(m.map)) m.map.dispose(); // per-mesh canvas sprites only
+        m.dispose();
       }
     });
   }

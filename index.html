@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Limen — a hex-tile duel across the threshold</title>
+<meta name="description" content="A collectible hex-tile duel between two realities. Build a deck, hold the rift, capture the enemy capital. Free in the browser — hotseat, vs bot, or online.">
+<meta property="og:title" content="Limen — a hex-tile duel across the threshold">
+<meta property="og:description" content="Collectible hex-tile strategy between two realities. Play free in the browser.">
+<meta property="og:image" content="https://laulpogan.github.io/hexagon/assets/tiles/CAPITAL_VERDANT.jpg">
+<meta property="og:url" content="https://laulpogan.github.io/hexagon/">
+<link rel="icon" type="image/jpeg" href="./assets/tiles/RIFTWALKER.jpg">
 <style>
   * { box-sizing: border-box; }
   body {
@@ -71,6 +77,11 @@
   .card.selected { transform: translateY(-12px); box-shadow: 0 6px 22px rgba(255,255,255,0.18); }
   .card.selected.owner-p1 { box-shadow: 0 6px 22px rgba(63,174,106,0.5); }
   .card.selected.owner-p2 { box-shadow: 0 6px 22px rgba(124,77,204,0.5); }
+  .card-art {
+    width: 100%; height: 62px; border-radius: 6px; margin-bottom: 5px;
+    background-size: cover; background-position: center;
+    background-color: #10131b;
+  }
   .card-name { font-size: 11px; font-weight: bold; letter-spacing: 1px; color: #fff; }
   .card-inf { font-size: 30px; font-weight: bold; margin: 6px 0; }
   .card-kws { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; min-height: 18px; }

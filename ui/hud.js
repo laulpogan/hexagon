@@ -82,6 +82,7 @@ export class Hud {
       const kws = tile.keywords.map(k =>
         `<span class="kw" title="${(KEYWORDS[k]?.desc || '').replace(/"/g, '&quot;')}">${KEYWORDS[k]?.name || k}</span>`).join('');
       card.innerHTML = `
+        <div class="card-art" style="background-image:url('./assets/tiles/${tile.type}.jpg')"></div>
         <div class="card-name">${tile.type}</div>
         <div class="card-inf">${tile.influence}</div>
         <div class="card-kws">${kws}</div>

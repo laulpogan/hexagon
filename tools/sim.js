@@ -7,6 +7,16 @@ import { mulberry32, hashSeed } from '../core/rng.js';
 
 const PLY_CAP = 400;
 
+// A/B harness: run a batch with CONFIG knobs temporarily patched.
+// Usage: withConfig({ SIEGE_BONUS: 3 }, () => runBatch(100, 'exp'))
+import { CONFIG } from '../core/config.js';
+export function withConfig(patch, fn) {
+  const saved = {};
+  for (const k of Object.keys(patch)) { saved[k] = CONFIG[k]; CONFIG[k] = patch[k]; }
+  try { return fn(); }
+  finally { for (const k of Object.keys(saved)) CONFIG[k] = saved[k]; }
+}
+
 export function runMatch(seed) {
   const game = new Game({ seed });
   const rand = mulberry32(hashSeed(seed + '-bot'));
