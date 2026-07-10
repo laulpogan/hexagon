@@ -102,3 +102,12 @@ hexagon 2D prototype in one autonomous session on branch `limen-design`
 - Design round 1 verdict: all 11 keywords evergreen (48.9–57.3% band, ~1150
   games), diversity 24.3/32, RALLY hot / SCOUT cold as gen-cost tunings.
   Full verdicts + round-2 backlog in ARENA_PLAN.md.
+
+## Round 4 (same day) — design round 2: WING/MENACE + the RALLY cap
+
+- WING (flying) + MENACE shipped as rare training wheels; 1150-card pool
+  (183 new cards under retuned gen costs); Wilson CIs in meta reports.
+- Meta caught its first true degenerate: RALLY-stack 64.2% @ 5330g →
+  RALLY_STACK_CAP=2 → 58.3%, diversity 21.7→24.1, baseline sim unmoved.
+- Policy retrained post-rules-change with zero arena edits (the modularity
+  guarantee held twice now).

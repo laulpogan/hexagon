@@ -4,7 +4,7 @@ import { CONFIG } from './config.js';
 import { TILE_POOL, tileTemplate, defaultDeckComposition } from '../data/tiles.js';
 import { createBoard, neighborCoords, isEdge, midRow, riftNeighborCount } from './board.js';
 import { hashSeed, mulberry32, shuffleInPlace } from './rng.js';
-import { captureThreshold, fireOnPlacement, RITE_EFFECTS } from './mechanics.js';
+import { captureThreshold, fireOnPlacement, modifyIncoming, RITE_EFFECTS } from './mechanics.js';
 
 export class Game {
   // seed: shared board seed (room code in MP). decks: {1: comp, 2: comp}
@@ -100,12 +100,14 @@ export class Game {
     if (this.hasKeyword(tile, 'FORTIFIED') && isEdge(col, row)) {
       inf += CONFIG.FORTIFIED_BONUS;
     }
+    let rally = 0;
     for (const [c, r] of neighborCoords(col, row)) {
       const nt = this.board[c][r].tile;
       if (nt && nt.owner === tile.owner && this.hasKeyword(nt, 'RALLY')) {
-        inf += CONFIG.RALLY_BONUS;
+        rally += CONFIG.RALLY_BONUS;
       }
     }
+    inf += Math.min(rally, CONFIG.RALLY_STACK_CAP); // aura stacking capped (round 2)
     return inf;
   }
 
@@ -127,7 +129,7 @@ export class Game {
         // suffer an extra penalty. (The original applied this to the SIEGE
         // tile itself — a bug contradicting its own description; fixed here.)
         const siege = this.hasKeyword(nt, 'SIEGE') ? CONFIG.SIEGE_BONUS : 0;
-        total -= contribution + siege;
+        total -= modifyIncoming(tile, nt, contribution + siege); // WING halves incoming
       }
     }
     const riftN = riftNeighborCount(this.board, col, row);

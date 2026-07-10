@@ -11,6 +11,8 @@ export const KEYWORDS = {
   ATTUNED:     { name: 'Rift-Attuned', desc: 'Gains +1 influence per adjacent rift hex instead of −1.' },
   // Wave 1 (design round 1 — MTG analogs)
   FLANK:       { name: 'Flank',        desc: 'With 2+ of your tiles adjacent (this among them), the enemy tile is capturable at 1 influence or less.' },
+  WING:        { name: 'Wing',         desc: 'Influence pressed onto this tile by non-Wing enemies is halved.' },
+  MENACE:      { name: 'Menace',       desc: 'Cannot be captured unless 2+ enemy tiles are adjacent.' },
   SUSTAIN:     { name: 'Sustain',      desc: 'Each capture this tile makes permanently raises its base influence by 1.' },
   TRAMPLE:     { name: 'Trample',      desc: 'When this captures, the weakest other adjacent enemy tile permanently loses 2 base influence.' },
   UNTOUCHABLE: { name: 'Untouchable',  desc: 'Cannot be targeted by enemy rites.' },
@@ -51,6 +53,9 @@ export const TILE_POOL = [
   { type: 'LEECHSPRITE', influence: 1, rarity: 'uncommon', count: 0, keywords: ['SUSTAIN'] },
   { type: 'JUGGERNAUT',  influence: 3, rarity: 'rare',     count: 0, keywords: ['TRAMPLE'] },
   { type: 'VEILWISP',    influence: 2, rarity: 'uncommon', count: 0, keywords: ['UNTOUCHABLE'] },
+  // Round 2 anti-aggro pair — rare-capped training wheels
+  { type: 'GALEHARRIER', influence: 2, rarity: 'rare',     count: 0, keywords: ['WING'] },
+  { type: 'DREADMAW',    influence: 2, rarity: 'rare',     count: 0, keywords: ['MENACE'] },
 
   // ─── RITES (spells — cast as your placement) ─────────────────────────
   { type: 'SUNDER',       influence: 0, rarity: 'common',   count: 0, keywords: [], kind: 'rite' },

@@ -62,6 +62,32 @@ test('SUSTAIN grows on capture; TRAMPLE splashes the weakest other enemy', () =>
   }
 });
 
+console.log('round-2 keywords');
+
+test('WING halves incoming enemy pressure from non-WING tiles', () => {
+  const g = playState('wing');
+  g.board[5][0].tile = g._makeTile('GALEHARRIER', 1);   // WING, base 2
+  const ns = neighborCoords(5, 0).filter(([c, r]) => !g.board[c][r].rift);
+  g.board[ns[0][0]][ns[0][1]].tile = g._makeTile('COLOSSUS', 2); // enemy base 4
+  // incoming 4 → halved to 2; rel = 2 − 2 = 0
+  assert.equal(g.relativeInfluence(5, 0), 2 - Math.floor(4 / 2));
+  // same spot without WING would be max(0, 2−4) = 0 either way, so check a
+  // weaker attacker where the halving visibly matters:
+  g.board[ns[0][0]][ns[0][1]].tile = g._makeTile('THICKET', 2); // enemy base 2 → halved 1
+  assert.equal(g.relativeInfluence(5, 0), 2 - 1);
+});
+
+test('MENACE blocks capture with fewer than two adjacent attackers', () => {
+  const g = playState('menace');
+  g.board[5][0].tile = g._makeTile('DREADMAW', 1);      // MENACE, base 2
+  const ns = neighborCoords(5, 0).filter(([c, r]) => !g.board[c][r].rift);
+  g.board[ns[0][0]][ns[0][1]].tile = g._makeTile('COLOSSUS', 2); // rel = max(0, 2−4) = 0
+  assert.equal(g.relativeInfluence(5, 0), 0);
+  assert.equal(g.isCapturable(5, 0, 2), false, 'one attacker: menace holds');
+  g.board[ns[1][0]][ns[1][1]].tile = g._makeTile('THICKET', 2);  // second attacker
+  assert.equal(g.isCapturable(5, 0, 2), true, 'two attackers: menace broken');
+});
+
 console.log('rites');
 
 test('SUNDER destroys a weak enemy tile anywhere; capitals immune', () => {

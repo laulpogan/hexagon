@@ -105,10 +105,25 @@ export function runMeta({ rounds = 3, popSize = 24, games = 3 } = {}) {
     console.log(`round ${round + 1}: top deck ${(winRates[0].wr * 100).toFixed(0)}%, median ${(winRates[Math.floor(popSize / 2)].wr * 100).toFixed(0)}%`);
   }
 
-  // Per-card impact (min sample floor) + per-keyword aggregation
+  // Per-card impact (min sample floor) + Wilson 95% CI — a card is only
+  // FLAGGED when its whole interval clears 50% (over) or sits under it.
+  const wilson = (w, n) => {
+    const z = 1.96, p = w / n;
+    const den = 1 + z * z / n;
+    const centre = (p + z * z / (2 * n)) / den;
+    const half = (z / den) * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n));
+    return [Math.max(0, centre - half), Math.min(1, centre + half)];
+  };
   const impacts = [];
   for (const [type, e] of cardGames) {
-    if (e.games >= 30) impacts.push({ type, games: e.games, winRate: +(e.wins / e.games).toFixed(3) });
+    if (e.games >= 30) {
+      const [lo, hi] = wilson(e.wins, e.games);
+      impacts.push({
+        type, games: e.games, winRate: +(e.wins / e.games).toFixed(3),
+        ci: [+lo.toFixed(3), +hi.toFixed(3)],
+        flag: lo > 0.5 ? 'OVER' : hi < 0.5 ? 'UNDER' : null,
+      });
+    }
   }
   impacts.sort((a, b) => b.winRate - a.winRate);
   const kwAgg = new Map();
@@ -131,6 +146,8 @@ export function runMeta({ rounds = 3, popSize = 24, games = 3 } = {}) {
   const report = {
     rounds, popSize,
     diversityInvSimpson: +invSimpson.toFixed(1), maxDiversity: popSize,
+    flaggedOver: impacts.filter(i => i.flag === 'OVER'),
+    flaggedUnder: impacts.filter(i => i.flag === 'UNDER'),
     topCards: impacts.slice(0, 15), bottomCards: impacts.slice(-15).reverse(),
     keywords,
     topDecks: winRates.slice(0, 3).map(x => ({ winRate: +x.wr.toFixed(3), comp: popn[x.i] || null })),

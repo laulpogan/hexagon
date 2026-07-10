@@ -26,7 +26,7 @@ rounds that mine MTG-analog mechanics into an evergreen Limen base set.
   policy (evolution strategies over feature weights — retrainable per rules rev).
 
 ## Iteration counter (bump each design round; cap 3 per session)
-Round: 1 COMPLETE (2026-07-10)
+Round: 2 COMPLETE (2026-07-10)
 
 ## Round 1 verdicts (arena: 967-card pool, 4 PSRO rounds, ~1150 games)
 - All success criteria 1-5 met (arena matrix, retrain-without-arena-edits,
@@ -57,3 +57,17 @@ Round: 1 COMPLETE (2026-07-10)
 - Menace → must be attacked by 2+ or uncapturable
 - Landfall/rift-fall → triggers on rift-adjacent placement
 - Equipment/aura → rite that buffs a friendly tile permanently
+
+## Round 2 verdicts (1150-card pool, WING/MENACE live, retuned gen costs)
+- WING debut 54.4% (250g) — healthy, keep. MENACE 51.0% (206g) after the
+  RALLY cap — keep, watch.
+- **Degenerate axis found and fixed:** RALLY-stack archetype hit 64.2% @
+  5330g (PSRO population collapsed onto triple-RALLY aura cores; diversity
+  21.7). Fix: RALLY_STACK_CAP=2 (max total aura per tile). After: RALLY
+  58.3%, diversity back to 24.1, shipped baseline unchanged (148/151,
+  0 stalls, 3.9 cap/match, 38 tests green).
+- Wilson CIs live in meta.js (flaggedOver/Under in data/meta_report.json).
+- Round 3 backlog: FLANK cold (43.0% @ 1340g — buff threshold or cost),
+  TRAMPLE hot on thin sample (63.0% @ 246g — needs exposure), UNTOUCHABLE
+  sagging (44.2%), regenerate pool fully under retuned costs, archetype
+  clustering + Nash-averaging, human playtest calibration vs bot meta.

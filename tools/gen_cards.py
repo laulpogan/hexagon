@@ -7,15 +7,18 @@ import json, os, subprocess, sys, time
 from concurrent.futures import ThreadPoolExecutor
 from urllib.request import Request, urlopen
 
-TARGET = 1000
+TARGET = 1150
 BATCH = 40
 OUT = os.path.join(os.path.dirname(__file__), "..", "data", "cards_gen.json")
 
 KEYWORDS = {
     # keyword: power cost for the rarity budget
-    "RALLY": 1.5, "SIEGE": 2.0, "SCOUT": 1.0, "FORTIFIED": 1.0,
+    # Round-1 meta retune: RALLY ran hot (57.0% @ 5288g) 1.5→2.0;
+    # SCOUT ran cold (48.9% @ 5800g) 1.0→0.5. Round 2 adds WING/MENACE.
+    "RALLY": 2.0, "SIEGE": 2.0, "SCOUT": 0.5, "FORTIFIED": 1.0,
     "DOUBLESTRIKE": 1.5, "ATTUNED": 1.0, "WARD": 1.5,
     "FLANK": 1.5, "SUSTAIN": 1.5, "TRAMPLE": 2.0, "UNTOUCHABLE": 1.0,
+    "WING": 1.5, "MENACE": 1.5,
 }
 BUDGET = {"common": 3.0, "uncommon": 4.5, "rare": 6.0}
 RARITY_MIX = "roughly 55% common, 30% uncommon, 15% rare"
@@ -26,7 +29,8 @@ Mechanics you may use (keyword: meaning):
 RALLY +1 to adjacent friendlies | SIEGE enemies adjacent suffer -5 | SCOUT place anywhere outside enemy heartland \
 | FORTIFIED +2 on board edges | DOUBLESTRIKE contributes twice to neighbors | ATTUNED +1 per adjacent rift hex \
 | WARD blocks first capture | FLANK enemies capturable at <=1 with 2+ attackers | SUSTAIN +1 base per capture \
-| TRAMPLE captures dent another adjacent enemy | UNTOUCHABLE immune to enemy rites.
+| TRAMPLE captures dent another adjacent enemy | UNTOUCHABLE immune to enemy rites \
+| WING incoming enemy pressure halved | MENACE cannot be captured by fewer than 2 adjacent attackers.
 Rules: influence 1-5. 0-2 keywords. Power budget = influence + keyword costs \
 ({json.dumps(KEYWORDS)}) must be <= {json.dumps(BUDGET)} for the card's rarity. {RARITY_MIX}.
 Names: evocative, UPPERCASE, single word or hyphenated, unique, on-theme (nature/arcana/rift/war). \

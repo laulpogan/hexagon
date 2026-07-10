@@ -52,10 +52,29 @@ export const KEYWORD_HOOKS = {
 
 // captureGate aggregation across the attacker's board (called from isCapturable)
 export function captureThreshold(game, col, row, byPlayer) {
+  // MENACE (round 2): defender uncapturable with fewer than 2 attackers adjacent
+  const defender = game.board[col][row].tile;
+  if (defender?.keywords.includes('MENACE')) {
+    let attackers = 0;
+    for (const [c, r] of neighborCoords(col, row)) {
+      const t = game.board[c][r].tile;
+      if (t && t.owner === byPlayer) attackers++;
+    }
+    if (attackers < 2) return -1; // threshold below any clamped influence → never capturable
+  }
   let threshold = 0;
   const gate = KEYWORD_HOOKS.FLANK.captureGate({ game, col, row, byPlayer });
   if (gate.thresholdOverride !== undefined) threshold = gate.thresholdOverride;
   return threshold;
+}
+
+// WING (round 2, flying analog): influence subtracted onto a WING tile by
+// non-WING enemies is halved (round down). Called from relativeInfluence.
+export function modifyIncoming(defTile, attackerTile, amount) {
+  if (defTile.keywords.includes('WING') && !attackerTile.keywords.includes('WING')) {
+    return Math.floor(amount / 2);
+  }
+  return amount;
 }
 
 export function fireOnPlacement(game, tile, col, row, captured) {

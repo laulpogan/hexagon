@@ -24,6 +24,8 @@ export const CONFIG = {
   // Keyword magnitudes
   FORTIFIED_BONUS: 2,
   RALLY_BONUS: 1,
+  RALLY_STACK_CAP: 2,  // round 2: RALLY-stack archetype hit 64.2% @ 5330g —
+                       // a tile now gains at most +2 total from adjacent RALLY
   SIEGE_BONUS: 5,   // 2→5 (2026-07-10 balance round): at 2, aggression never paid.
                     // Seed-paired sim n=300: captures/match 2.5→3.8, split unmoved.
 
