@@ -96,7 +96,7 @@ hexagon 2D prototype in one autonomous session on branch `limen-design`
   Game.clone(), core/mechanics.js hook registry, rite category end-to-end
   (engine → agents → shipped UI with target highlighting → MP relay).
 - Wave-1 mechanics: FLANK/SUSTAIN/TRAMPLE/UNTOUCHABLE + SUNDER/FORESIGHT/
-  RALLYING_CRY. 36→42 tests green.
+  RALLYING_CRY. 30→36 tests green.
 - DeepSeek generated 967 validated cards (~$0.15); power-budget validator
   rejected over/under-budget chaff; rarity skewed 73/16/10 — loosen next round.
 - Design round 1 verdict: all 11 keywords evergreen (48.9–57.3% band, ~1150
