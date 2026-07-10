@@ -4,6 +4,7 @@ import { CONFIG } from './config.js';
 import { TILE_POOL, tileTemplate, defaultDeckComposition } from '../data/tiles.js';
 import { createBoard, neighborCoords, isEdge, midRow, riftNeighborCount } from './board.js';
 import { hashSeed, mulberry32, shuffleInPlace } from './rng.js';
+import { captureThreshold, fireOnPlacement, RITE_EFFECTS } from './mechanics.js';
 
 export class Game {
   // seed: shared board seed (room code in MP). decks: {1: comp, 2: comp}
@@ -58,6 +59,7 @@ export class Game {
     return {
       id: this._tileId++,
       type,
+      kind: tpl.kind || 'tile',   // 'tile' | 'rite'
       influence: tpl.influence,
       keywords: [...tpl.keywords],
       rarity: tpl.rarity,
@@ -136,7 +138,8 @@ export class Game {
   isCapturable(col, row, byPlayer) {
     const tile = this.cellAt(col, row)?.tile;
     if (!tile || tile.owner === byPlayer) return false;
-    return this.relativeInfluence(col, row) === 0;
+    // Base threshold 0; mechanics (FLANK) may loosen it via captureGate.
+    return this.relativeInfluence(col, row) <= captureThreshold(this, col, row, byPlayer);
   }
 
   // Capital zone: your side of the seam, at least N rows from the mid line.
@@ -181,6 +184,7 @@ export class Game {
     if (this.phase !== 'play' || player !== this.currentPlayer) return moves;
     if (this.placementsLeft <= 0) return moves;
     this.hands[player].forEach((tile, handIndex) => {
+      if (tile.kind === 'rite') return; // rites go through legalRiteTargets/castRite
       for (let c = 0; c < CONFIG.GRID_W; c++) {
         for (let r = 0; r < CONFIG.GRID_H; r++) {
           if (this.canPlace(player, tile, c, r)) {
@@ -246,6 +250,7 @@ export class Game {
     if (this.placementsLeft <= 0) return { ok: false, reason: 'no placements left' };
     const tile = this.hands[player][handIndex];
     if (!tile) return { ok: false, reason: 'no such hand tile' };
+    if (tile.kind === 'rite') return { ok: false, reason: 'rites are cast, not placed' };
     if (!this.canPlace(player, tile, col, row)) return { ok: false, reason: 'illegal placement' };
 
     const cell = this.board[col][row];
@@ -287,7 +292,44 @@ export class Game {
     } else {
       this._log(player, `placed ${tile.type} at (${col},${row})`);
     }
+    fireOnPlacement(this, tile, col, row, captured); // ETB-class hooks (SUSTAIN/TRAMPLE)
     const result = { ok: true, captured, won: false };
+    this._afterAction();
+    return result;
+  }
+
+  // Rites: spell-class cards cast from hand — consumes the turn's placement.
+  legalRiteTargets(player, handIndex) {
+    const card = this.hands[player][handIndex];
+    if (!card || card.kind !== 'rite') return [];
+    const effect = RITE_EFFECTS[card.type];
+    if (!effect) return [];
+    if (!effect.needsTarget) return [{ col: null, row: null }];
+    const targets = [];
+    for (let c = 0; c < CONFIG.GRID_W; c++) {
+      for (let r = 0; r < CONFIG.GRID_H; r++) {
+        if (effect.isLegalTarget(this, player, c, r)) targets.push({ col: c, row: r });
+      }
+    }
+    return targets;
+  }
+
+  castRite(player, handIndex, col = null, row = null) {
+    if (this.phase !== 'play') return { ok: false, reason: 'wrong phase' };
+    if (player !== this.currentPlayer) return { ok: false, reason: 'not your turn' };
+    if (this.placementsLeft <= 0) return { ok: false, reason: 'no placements left' };
+    const card = this.hands[player][handIndex];
+    if (!card || card.kind !== 'rite') return { ok: false, reason: 'not a rite' };
+    const effect = RITE_EFFECTS[card.type];
+    if (!effect) return { ok: false, reason: 'unknown rite' };
+    if (effect.needsTarget && !effect.isLegalTarget(this, player, col, row)) {
+      return { ok: false, reason: 'illegal target' };
+    }
+    this.hands[player].splice(handIndex, 1);
+    this.placementsLeft--;
+    this.consecutivePasses = 0;
+    const detail = effect.resolve(this, player, col, row) || {};
+    const result = { ok: true, rite: card.type, ...detail };
     this._afterAction();
     return result;
   }
@@ -361,6 +403,39 @@ export class Game {
   _log(player, text) {
     this.log.push({ turn: this.turn, player, text });
     if (this.log.length > 200) this.log.shift();
+  }
+
+  // Deep-copy for search agents (MCTS etc.). The clone carries NO RNG — all
+  // in-play rules are deterministic; rand is only used during construction.
+  clone() {
+    const g = Object.create(Game.prototype);
+    g.seed = this.seed;
+    g.rand = null;
+    g.board = this.board.map(col => col.map(cell => ({
+      col: cell.col, row: cell.row, rift: cell.rift,
+      tile: cell.tile ? { ...cell.tile, keywords: [...cell.tile.keywords] } : null,
+    })));
+    g.phase = this.phase;
+    g.currentPlayer = this.currentPlayer;
+    g.turn = this.turn;
+    g.winner = this.winner;
+    g.winReason = this.winReason;
+    g.consecutivePasses = this.consecutivePasses;
+    g.placementsLeft = this.placementsLeft;
+    g.discardsLeft = this.discardsLeft;
+    g.capitalsPlaced = { ...this.capitalsPlaced };
+    g.decks = {
+      1: this.decks[1].map(t => ({ ...t, keywords: [...t.keywords] })),
+      2: this.decks[2].map(t => ({ ...t, keywords: [...t.keywords] })),
+    };
+    g.hands = {
+      1: this.hands[1].map(t => ({ ...t, keywords: [...t.keywords] })),
+      2: this.hands[2].map(t => ({ ...t, keywords: [...t.keywords] })),
+    };
+    g.stats = { 1: { ...this.stats[1] }, 2: { ...this.stats[2] } };
+    g.log = []; // search clones don't need history
+    g._tileId = this._tileId;
+    return g;
   }
 
   // ─── Derived summaries (for HUD / win screen) ────────────────────────

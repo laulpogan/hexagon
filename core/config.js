@@ -36,4 +36,10 @@ export const CONFIG = {
   // Scouts may ignore adjacency anywhere EXCEPT the enemy heartland (the
   // opponent's capital-zone rows) — kills the turn-1 scout capital rush.
   SCOUT_HEARTLAND_BAN: true,
+
+  // Wave-1 mechanics (2026-07-10 design round 1 — MTG analogs)
+  FLANK_THRESHOLD: 1,   // deathtouch-ish: capture at ≤1 with 2+ attackers incl. FLANK
+  SUSTAIN_BONUS: 1,     // lifelink-ish: permanent growth per capture
+  TRAMPLE_SPLASH: 2,    // trample: permanent dent on one extra adjacent enemy per capture
+  SUNDER_MAX_INF: 2,    // targeted removal ceiling (non-capital only)
 };
