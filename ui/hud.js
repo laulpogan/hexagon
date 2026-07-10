@@ -10,6 +10,8 @@ export class Hud {
     this.game = game;
     this.root = root;
     this.selectedIndex = null;
+    this.viewPlayer = null;     // bot mode: always show the human's hand
+    this.botMode = false;
     this.onSelectTile = null;   // (indexOrNull)
     this.onDiscard = null;      // (index)
     this.onPass = null;
@@ -54,7 +56,9 @@ export class Hud {
       el.innerHTML = `${this.playerLabel(g.currentPlayer)} — place your <b>capital</b> (highlighted hexes)`;
       el.className = `turn-p${g.currentPlayer}`;
     } else if (g.phase === 'play') {
-      el.innerHTML = `Turn ${g.turn} — ${this.playerLabel(g.currentPlayer)} · draw 1, place 1 · right-click a card to discard (1×)`;
+      el.innerHTML = this.botMode && g.currentPlayer === 2
+        ? `Turn ${g.turn} — ${this.playerLabel(2)} is thinking…`
+        : `Turn ${g.turn} — ${this.playerLabel(g.currentPlayer)} · draw 1, place 1 · right-click a card to discard (1×)`;
       el.className = `turn-p${g.currentPlayer}`;
     } else {
       el.innerHTML = `Game over`;
@@ -67,11 +71,12 @@ export class Hud {
     const g = this.game;
     const strip = this.root.querySelector('#handStrip');
     if (g.phase !== 'play') { strip.innerHTML = ''; return; }
-    const hand = g.hands[g.currentPlayer];
+    const viewP = this.viewPlayer ?? g.currentPlayer;
+    const hand = g.hands[viewP];
     strip.innerHTML = '';
     hand.forEach((tile, i) => {
       const card = document.createElement('div');
-      card.className = 'card' + (i === this.selectedIndex ? ' selected' : '') + ` owner-p${g.currentPlayer}`;
+      card.className = 'card' + (i === this.selectedIndex ? ' selected' : '') + ` owner-p${viewP}`;
       card.style.borderColor = RARITY_COLOR[tile.rarity];
       const kws = tile.keywords.map(k =>
         `<span class="kw" title="${KEYWORDS[k]?.desc || ''}">${KEYWORDS[k]?.name || k}</span>`).join('');
@@ -98,14 +103,20 @@ export class Hud {
     this.root.querySelector('#hintBar').textContent = text || '';
   }
 
-  showWin(winner, stats, turns) {
+  showWin(winner, stats, turns, reason) {
     const el = this.root.querySelector('#winOverlay');
     el.classList.remove('hidden');
     const s1 = stats[1], s2 = stats[2];
+    const title = winner ? `${winner === 1 ? '🌿 Verdant' : '🌌 Umbral'} wins!` : '⚖️ Draw';
+    const sub = reason === 'capital'
+      ? `The enemy capital has fallen after ${turns} turns.`
+      : reason === 'influence'
+        ? `All tiles spent — the threshold yields to greater influence (${turns} turns).`
+        : `The threshold holds. Neither reality prevails (${turns} turns).`;
     el.innerHTML = `
       <div class="win-box">
-        <h1>${winner === 1 ? '🌿 Verdant' : '🌌 Umbral'} wins!</h1>
-        <p>The enemy capital has fallen after ${turns} turns.</p>
+        <h1>${title}</h1>
+        <p>${sub}</p>
         <table>
           <tr><th></th><th class="p1name">Verdant</th><th class="p2name">Umbral</th></tr>
           <tr><td>Placed</td><td>${s1.placed}</td><td>${s2.placed}</td></tr>

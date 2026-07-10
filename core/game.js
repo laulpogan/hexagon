@@ -16,6 +16,8 @@ export class Game {
     this.currentPlayer = 1;
     this.turn = 0;
     this.winner = null;
+    this.winReason = null;         // 'capital' | 'influence' | 'draw'
+    this.consecutivePasses = 0;
     this.placementsLeft = 0;
     this.discardsLeft = 0;
     this.capitalsPlaced = { 1: false, 2: false };
@@ -205,6 +207,11 @@ export class Game {
     this.placementsLeft = CONFIG.PLACEMENTS_PER_TURN;
     this.discardsLeft = CONFIG.DISCARDS_PER_TURN;
     this._draw(this.currentPlayer);
+    // All cards spent on both sides → resolve immediately, no pass theater.
+    if (this.decks[1].length + this.decks[2].length +
+        this.hands[1].length + this.hands[2].length === 0) {
+      this._resolveInfluenceVictory();
+    }
   }
 
   _draw(player) {
@@ -241,6 +248,7 @@ export class Game {
       this.stats[player].placed++;
       this.stats[player].captured++;
       this.winner = player;
+      this.winReason = 'capital';
       this.phase = 'over';
       this._log(player, `captured the enemy capital — VICTORY`);
       return { ok: true, captured: target, won: true };
@@ -248,6 +256,7 @@ export class Game {
 
     const captured = target || null;
     cell.tile = tile;
+    this.consecutivePasses = 0;
     this.stats[player].placed++;
     if (captured) {
       this.stats[player].captured++;
@@ -278,8 +287,33 @@ export class Game {
     if (this.phase !== 'play') return { ok: false, reason: 'wrong phase' };
     if (player !== this.currentPlayer) return { ok: false, reason: 'not your turn' };
     this._log(player, 'passed');
+    this.consecutivePasses++;
+    if (this.consecutivePasses >= 2) {
+      this._resolveInfluenceVictory();
+      return { ok: true, gameEnded: true };
+    }
     this._endTurn();
     return { ok: true };
+  }
+
+  // Nobody can act anymore → the reality with more influence claims the
+  // threshold. Capital capture is the knockout; this is the decision.
+  _resolveInfluenceVictory() {
+    const s = this.boardSummary();
+    this.phase = 'over';
+    if (s[1].influence !== s[2].influence) {
+      this.winner = s[1].influence > s[2].influence ? 1 : 2;
+      this.winReason = 'influence';
+    } else if (s[1].tiles !== s[2].tiles) {
+      this.winner = s[1].tiles > s[2].tiles ? 1 : 2;
+      this.winReason = 'influence';
+    } else {
+      this.winner = null;
+      this.winReason = 'draw';
+    }
+    this._log(this.winner || 0, this.winner
+      ? `influence victory — ${s[this.winner].influence} vs ${s[this.winner === 1 ? 2 : 1].influence}`
+      : 'the threshold holds — draw');
   }
 
   _afterAction() {

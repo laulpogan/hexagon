@@ -44,6 +44,14 @@ export function createBoard(rand) {
   return cells;
 }
 
+// Offset (odd-q, odd columns shifted down) → cube coords → hex distance.
+export function hexDistance(c1, r1, c2, r2) {
+  const z1 = r1 - (c1 - (c1 & 1)) / 2;
+  const z2 = r2 - (c2 - (c2 & 1)) / 2;
+  const y1 = -c1 - z1, y2 = -c2 - z2;
+  return Math.max(Math.abs(c1 - c2), Math.abs(y1 - y2), Math.abs(z1 - z2));
+}
+
 export function riftNeighborCount(cells, col, row) {
   let n = 0;
   for (const [c, r] of neighborCoords(col, row)) if (cells[c][r].rift) n++;

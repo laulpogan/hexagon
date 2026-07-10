@@ -1,10 +1,32 @@
 // Limen — entry point. Wires core (rules) + render (Three.js) + ui (HUD).
 import { Game } from './core/game.js';
+import { botTakeTurn } from './core/bot.js';
 import { BoardRenderer } from './render/scene.js';
 import { Hud } from './ui/hud.js';
 import { sound } from './ui/sound.js';
 
-let game, renderer, hud;
+let game, renderer, hud, botMode = false;
+
+// Bot plays Umbral (P2) after a short beat, so moves read as deliberate.
+function scheduleBot() {
+  if (!botMode || game.phase === 'over') return;
+  if (game.phase === 'play' && game.currentPlayer !== 2) return;
+  if (game.phase === 'capital' && game.currentPlayer !== 2) return;
+  setTimeout(() => {
+    const action = botTakeTurn(game, 2);
+    if (action.kind === 'place') {
+      if (action.result?.captured) sound.capture();
+      else if (action.result?.wardBlocked) sound.ward();
+      else sound.place();
+    } else if (action.kind === 'capital') {
+      sound.place();
+    }
+    update();
+    if (checkGameOver()) return;
+    if (game.currentPlayer === 1) sound.turnSwitch();
+    scheduleBot(); // capital phase can hand straight back to the bot's turn logic
+  }, 750);
+}
 
 // Projected influence if `tile` were placed at (col,row) — for the ghost preview.
 function projectedInfluence(g, tile, col, row) {
@@ -49,11 +71,13 @@ function update() {
 
 function handleClick({ col, row }) {
   const g = game;
+  if (botMode && g.currentPlayer === 2) return; // bot's turn — input locked
   if (g.phase === 'capital') {
     const res = g.placeCapital(g.currentPlayer, col, row);
     if (res.ok) { sound.place(); if (res.allCapitalsPlaced) sound.turnSwitch(); }
     else sound.error();
     update();
+    scheduleBot();
     return;
   }
   if (g.phase !== 'play') return;
@@ -75,14 +99,19 @@ function handleClick({ col, row }) {
   else if (res.captured) sound.capture();
   else sound.place();
 
-  if (res.won) {
-    update();
-    sound.victory();
-    hud.showWin(g.winner, g.stats, g.turn);
-    return;
-  }
+  if (checkGameOver()) return;
   if (g.currentPlayer !== before) sound.turnSwitch();
   update();
+  scheduleBot();
+}
+
+// Any action can end the game (capital capture, influence resolution, draw).
+function checkGameOver() {
+  if (game.phase !== 'over') return false;
+  update();
+  sound.victory();
+  hud.showWin(game.winner, game.stats, game.turn, game.winReason);
+  return true;
 }
 
 function handleHover(hit) {
@@ -97,7 +126,8 @@ function handleHover(hit) {
   }
 }
 
-function startGame() {
+function startGame(vsBot = false) {
+  botMode = vsBot;
   document.getElementById('menu').classList.add('hidden');
   const seed = `local-${Math.random().toString(36).slice(2, 10)}`;
   game = new Game({ seed });
@@ -106,6 +136,8 @@ function startGame() {
   boardEl.innerHTML = '';
   renderer = new BoardRenderer(boardEl, game);
   hud = new Hud(document.getElementById('hud'), game);
+  hud.botMode = vsBot;
+  if (vsBot) hud.viewPlayer = 1;
   hud.bindSound(sound);
 
   renderer.onCellClick = handleClick;
@@ -118,13 +150,20 @@ function startGame() {
     update();
   };
   hud.onPass = () => {
+    if (botMode && game.currentPlayer === 2) return;
     const res = game.pass(game.currentPlayer);
-    if (res.ok) { sound.turnSwitch(); hud.selectedIndex = null; update(); }
+    if (!res.ok) return;
+    hud.selectedIndex = null;
+    if (checkGameOver()) return;
+    sound.turnSwitch();
+    update();
+    scheduleBot();
   };
   hud.onRestart = () => location.reload();
 
   update();
-  window.__limen = { game, renderer, hud, update }; // debug/test handle
+  window.__limen = { game, renderer, hud, update, handleClick, scheduleBot }; // debug/test handle
 }
 
-document.getElementById('hotseatBtn').onclick = startGame;
+document.getElementById('hotseatBtn').onclick = () => startGame(false);
+document.getElementById('botBtn').onclick = () => startGame(true);

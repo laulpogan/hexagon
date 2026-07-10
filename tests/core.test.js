@@ -263,6 +263,19 @@ test('pass hands the turn over', () => {
   assert.equal(g.turn, 2);
 });
 
+test('two consecutive passes resolve an influence victory', () => {
+  const { g } = startedGame();
+  // Give P1 a supporting tile so influence differs.
+  const spot = findCell(g, (c) => !c.tile && !c.rift && c.row === 0);
+  spot.tile = g._makeTile('COLOSSUS', 1);
+  g.pass(1);
+  const res = g.pass(2);
+  assert.equal(res.gameEnded, true);
+  assert.equal(g.phase, 'over');
+  assert.equal(g.winner, 1);
+  assert.equal(g.winReason, 'influence');
+});
+
 test('legalMoves returns placements for the active player only', () => {
   const { g } = startedGame();
   assert.ok(g.legalMoves(1).length > 0);

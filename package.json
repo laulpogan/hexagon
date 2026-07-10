@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/core.test.js",
+    "test": "node tests/core.test.js && node tests/bot.test.js",
     "sim": "node tools/sim.js"
   }
 }
