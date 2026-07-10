@@ -40,6 +40,16 @@ export function moveFeatures(game, player, move) {
   const f = new Array(FEATURE_NAMES.length).fill(0);
   f[0] = 1;
 
+  if (target && target.owner === player) {
+    // Ascend: value = resulting tower influence (bias weight covers tempo)
+    cell.stack.push(target);
+    cell.tile = { ...tile, owner: player };
+    f[1] = game.relativeInfluence(move.col, move.row);
+    f[2] = f[1] === 0 ? 1 : 0;
+    cell.tile = target;
+    cell.stack.pop();
+    return f;
+  }
   if (target && target.capital) { f[4] = 1; return f; }
   if (target && target.keywords.includes('WARD') && !target.wardConsumed) { f[10] = 1; return f; }
 

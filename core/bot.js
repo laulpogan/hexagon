@@ -26,6 +26,17 @@ function scoreMove(game, player, move, rand) {
   // better than developing; mildly negative so it happens only when quiet.
   if (target && target.keywords.includes('WARD') && !target.wardConsumed) return -12 + rand();
 
+  // Ascend moves: simulate the stack, value the tower minus a tempo tax
+  // (expanding usually beats building tall — search/policy explore the rest).
+  if (target && target.owner === player) {
+    cell.stack.push(target);
+    cell.tile = { ...tile, owner: player };
+    const own = game.relativeInfluence(move.col, move.row);
+    cell.tile = target;
+    cell.stack.pop();
+    return own - 2.5 + rand() * 0.25;
+  }
+
   let score = 0;
   if (target) score += 6 + target.influence * 2; // captures are tempo + material
 

@@ -108,6 +108,7 @@ export class Game {
       }
     }
     inf += Math.min(rally, CONFIG.RALLY_STACK_CAP); // aura stacking capped (round 2)
+    inf += this.cellAt(col, row).stack.length * CONFIG.TIER_BONUS; // Ascension tiers (round 3)
     return inf;
   }
 
@@ -161,12 +162,18 @@ export class Game {
       : row <= mid - CONFIG.CAPITAL_MIN_DIST_FROM_SEAM;
   }
 
-  // Placement legality during normal play (capture and expansion).
+  // Placement legality during normal play (capture, expansion, ascension).
   canPlace(player, tile, col, row) {
     if (this.phase !== 'play') return false;
     const cell = this.cellAt(col, row);
     if (!cell) return false;
-    if (cell.tile) return this.isCapturable(col, row, player);
+    if (cell.tile) {
+      // Ascend: stack onto your own non-capital tile, up to TIER_MAX high.
+      if (cell.tile.owner === player) {
+        return !cell.tile.capital && cell.stack.length + 1 < CONFIG.TIER_MAX;
+      }
+      return this.isCapturable(col, row, player);
+    }
     const adjacent = neighborCoords(col, row).some(([c, r]) => {
       const nt = this.board[c][r].tile;
       return nt && nt.owner === player;
@@ -190,7 +197,12 @@ export class Game {
       for (let c = 0; c < CONFIG.GRID_W; c++) {
         for (let r = 0; r < CONFIG.GRID_H; r++) {
           if (this.canPlace(player, tile, c, r)) {
-            moves.push({ handIndex, col: c, row: r, capture: !!this.board[c][r].tile });
+            const t = this.board[c][r].tile;
+            moves.push({
+              handIndex, col: c, row: r,
+              capture: !!t && t.owner !== player,
+              ascend: !!t && t.owner === player,
+            });
           }
         }
       }
@@ -261,6 +273,20 @@ export class Game {
     this.placementsLeft--;
     this.consecutivePasses = 0; // any card-spending action is a real action (incl. ward-blocked attacks)
 
+    // Ascend (round 3): stacking onto your own tile. The old top is buried
+    // (keywords dormant), the new tile becomes the active face, +1 influence
+    // per buried tier.
+    if (target && target.owner === player) {
+      cell.stack.push(target);
+      cell.tile = tile;
+      this.stats[player].placed++;
+      this._log(player, `ascended at (${col},${row}) — ${tile.type} crowns a tier-${cell.stack.length + 1} stack`);
+      fireOnPlacement(this, tile, col, row, null);
+      const result = { ok: true, ascended: true, height: cell.stack.length + 1 };
+      this._afterAction();
+      return result;
+    }
+
     // WARD: the defender absorbs the attack. The attacker's tile bounces back
     // to hand — popping a ward costs the turn, not the card (2026-07-10
     // balance round: card-loss made attacking wards strictly dominated).
@@ -269,6 +295,18 @@ export class Game {
       this.hands[player].push(tile);
       this._log(player, `attacked ${target.type} at (${col},${row}) — its Ward absorbed the attack (${tile.type} returns to hand)`);
       const result = { ok: true, wardBlocked: true, target };
+      this._afterAction();
+      return result;
+    }
+
+    // Peel (round 3): capturing a stack only removes its top tier. The
+    // attacker's tile bounces to hand — sieging a tower is a war of turns.
+    if (target && cell.stack.length > 0) {
+      cell.tile = cell.stack.pop();
+      this.hands[player].push(tile);
+      this.stats[player].captured++;
+      this._log(player, `peeled ${target.type} off the stack at (${col},${row}) — tier ${cell.stack.length + 1} remains`);
+      const result = { ok: true, peeled: true, removed: target };
       this._afterAction();
       return result;
     }
@@ -416,6 +454,7 @@ export class Game {
     g.board = this.board.map(col => col.map(cell => ({
       col: cell.col, row: cell.row, rift: cell.rift,
       tile: cell.tile ? { ...cell.tile, keywords: [...cell.tile.keywords] } : null,
+      stack: cell.stack.map(t => ({ ...t, keywords: [...t.keywords] })),
     })));
     g.phase = this.phase;
     g.currentPlayer = this.currentPlayer;

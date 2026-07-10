@@ -179,9 +179,9 @@ export class BoardRenderer {
     return tile.owner === 1 ? COLORS.p1 : COLORS.p2;
   }
 
-  _makeTileGroup(tile, col, row) {
+  _makeTileGroup(tile, col, row, depth = 0) {
     const group = new THREE.Group();
-    const h = tile.capital ? CAPITAL_H : TILE_H;
+    const h = (tile.capital ? CAPITAL_H : TILE_H) + depth * 0.34; // stacks rise
     const geo = hexGeometry(h);
     const mat = new THREE.MeshStandardMaterial({
       color: this._tileColor(tile),
@@ -272,12 +272,13 @@ export class BoardRenderer {
     const seen = new Set();
     for (let c = 0; c < CONFIG.GRID_W; c++) {
       for (let r = 0; r < CONFIG.GRID_H; r++) {
-        const tile = this.game.board[c][r].tile;
+        const cell = this.game.board[c][r];
+        const tile = cell.tile;
         if (!tile) continue;
         seen.add(tile.id);
         let group = this.tileMeshes.get(tile.id);
         if (!group) {
-          group = this._makeTileGroup(tile, c, r);
+          group = this._makeTileGroup(tile, c, r, cell.stack.length);
           this.scene.add(group);
           this.tileMeshes.set(tile.id, group);
           // drop-in animation (skipped when tab hidden — rAF is suspended there)

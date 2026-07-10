@@ -71,7 +71,8 @@ function currentHighlights() {
       for (let c = 0; c < g.board.length; c++) {
         for (let r = 0; r < g.board[0].length; r++) {
           if (g.canPlace(g.currentPlayer, tile, c, r)) {
-            out.push({ col: c, row: r, kind: g.board[c][r].tile ? 'capture' : 'place' });
+            const t = g.board[c][r].tile;
+            out.push({ col: c, row: r, kind: t && t.owner !== g.currentPlayer ? 'capture' : 'place' });
           }
         }
       }

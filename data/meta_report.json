@@ -1,541 +1,211 @@
 {
   "rounds": 4,
   "popSize": 32,
-  "diversityInvSimpson": 24.1,
+  "diversityInvSimpson": 27.6,
   "maxDiversity": 32,
   "flaggedOver": [
     {
-      "type": "BOOK",
-      "games": 76,
-      "winRate": 0.842,
-      "ci": [
-        0.744,
-        0.907
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "GHOST",
-      "games": 34,
-      "winRate": 0.794,
+      "type": "PRISMATICFISH",
+      "games": 64,
+      "winRate": 0.75,
       "ci": [
         0.632,
-        0.897
+        0.84
       ],
       "flag": "OVER"
     },
     {
-      "type": "HOWL",
-      "games": 314,
-      "winRate": 0.787,
+      "type": "THORN",
+      "games": 32,
+      "winRate": 0.688,
       "ci": [
-        0.738,
-        0.828
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "ELDERBERRY",
-      "games": 236,
-      "winRate": 0.78,
-      "ci": [
-        0.723,
-        0.828
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "VINE-CRAWLER",
-      "games": 198,
-      "winRate": 0.778,
-      "ci": [
-        0.715,
-        0.83
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "BLOOM-MYSTIC",
-      "games": 44,
-      "winRate": 0.773,
-      "ci": [
-        0.63,
-        0.872
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "BANNER-BEARER",
-      "games": 44,
-      "winRate": 0.773,
-      "ci": [
-        0.63,
-        0.872
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "IRONHIDE",
-      "games": 44,
-      "winRate": 0.773,
-      "ci": [
-        0.63,
-        0.872
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "REVERBERATION",
-      "games": 44,
-      "winRate": 0.773,
-      "ci": [
-        0.63,
-        0.872
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "STONE-MASK",
-      "games": 44,
-      "winRate": 0.773,
-      "ci": [
-        0.63,
-        0.872
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "GLIDER",
-      "games": 44,
-      "winRate": 0.773,
-      "ci": [
-        0.63,
-        0.872
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "KEY",
-      "games": 44,
-      "winRate": 0.773,
-      "ci": [
-        0.63,
-        0.872
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "AJAR",
-      "games": 226,
-      "winRate": 0.77,
-      "ci": [
-        0.711,
+        0.514,
         0.82
       ],
       "flag": "OVER"
     },
     {
-      "type": "SERAPH-BEAST",
-      "games": 234,
-      "winRate": 0.765,
-      "ci": [
-        0.707,
-        0.815
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "SLIVER",
-      "games": 246,
-      "winRate": 0.764,
-      "ci": [
-        0.707,
-        0.813
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "PRISMATICFISH",
-      "games": 232,
-      "winRate": 0.754,
-      "ci": [
-        0.695,
-        0.805
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "TWIN-FLARE",
-      "games": 244,
-      "winRate": 0.754,
-      "ci": [
-        0.696,
-        0.804
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "TIN-SCOUT",
-      "games": 254,
-      "winRate": 0.744,
-      "ci": [
-        0.687,
-        0.794
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "OBSIDIAN-HELM",
-      "games": 584,
-      "winRate": 0.74,
-      "ci": [
-        0.703,
-        0.774
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "BREACH",
-      "games": 230,
-      "winRate": 0.739,
-      "ci": [
-        0.679,
-        0.792
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "THEWATCHER",
-      "games": 272,
-      "winRate": 0.732,
-      "ci": [
-        0.676,
-        0.781
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "SHARD",
-      "games": 52,
-      "winRate": 0.731,
-      "ci": [
-        0.597,
-        0.832
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "RIFTWISP",
-      "games": 92,
-      "winRate": 0.728,
-      "ci": [
-        0.63,
-        0.809
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "LOOM-SISTINE",
-      "games": 266,
-      "winRate": 0.722,
-      "ci": [
-        0.665,
-        0.772
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "RIFT-THORN",
-      "games": 54,
-      "winRate": 0.722,
-      "ci": [
-        0.591,
-        0.824
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "DIFFRACTION",
-      "games": 276,
-      "winRate": 0.721,
-      "ci": [
-        0.665,
-        0.771
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "TREMBLE-CORE",
-      "games": 152,
-      "winRate": 0.717,
-      "ci": [
-        0.641,
-        0.783
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "CLOCKWORK-BEETLE",
-      "games": 192,
-      "winRate": 0.703,
-      "ci": [
-        0.635,
-        0.763
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "MOONHOWLER",
-      "games": 332,
-      "winRate": 0.69,
-      "ci": [
-        0.638,
-        0.737
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "DUSK-FLASK",
-      "games": 204,
+      "type": "EMBERBADGER",
+      "games": 72,
       "winRate": 0.681,
       "ci": [
-        0.615,
-        0.741
+        0.566,
+        0.777
       ],
       "flag": "OVER"
     },
     {
-      "type": "ANIMATE_SHRUBBERY",
-      "games": 240,
-      "winRate": 0.671,
+      "type": "KEY",
+      "games": 112,
+      "winRate": 0.679,
       "ci": [
-        0.609,
-        0.727
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "NYMPHLEAF",
-      "games": 86,
-      "winRate": 0.663,
-      "ci": [
-        0.558,
-        0.754
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "TWIN-BLADE",
-      "games": 86,
-      "winRate": 0.663,
-      "ci": [
-        0.558,
-        0.754
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "NEXUS",
-      "games": 148,
-      "winRate": 0.662,
-      "ci": [
-        0.583,
-        0.733
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "FETTERS",
-      "games": 138,
-      "winRate": 0.659,
-      "ci": [
-        0.577,
-        0.733
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "BLOSSOMGUARD",
-      "games": 58,
-      "winRate": 0.655,
-      "ci": [
-        0.527,
-        0.764
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "WARG",
-      "games": 66,
-      "winRate": 0.652,
-      "ci": [
-        0.531,
-        0.755
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "POLLEN",
-      "games": 166,
-      "winRate": 0.639,
-      "ci": [
-        0.563,
-        0.708
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "IRONBARK",
-      "games": 166,
-      "winRate": 0.639,
-      "ci": [
-        0.563,
-        0.708
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "PETRIFIED-ROSE",
-      "games": 166,
-      "winRate": 0.639,
-      "ci": [
-        0.563,
-        0.708
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "CLOCKWORK-FANE",
-      "games": 118,
-      "winRate": 0.627,
-      "ci": [
-        0.537,
-        0.709
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "TETHER",
-      "games": 74,
-      "winRate": 0.622,
-      "ci": [
-        0.508,
-        0.724
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "DISTORTION",
-      "games": 208,
-      "winRate": 0.62,
-      "ci": [
-        0.553,
-        0.683
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "GARGOYLE",
-      "games": 84,
-      "winRate": 0.619,
-      "ci": [
-        0.512,
-        0.716
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "VOIDSEAL",
-      "games": 84,
-      "winRate": 0.619,
-      "ci": [
-        0.512,
-        0.716
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "ECHO",
-      "games": 84,
-      "winRate": 0.619,
-      "ci": [
-        0.512,
-        0.716
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "FLUX",
-      "games": 84,
-      "winRate": 0.619,
-      "ci": [
-        0.512,
-        0.716
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "RIFTMENDER",
-      "games": 84,
-      "winRate": 0.619,
-      "ci": [
-        0.512,
-        0.716
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "GEARHOUND",
-      "games": 84,
-      "winRate": 0.619,
-      "ci": [
-        0.512,
-        0.716
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "CHITIN-PLATE",
-      "games": 84,
-      "winRate": 0.619,
-      "ci": [
-        0.512,
-        0.716
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "AETHERIC-SPIKE",
-      "games": 84,
-      "winRate": 0.619,
-      "ci": [
-        0.512,
-        0.716
+        0.587,
+        0.758
       ],
       "flag": "OVER"
     },
     {
       "type": "PARAGONUNIT",
-      "games": 172,
-      "winRate": 0.616,
+      "games": 116,
+      "winRate": 0.655,
       "ci": [
-        0.542,
-        0.686
+        0.565,
+        0.735
       ],
       "flag": "OVER"
     },
     {
-      "type": "SUNDROP",
-      "games": 174,
-      "winRate": 0.615,
+      "type": "POLLEN",
+      "games": 80,
+      "winRate": 0.65,
       "ci": [
         0.541,
-        0.684
+        0.745
       ],
       "flag": "OVER"
     },
     {
-      "type": "SPRITE",
+      "type": "GLIDER",
+      "games": 160,
+      "winRate": 0.644,
+      "ci": [
+        0.567,
+        0.714
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "ELDERBERRY",
+      "games": 154,
+      "winRate": 0.643,
+      "ci": [
+        0.565,
+        0.714
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "VINE-CRAWLER",
+      "games": 154,
+      "winRate": 0.643,
+      "ci": [
+        0.565,
+        0.714
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "TREMBLE-CORE",
+      "games": 174,
+      "winRate": 0.632,
+      "ci": [
+        0.558,
+        0.7
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "SLIVER",
+      "games": 174,
+      "winRate": 0.632,
+      "ci": [
+        0.558,
+        0.7
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "HOWL",
+      "games": 498,
+      "winRate": 0.629,
+      "ci": [
+        0.585,
+        0.67
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "WARG",
+      "games": 78,
+      "winRate": 0.628,
+      "ci": [
+        0.517,
+        0.727
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "ANIMATE_SHRUBBERY",
+      "games": 152,
+      "winRate": 0.625,
+      "ci": [
+        0.546,
+        0.698
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "SERAPH-BEAST",
+      "games": 184,
+      "winRate": 0.62,
+      "ci": [
+        0.548,
+        0.687
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "AJAR",
+      "games": 184,
+      "winRate": 0.62,
+      "ci": [
+        0.548,
+        0.687
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "FETTERS",
+      "games": 160,
+      "winRate": 0.619,
+      "ci": [
+        0.542,
+        0.69
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "BREACH",
+      "games": 190,
+      "winRate": 0.616,
+      "ci": [
+        0.545,
+        0.682
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "TWIN-FLARE",
+      "games": 178,
+      "winRate": 0.612,
+      "ci": [
+        0.539,
+        0.681
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "OBSIDIAN-HELM",
+      "games": 422,
+      "winRate": 0.609,
+      "ci": [
+        0.562,
+        0.654
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "TIN-SCOUT",
       "games": 192,
       "winRate": 0.609,
       "ci": [
@@ -545,394 +215,204 @@
       "flag": "OVER"
     },
     {
-      "type": "SILVER-WISP",
-      "games": 148,
-      "winRate": 0.608,
+      "type": "BLOOM-MYSTIC",
+      "games": 174,
+      "winRate": 0.609,
       "ci": [
-        0.528,
-        0.683
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "BRASSHOUND",
-      "games": 94,
-      "winRate": 0.606,
-      "ci": [
-        0.505,
-        0.699
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "GHOSTLIGHT",
-      "games": 142,
-      "winRate": 0.606,
-      "ci": [
-        0.523,
-        0.682
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "DUSKSCOUNT",
-      "games": 152,
-      "winRate": 0.605,
-      "ci": [
-        0.526,
+        0.535,
         0.679
       ],
       "flag": "OVER"
     },
     {
-      "type": "VINEKIN",
-      "games": 450,
-      "winRate": 0.602,
+      "type": "REVERBERATION",
+      "games": 174,
+      "winRate": 0.609,
       "ci": [
-        0.556,
-        0.646
+        0.535,
+        0.679
       ],
       "flag": "OVER"
     },
     {
-      "type": "BANEBERRY",
-      "games": 228,
-      "winRate": 0.601,
+      "type": "THEWATCHER",
+      "games": 206,
+      "winRate": 0.607,
+      "ci": [
+        0.539,
+        0.671
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "LOOM-SISTINE",
+      "games": 214,
+      "winRate": 0.603,
       "ci": [
         0.536,
-        0.662
+        0.666
       ],
       "flag": "OVER"
     },
     {
-      "type": "TEAR-ESSENCE",
-      "games": 194,
-      "winRate": 0.598,
+      "type": "BANNER-BEARER",
+      "games": 140,
+      "winRate": 0.6,
       "ci": [
-        0.528,
-        0.664
+        0.517,
+        0.677
       ],
       "flag": "OVER"
     },
     {
-      "type": "RIFT-WALL",
-      "games": 194,
-      "winRate": 0.598,
+      "type": "CLOCKWORK-BEETLE",
+      "games": 144,
+      "winRate": 0.597,
       "ci": [
-        0.528,
-        0.664
+        0.516,
+        0.674
       ],
       "flag": "OVER"
     },
     {
-      "type": "RECONSTRUCTOR",
-      "games": 204,
-      "winRate": 0.593,
+      "type": "TWIN-BLADE",
+      "games": 258,
+      "winRate": 0.597,
       "ci": [
-        0.525,
-        0.658
+        0.536,
+        0.655
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "IRONHIDE",
+      "games": 158,
+      "winRate": 0.595,
+      "ci": [
+        0.517,
+        0.668
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "STONE-MASK",
+      "games": 158,
+      "winRate": 0.595,
+      "ci": [
+        0.517,
+        0.668
       ],
       "flag": "OVER"
     },
     {
       "type": "TEARBUILDER",
-      "games": 226,
-      "winRate": 0.58,
+      "games": 130,
+      "winRate": 0.592,
       "ci": [
-        0.514,
-        0.642
+        0.506,
+        0.673
       ],
       "flag": "OVER"
     },
     {
-      "type": "LAPSE",
-      "games": 204,
-      "winRate": 0.578,
+      "type": "VINEKIN",
+      "games": 248,
+      "winRate": 0.589,
       "ci": [
-        0.51,
-        0.644
+        0.527,
+        0.648
       ],
       "flag": "OVER"
     },
     {
-      "type": "SPLINTER-SHIELD",
-      "games": 304,
-      "winRate": 0.572,
+      "type": "SHARD",
+      "games": 158,
+      "winRate": 0.589,
       "ci": [
-        0.516,
-        0.627
+        0.511,
+        0.662
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "RIFT-THORN",
+      "games": 138,
+      "winRate": 0.587,
+      "ci": [
+        0.504,
+        0.666
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "FROSTWISP",
+      "games": 216,
+      "winRate": 0.583,
+      "ci": [
+        0.517,
+        0.647
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "DUSK-FLASK",
+      "games": 292,
+      "winRate": 0.582,
+      "ci": [
+        0.525,
+        0.637
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "MOONHOWLER",
+      "games": 210,
+      "winRate": 0.571,
+      "ci": [
+        0.504,
+        0.636
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "DIFFRACTION",
+      "games": 242,
+      "winRate": 0.57,
+      "ci": [
+        0.507,
+        0.631
       ],
       "flag": "OVER"
     }
   ],
   "flaggedUnder": [
     {
-      "type": "VEILWALKER",
-      "games": 240,
-      "winRate": 0.408,
-      "ci": [
-        0.348,
-        0.471
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "SOULSHARD",
-      "games": 84,
-      "winRate": 0.393,
-      "ci": [
-        0.295,
-        0.5
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "PIERCER-SPINE",
-      "games": 110,
-      "winRate": 0.391,
-      "ci": [
-        0.305,
-        0.484
-      ],
-      "flag": "UNDER"
-    },
-    {
       "type": "AETHERLEOPARD",
-      "games": 64,
-      "winRate": 0.359,
-      "ci": [
-        0.253,
-        0.482
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "CRYSTAL-VINE",
-      "games": 178,
-      "winRate": 0.354,
-      "ci": [
-        0.287,
-        0.427
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "SOUL-ANCHOR",
       "games": 74,
-      "winRate": 0.351,
+      "winRate": 0.378,
       "ci": [
-        0.252,
-        0.465
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "HALF-LIGHT",
-      "games": 86,
-      "winRate": 0.349,
-      "ci": [
-        0.257,
-        0.454
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "CHITIN-WHELP",
-      "games": 44,
-      "winRate": 0.341,
-      "ci": [
-        0.219,
-        0.489
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "BLINK-CONSTRUCT",
-      "games": 44,
-      "winRate": 0.341,
-      "ci": [
-        0.219,
-        0.489
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "BOG-SPIRIT",
-      "games": 44,
-      "winRate": 0.341,
-      "ci": [
-        0.219,
-        0.489
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "FOXFIR",
-      "games": 44,
-      "winRate": 0.341,
-      "ci": [
-        0.219,
-        0.489
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "HUNTRESS",
-      "games": 44,
-      "winRate": 0.341,
-      "ci": [
-        0.219,
-        0.489
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "ROCSTEED",
-      "games": 44,
-      "winRate": 0.341,
-      "ci": [
-        0.219,
-        0.489
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "AMBER-HEART",
-      "games": 44,
-      "winRate": 0.341,
-      "ci": [
-        0.219,
-        0.489
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "CRAG",
-      "games": 74,
-      "winRate": 0.338,
-      "ci": [
-        0.24,
-        0.451
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "TERRACOTTA",
-      "games": 110,
-      "winRate": 0.336,
-      "ci": [
-        0.255,
-        0.429
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "REMNANT",
-      "games": 90,
-      "winRate": 0.333,
-      "ci": [
-        0.245,
-        0.436
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "SAGE",
-      "games": 58,
-      "winRate": 0.328,
-      "ci": [
-        0.221,
-        0.456
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "POLARITY",
-      "games": 104,
-      "winRate": 0.327,
-      "ci": [
-        0.244,
-        0.422
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "RIFTSTALKER",
-      "games": 52,
-      "winRate": 0.327,
-      "ci": [
-        0.215,
-        0.462
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "CHERRY",
-      "games": 46,
-      "winRate": 0.326,
-      "ci": [
-        0.209,
-        0.47
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "CRYSTAL-STALWART",
-      "games": 46,
-      "winRate": 0.326,
-      "ci": [
-        0.209,
-        0.47
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "SHADOW-FORM",
-      "games": 46,
-      "winRate": 0.326,
-      "ci": [
-        0.209,
-        0.47
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "ECHOCHIME",
-      "games": 46,
-      "winRate": 0.326,
-      "ci": [
-        0.209,
-        0.47
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "CRYSTALBEETLE",
-      "games": 46,
-      "winRate": 0.326,
-      "ci": [
-        0.209,
-        0.47
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "RIOT-WISP",
-      "games": 46,
-      "winRate": 0.326,
-      "ci": [
-        0.209,
-        0.47
+        0.276,
+        0.492
       ],
       "flag": "UNDER"
     },
     {
       "type": "LOTUS",
-      "games": 160,
-      "winRate": 0.325,
+      "games": 142,
+      "winRate": 0.338,
       "ci": [
-        0.257,
-        0.401
+        0.265,
+        0.419
+      ],
+      "flag": "UNDER"
+    },
+    {
+      "type": "RIFT-BORN",
+      "games": 90,
+      "winRate": 0.333,
+      "ci": [
+        0.245,
+        0.436
       ],
       "flag": "UNDER"
     },
@@ -947,177 +427,87 @@
       "flag": "UNDER"
     },
     {
-      "type": "SUNSERPENT",
-      "games": 38,
-      "winRate": 0.316,
-      "ci": [
-        0.191,
-        0.475
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "MIRAGE-TOTEM",
-      "games": 68,
-      "winRate": 0.309,
-      "ci": [
-        0.212,
-        0.426
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "HUMMING",
-      "games": 36,
-      "winRate": 0.306,
+      "type": "CRAG",
+      "games": 32,
+      "winRate": 0.313,
       "ci": [
         0.18,
-        0.469
+        0.486
       ],
       "flag": "UNDER"
     },
     {
-      "type": "GLYPH",
-      "games": 30,
-      "winRate": 0.3,
+      "type": "RIFT-WEED",
+      "games": 32,
+      "winRate": 0.313,
       "ci": [
-        0.167,
-        0.479
+        0.18,
+        0.486
       ],
       "flag": "UNDER"
     },
     {
-      "type": "HARPY",
+      "type": "HEARTWOOD",
+      "games": 34,
+      "winRate": 0.294,
+      "ci": [
+        0.168,
+        0.462
+      ],
+      "flag": "UNDER"
+    },
+    {
+      "type": "HOUNDFLOWER",
+      "games": 32,
+      "winRate": 0.281,
+      "ci": [
+        0.156,
+        0.454
+      ],
+      "flag": "UNDER"
+    },
+    {
+      "type": "RIFT-READER",
+      "games": 44,
+      "winRate": 0.273,
+      "ci": [
+        0.163,
+        0.418
+      ],
+      "flag": "UNDER"
+    },
+    {
+      "type": "MUDLURKER",
       "games": 58,
-      "winRate": 0.293,
+      "winRate": 0.241,
       "ci": [
-        0.192,
-        0.42
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "OBELISK",
-      "games": 58,
-      "winRate": 0.293,
-      "ci": [
-        0.192,
-        0.42
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "COG-KNIGHT",
-      "games": 38,
-      "winRate": 0.289,
-      "ci": [
-        0.17,
-        0.448
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "WISPS",
-      "games": 72,
-      "winRate": 0.278,
-      "ci": [
-        0.188,
-        0.39
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "SAPLING",
-      "games": 78,
-      "winRate": 0.269,
-      "ci": [
-        0.183,
-        0.377
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "EMBER-SENTRY",
-      "games": 94,
-      "winRate": 0.266,
-      "ci": [
-        0.187,
-        0.363
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "GROVE-GUARDIAN",
-      "games": 80,
-      "winRate": 0.263,
-      "ci": [
-        0.179,
-        0.368
+        0.15,
+        0.365
       ],
       "flag": "UNDER"
     },
     {
       "type": "FETCHLING",
-      "games": 42,
-      "winRate": 0.262,
+      "games": 34,
+      "winRate": 0.235,
       "ci": [
-        0.153,
-        0.411
+        0.124,
+        0.4
       ],
       "flag": "UNDER"
     },
     {
-      "type": "PRISMARK",
-      "games": 46,
-      "winRate": 0.261,
+      "type": "STONE-SCALES",
+      "games": 30,
+      "winRate": 0.233,
       "ci": [
-        0.156,
-        0.403
+        0.118,
+        0.409
       ],
       "flag": "UNDER"
     },
     {
-      "type": "RESONANCE",
-      "games": 66,
-      "winRate": 0.258,
-      "ci": [
-        0.167,
-        0.374
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "TULIP",
-      "games": 32,
-      "winRate": 0.25,
-      "ci": [
-        0.133,
-        0.421
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "RIFTALIGNER",
-      "games": 74,
-      "winRate": 0.243,
-      "ci": [
-        0.16,
-        0.352
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "BOG-WRAITH",
-      "games": 96,
-      "winRate": 0.229,
-      "ci": [
-        0.156,
-        0.323
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "GLOWROOT",
+      "type": "PENDANT",
       "games": 40,
       "winRate": 0.225,
       "ci": [
@@ -1127,57 +517,7 @@
       "flag": "UNDER"
     },
     {
-      "type": "DIRGE",
-      "games": 54,
-      "winRate": 0.222,
-      "ci": [
-        0.132,
-        0.349
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "FUNGALSPORE",
-      "games": 32,
-      "winRate": 0.219,
-      "ci": [
-        0.11,
-        0.388
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "RIFT-BORN",
-      "games": 52,
-      "winRate": 0.212,
-      "ci": [
-        0.122,
-        0.34
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "SPIRE-WASP",
-      "games": 40,
-      "winRate": 0.2,
-      "ci": [
-        0.105,
-        0.348
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "OBSERVER-EYE",
-      "games": 50,
-      "winRate": 0.18,
-      "ci": [
-        0.098,
-        0.308
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "LEAFCUTTER",
+      "type": "LARVA-SOUL",
       "games": 34,
       "winRate": 0.176,
       "ci": [
@@ -1187,414 +527,174 @@
       "flag": "UNDER"
     },
     {
-      "type": "MIRROR-DRONE",
-      "games": 64,
-      "winRate": 0.172,
-      "ci": [
-        0.099,
-        0.282
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "GLAZEHORN",
-      "games": 70,
-      "winRate": 0.171,
-      "ci": [
-        0.101,
-        0.276
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "MISTFALL",
-      "games": 72,
-      "winRate": 0.167,
-      "ci": [
-        0.098,
-        0.269
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "MIRROR-PACT",
-      "games": 44,
-      "winRate": 0.159,
-      "ci": [
-        0.079,
-        0.294
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "FORESIGHT",
-      "games": 44,
-      "winRate": 0.159,
-      "ci": [
-        0.079,
-        0.294
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "HOLLOW",
-      "games": 44,
-      "winRate": 0.159,
-      "ci": [
-        0.079,
-        0.294
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "WRAITH",
-      "games": 44,
-      "winRate": 0.159,
-      "ci": [
-        0.079,
-        0.294
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "RIFT-SPRITE",
-      "games": 44,
-      "winRate": 0.159,
-      "ci": [
-        0.079,
-        0.294
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "RIFT-WALKER",
-      "games": 44,
-      "winRate": 0.159,
-      "ci": [
-        0.079,
-        0.294
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "SUCCUBUS",
-      "games": 60,
-      "winRate": 0.15,
-      "ci": [
-        0.081,
-        0.261
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "MAELSTONIUM",
-      "games": 64,
-      "winRate": 0.141,
-      "ci": [
-        0.076,
-        0.246
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "HEMLOCK",
-      "games": 52,
-      "winRate": 0.135,
-      "ci": [
-        0.067,
-        0.253
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "RIFTFORGER",
-      "games": 52,
-      "winRate": 0.135,
-      "ci": [
-        0.067,
-        0.253
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "HYENA",
-      "games": 52,
-      "winRate": 0.135,
-      "ci": [
-        0.067,
-        0.253
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "LILYPAD",
-      "games": 52,
-      "winRate": 0.135,
-      "ci": [
-        0.067,
-        0.253
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "TUMBLE-ROOT",
-      "games": 104,
-      "winRate": 0.135,
-      "ci": [
-        0.082,
-        0.213
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "BELL",
-      "games": 52,
-      "winRate": 0.135,
-      "ci": [
-        0.067,
-        0.253
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "QUARTZ-TICK",
-      "games": 52,
-      "winRate": 0.135,
-      "ci": [
-        0.067,
-        0.253
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "WHISP",
-      "games": 52,
-      "winRate": 0.135,
-      "ci": [
-        0.067,
-        0.253
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "NIGHTSHADE",
-      "games": 52,
-      "winRate": 0.135,
-      "ci": [
-        0.067,
-        0.253
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "RIFT-WALKERS",
-      "games": 60,
-      "winRate": 0.133,
-      "ci": [
-        0.069,
-        0.242
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "MUDLURKER",
-      "games": 58,
-      "winRate": 0.121,
-      "ci": [
-        0.06,
-        0.229
-      ],
-      "flag": "UNDER"
-    },
-    {
       "type": "SHIMMER",
       "games": 30,
-      "winRate": 0.067,
+      "winRate": 0.133,
       "ci": [
-        0.018,
-        0.213
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "LARVA-SOUL",
-      "games": 34,
-      "winRate": 0.059,
-      "ci": [
-        0.016,
-        0.191
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "PENDANT",
-      "games": 30,
-      "winRate": 0.033,
-      "ci": [
-        0.006,
-        0.167
+        0.053,
+        0.297
       ],
       "flag": "UNDER"
     },
     {
       "type": "SCOUTSENTINEL",
       "games": 44,
-      "winRate": 0,
+      "winRate": 0.091,
       "ci": [
-        0,
-        0.08
+        0.036,
+        0.212
       ],
       "flag": "UNDER"
     }
   ],
   "topCards": [
     {
-      "type": "BOOK",
-      "games": 76,
-      "winRate": 0.842,
-      "ci": [
-        0.744,
-        0.907
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "GHOST",
-      "games": 34,
-      "winRate": 0.794,
+      "type": "PRISMATICFISH",
+      "games": 64,
+      "winRate": 0.75,
       "ci": [
         0.632,
-        0.897
+        0.84
       ],
       "flag": "OVER"
     },
     {
-      "type": "HOWL",
-      "games": 314,
-      "winRate": 0.787,
+      "type": "THORN",
+      "games": 32,
+      "winRate": 0.688,
       "ci": [
-        0.738,
-        0.828
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "ELDERBERRY",
-      "games": 236,
-      "winRate": 0.78,
-      "ci": [
-        0.723,
-        0.828
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "VINE-CRAWLER",
-      "games": 198,
-      "winRate": 0.778,
-      "ci": [
-        0.715,
-        0.83
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "BLOOM-MYSTIC",
-      "games": 44,
-      "winRate": 0.773,
-      "ci": [
-        0.63,
-        0.872
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "BANNER-BEARER",
-      "games": 44,
-      "winRate": 0.773,
-      "ci": [
-        0.63,
-        0.872
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "IRONHIDE",
-      "games": 44,
-      "winRate": 0.773,
-      "ci": [
-        0.63,
-        0.872
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "REVERBERATION",
-      "games": 44,
-      "winRate": 0.773,
-      "ci": [
-        0.63,
-        0.872
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "STONE-MASK",
-      "games": 44,
-      "winRate": 0.773,
-      "ci": [
-        0.63,
-        0.872
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "GLIDER",
-      "games": 44,
-      "winRate": 0.773,
-      "ci": [
-        0.63,
-        0.872
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "KEY",
-      "games": 44,
-      "winRate": 0.773,
-      "ci": [
-        0.63,
-        0.872
-      ],
-      "flag": "OVER"
-    },
-    {
-      "type": "AJAR",
-      "games": 226,
-      "winRate": 0.77,
-      "ci": [
-        0.711,
+        0.514,
         0.82
       ],
       "flag": "OVER"
     },
     {
-      "type": "SERAPH-BEAST",
-      "games": 234,
-      "winRate": 0.765,
+      "type": "EMBERBADGER",
+      "games": 72,
+      "winRate": 0.681,
       "ci": [
-        0.707,
-        0.815
+        0.566,
+        0.777
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "KEY",
+      "games": 112,
+      "winRate": 0.679,
+      "ci": [
+        0.587,
+        0.758
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "PARAGONUNIT",
+      "games": 116,
+      "winRate": 0.655,
+      "ci": [
+        0.565,
+        0.735
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "POLLEN",
+      "games": 80,
+      "winRate": 0.65,
+      "ci": [
+        0.541,
+        0.745
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "GLIDER",
+      "games": 160,
+      "winRate": 0.644,
+      "ci": [
+        0.567,
+        0.714
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "ELDERBERRY",
+      "games": 154,
+      "winRate": 0.643,
+      "ci": [
+        0.565,
+        0.714
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "VINE-CRAWLER",
+      "games": 154,
+      "winRate": 0.643,
+      "ci": [
+        0.565,
+        0.714
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "TREMBLE-CORE",
+      "games": 174,
+      "winRate": 0.632,
+      "ci": [
+        0.558,
+        0.7
       ],
       "flag": "OVER"
     },
     {
       "type": "SLIVER",
-      "games": 246,
-      "winRate": 0.764,
+      "games": 174,
+      "winRate": 0.632,
       "ci": [
-        0.707,
-        0.813
+        0.558,
+        0.7
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "IRON-BARK",
+      "games": 38,
+      "winRate": 0.632,
+      "ci": [
+        0.473,
+        0.766
+      ],
+      "flag": null
+    },
+    {
+      "type": "HOWL",
+      "games": 498,
+      "winRate": 0.629,
+      "ci": [
+        0.585,
+        0.67
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "WARG",
+      "games": 78,
+      "winRate": 0.628,
+      "ci": [
+        0.517,
+        0.727
+      ],
+      "flag": "OVER"
+    },
+    {
+      "type": "ANIMATE_SHRUBBERY",
+      "games": 152,
+      "winRate": 0.625,
+      "ci": [
+        0.546,
+        0.698
       ],
       "flag": "OVER"
     }
@@ -1603,150 +703,150 @@
     {
       "type": "SCOUTSENTINEL",
       "games": 44,
-      "winRate": 0,
+      "winRate": 0.091,
       "ci": [
-        0,
-        0.08
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "PENDANT",
-      "games": 30,
-      "winRate": 0.033,
-      "ci": [
-        0.006,
-        0.167
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "LARVA-SOUL",
-      "games": 34,
-      "winRate": 0.059,
-      "ci": [
-        0.016,
-        0.191
+        0.036,
+        0.212
       ],
       "flag": "UNDER"
     },
     {
       "type": "SHIMMER",
       "games": 30,
-      "winRate": 0.067,
+      "winRate": 0.133,
       "ci": [
-        0.018,
-        0.213
+        0.053,
+        0.297
+      ],
+      "flag": "UNDER"
+    },
+    {
+      "type": "LARVA-SOUL",
+      "games": 34,
+      "winRate": 0.176,
+      "ci": [
+        0.083,
+        0.335
+      ],
+      "flag": "UNDER"
+    },
+    {
+      "type": "PENDANT",
+      "games": 40,
+      "winRate": 0.225,
+      "ci": [
+        0.123,
+        0.375
+      ],
+      "flag": "UNDER"
+    },
+    {
+      "type": "STONE-SCALES",
+      "games": 30,
+      "winRate": 0.233,
+      "ci": [
+        0.118,
+        0.409
+      ],
+      "flag": "UNDER"
+    },
+    {
+      "type": "FETCHLING",
+      "games": 34,
+      "winRate": 0.235,
+      "ci": [
+        0.124,
+        0.4
       ],
       "flag": "UNDER"
     },
     {
       "type": "MUDLURKER",
       "games": 58,
-      "winRate": 0.121,
+      "winRate": 0.241,
       "ci": [
-        0.06,
-        0.229
+        0.15,
+        0.365
       ],
       "flag": "UNDER"
     },
     {
-      "type": "RIFT-WALKERS",
-      "games": 60,
-      "winRate": 0.133,
+      "type": "RIFT-READER",
+      "games": 44,
+      "winRate": 0.273,
       "ci": [
-        0.069,
-        0.242
+        0.163,
+        0.418
       ],
       "flag": "UNDER"
     },
     {
-      "type": "NIGHTSHADE",
-      "games": 52,
-      "winRate": 0.135,
+      "type": "HOUNDFLOWER",
+      "games": 32,
+      "winRate": 0.281,
       "ci": [
-        0.067,
-        0.253
+        0.156,
+        0.454
       ],
       "flag": "UNDER"
     },
     {
-      "type": "WHISP",
-      "games": 52,
-      "winRate": 0.135,
+      "type": "HEARTWOOD",
+      "games": 34,
+      "winRate": 0.294,
       "ci": [
-        0.067,
-        0.253
+        0.168,
+        0.462
       ],
       "flag": "UNDER"
     },
     {
-      "type": "QUARTZ-TICK",
-      "games": 52,
-      "winRate": 0.135,
+      "type": "RIFT-WEED",
+      "games": 32,
+      "winRate": 0.313,
       "ci": [
-        0.067,
-        0.253
+        0.18,
+        0.486
       ],
       "flag": "UNDER"
     },
     {
-      "type": "BELL",
-      "games": 52,
-      "winRate": 0.135,
+      "type": "CRAG",
+      "games": 32,
+      "winRate": 0.313,
       "ci": [
-        0.067,
-        0.253
+        0.18,
+        0.486
       ],
       "flag": "UNDER"
     },
     {
-      "type": "TUMBLE-ROOT",
-      "games": 104,
-      "winRate": 0.135,
+      "type": "RIVERWISP",
+      "games": 34,
+      "winRate": 0.324,
       "ci": [
-        0.082,
-        0.213
+        0.191,
+        0.492
       ],
       "flag": "UNDER"
     },
     {
-      "type": "LILYPAD",
-      "games": 52,
-      "winRate": 0.135,
+      "type": "HARVESTMITE",
+      "games": 30,
+      "winRate": 0.333,
       "ci": [
-        0.067,
-        0.253
+        0.192,
+        0.512
       ],
-      "flag": "UNDER"
+      "flag": null
     },
     {
-      "type": "HYENA",
-      "games": 52,
-      "winRate": 0.135,
+      "type": "RIFT-BORN",
+      "games": 90,
+      "winRate": 0.333,
       "ci": [
-        0.067,
-        0.253
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "RIFTFORGER",
-      "games": 52,
-      "winRate": 0.135,
-      "ci": [
-        0.067,
-        0.253
-      ],
-      "flag": "UNDER"
-    },
-    {
-      "type": "HEMLOCK",
-      "games": 52,
-      "winRate": 0.135,
-      "ci": [
-        0.067,
-        0.253
+        0.245,
+        0.436
       ],
       "flag": "UNDER"
     }
@@ -1754,146 +854,147 @@
   "keywords": [
     {
       "kw": "WING",
-      "games": 352,
-      "winRate": 0.656
-    },
-    {
-      "kw": "TRAMPLE",
-      "games": 246,
-      "winRate": 0.63
-    },
-    {
-      "kw": "DOUBLESTRIKE",
-      "games": 2620,
-      "winRate": 0.592
+      "games": 222,
+      "winRate": 0.604
     },
     {
       "kw": "RALLY",
-      "games": 5076,
-      "winRate": 0.583
+      "games": 5258,
+      "winRate": 0.559
+    },
+    {
+      "kw": "DOUBLESTRIKE",
+      "games": 2876,
+      "winRate": 0.547
     },
     {
       "kw": "WARD",
-      "games": 1416,
-      "winRate": 0.553
-    },
-    {
-      "kw": "FORTIFIED",
-      "games": 3790,
+      "games": 1134,
       "winRate": 0.536
     },
     {
-      "kw": "SCOUT",
-      "games": 6280,
-      "winRate": 0.525
-    },
-    {
-      "kw": "SIEGE",
-      "games": 1222,
-      "winRate": 0.514
+      "kw": "TRAMPLE",
+      "games": 616,
+      "winRate": 0.532
     },
     {
       "kw": "MENACE",
-      "games": 206,
-      "winRate": 0.51
+      "games": 110,
+      "winRate": 0.527
     },
     {
-      "kw": "ATTUNED",
-      "games": 4188,
-      "winRate": 0.484
+      "kw": "SIEGE",
+      "games": 1348,
+      "winRate": 0.521
     },
     {
-      "kw": "SUSTAIN",
-      "games": 1844,
-      "winRate": 0.457
+      "kw": "FORTIFIED",
+      "games": 3542,
+      "winRate": 0.516
+    },
+    {
+      "kw": "SCOUT",
+      "games": 5220,
+      "winRate": 0.511
     },
     {
       "kw": "(vanilla)",
-      "games": 600,
-      "winRate": 0.457
+      "games": 570,
+      "winRate": 0.509
+    },
+    {
+      "kw": "ATTUNED",
+      "games": 4244,
+      "winRate": 0.5
+    },
+    {
+      "kw": "SUSTAIN",
+      "games": 2172,
+      "winRate": 0.483
     },
     {
       "kw": "UNTOUCHABLE",
-      "games": 954,
-      "winRate": 0.442
+      "games": 872,
+      "winRate": 0.471
     },
     {
       "kw": "FLANK",
-      "games": 1340,
-      "winRate": 0.43
+      "games": 1370,
+      "winRate": 0.47
     }
   ],
   "topDecks": [
     {
-      "winRate": 1,
-      "comp": {
-        "SERAPH-BEAST": 1,
-        "THEWATCHER": 1,
-        "LOOM-SISTINE": 1,
-        "ELDERBERRY": 1,
-        "DIFFRACTION": 1,
-        "AJAR": 1,
-        "OBSIDIAN-HELM": 2,
-        "VINE-CRAWLER": 1,
-        "TWIN-FLARE": 1,
-        "HOWL": 1,
-        "RIFTWISP": 1,
-        "BOOK": 1,
-        "STONEWING": 1,
-        "GHOST": 1,
-        "FLESHLESS_KNIGHT": 1,
-        "THYME": 1,
-        "GEODE": 1,
-        "RIFTSTALKER": 1,
-        "WARP-STONE": 1
-      }
-    },
-    {
-      "winRate": 0.929,
+      "winRate": 0.9,
       "comp": {
         "SERAPH-BEAST": 1,
         "PRISMATICFISH": 1,
-        "THEWATCHER": 2,
+        "THEWATCHER": 1,
+        "TREMBLE-CORE": 1,
         "LOOM-SISTINE": 1,
         "ELDERBERRY": 1,
         "DIFFRACTION": 1,
         "AJAR": 1,
+        "SLIVER": 1,
         "OBSIDIAN-HELM": 2,
-        "CLOCKWORK-BEETLE": 1,
+        "ANIMATE_SHRUBBERY": 1,
+        "TIN-SCOUT": 1,
         "VINE-CRAWLER": 1,
         "TWIN-FLARE": 1,
         "MOONHOWLER": 1,
+        "FETTERS": 1,
+        "BREACH": 1,
         "HOWL": 1,
-        "RIFTWISP": 1,
-        "STONEWING": 1,
-        "GHOST": 1,
-        "SAPLINGWARD": 1,
-        "TETHER": 1
+        "VOLTSPARK": 1
       }
     },
     {
-      "winRate": 0.917,
+      "winRate": 0.85,
+      "comp": {
+        "BOUNDARY-WARD": 1,
+        "THORNSTRIKE": 1,
+        "UMBRA-WISP": 1,
+        "DISTORTION": 1,
+        "GALE-SEED": 1,
+        "EMBERCONSTRUCT": 1,
+        "CRAGCLAW": 1,
+        "DARKEMBER": 1,
+        "RIFT-SURGE": 1,
+        "OBSIDIAN_SHARD": 1,
+        "TEAR": 1,
+        "BOGBLOOM": 1,
+        "RIFFALCON": 1,
+        "TANGLED-HUSK": 1,
+        "STONE": 1,
+        "FLOE": 1,
+        "PULSAR-CRYSTAL": 1,
+        "NYMPHLEAF": 1,
+        "MENDER": 1,
+        "INERT-ARBOR": 1
+      }
+    },
+    {
+      "winRate": 0.833,
       "comp": {
         "PARAGONUNIT": 1,
-        "VEILWALKER": 1,
-        "HARBINGER": 1,
-        "AEGIS": 1,
-        "GILDELAMP": 1,
-        "OBSIDIANKNIGHT": 1,
-        "SPLINTER-SHIELD": 1,
-        "BRAMBLE-BOW": 1,
-        "BLOODMOTH": 1,
-        "TELEPORT": 1,
-        "LENS-OF-TRUTH": 1,
-        "SILVERZYTE": 1,
-        "SWIFT-VINE": 1,
-        "FOCUSED": 1,
-        "DIMENSION-FEED": 1,
-        "IRON-WILL": 1,
-        "BRAMBLE-SHIELD": 1,
-        "FARSIGHT-LENS": 1,
-        "SHADOWFORM": 1,
-        "BARKHIDE": 1
+        "HOWL": 2,
+        "BLOOM-MYSTIC": 1,
+        "TWIN-BLADE": 1,
+        "BANNER-BEARER": 1,
+        "DUSK-FLASK": 1,
+        "SHARD": 1,
+        "REVERBERATION": 1,
+        "SKIRMISHER": 1,
+        "STONE-MASK": 1,
+        "BLINK": 1,
+        "NYMPHLEAF": 1,
+        "GLIDER": 1,
+        "FROSTWISP": 1,
+        "KEY": 1,
+        "WARG": 1,
+        "GEODE": 1,
+        "RIFTSTALKER": 1,
+        "WARP-STONE": 1
       }
     }
   ]

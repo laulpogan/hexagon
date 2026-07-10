@@ -26,7 +26,7 @@ rounds that mine MTG-analog mechanics into an evergreen Limen base set.
   policy (evolution strategies over feature weights — retrainable per rules rev).
 
 ## Iteration counter (bump each design round; cap 3 per session)
-Round: 2 COMPLETE (2026-07-10)
+Round: 3 COMPLETE (2026-07-10) — session cap reached
 
 ## Round 1 verdicts (arena: 967-card pool, 4 PSRO rounds, ~1150 games)
 - All success criteria 1-5 met (arena matrix, retrain-without-arena-edits,
@@ -71,3 +71,18 @@ Round: 2 COMPLETE (2026-07-10)
   TRAMPLE hot on thin sample (63.0% @ 246g — needs exposure), UNTOUCHABLE
   sagging (44.2%), regenerate pool fully under retuned costs, archetype
   clustering + Nash-averaging, human playtest calibration vs bot meta.
+
+## Round 3 verdicts — Ascension (stacking)
+- Mechanic: place onto your own non-capital tile → tower (cap 3 high, +1
+  influence per buried tier, only the top face's keywords active). Captures
+  PEEL one tier (attacker card bounces) — sieges are wars of turns now.
+- Search agent exploits towers hard (20-0 vs greedy) — deep tactical
+  texture; greedy/policy undervalue them (round-4: tower features for ES).
+- Post-ascension paired sweep re-locked INFLUENCE_TIEBREAK_BONUS_P1=0
+  (152/146). Meta band compressed to 47.0–55.9% — healthiest yet, no
+  degenerate axis. Captures 3.8→~3 (towers absorb aggression — watch).
+- Verified in shipped UI: tier-3 tower built, peel path, dormant-keyword
+  rule (buried RALLY stops buffing), capital stacking blocked. 42 tests.
+- Round 4 backlog: tower-aware policy features, FLANK/UNTOUCHABLE cold,
+  tower-themed keywords (e.g. 'SUMMIT: active while tier-2+'), rite that
+  topples a tier, art for stack sides, human playtest of tall-vs-wide.

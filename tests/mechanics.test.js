@@ -88,6 +88,70 @@ test('MENACE blocks capture with fewer than two adjacent attackers', () => {
   assert.equal(g.isCapturable(5, 0, 2), true, 'two attackers: menace broken');
 });
 
+console.log('ascension (stacking)');
+
+test('ascend: stack on own tile, +1 influence per tier, cap at TIER_MAX', () => {
+  const g = playState('ascend');
+  g.currentPlayer = 1;
+  g.board[4][0].tile = g._makeTile('THICKET', 1);      // base 2
+  g.hands[1] = [g._makeTile('OUTCROP', 1)];
+  const res = g.placeFromHand(1, 0, 4, 0);
+  assert.equal(res.ascended, true);
+  assert.equal(res.height, 2);
+  assert.equal(g.board[4][0].tile.type, 'OUTCROP', 'new top face');
+  assert.equal(g.relativeInfluence(4, 0), 2 + CONFIG.TIER_BONUS, 'top influence + tier bonus');
+  // third tier ok, fourth blocked
+  g.currentPlayer = 1; g.placementsLeft = 1;
+  g.hands[1] = [g._makeTile('ALTAR', 1)];
+  assert.equal(g.placeFromHand(1, 0, 4, 0).ascended, true);
+  g.currentPlayer = 1; g.placementsLeft = 1;
+  g.hands[1] = [g._makeTile('THICKET', 1)];
+  assert.equal(g.canPlace(1, g.hands[1][0], 4, 0), false, 'TIER_MAX reached');
+});
+
+test('buried keywords are dormant (only the top face acts)', () => {
+  const g = playState('dormant');
+  g.currentPlayer = 1;
+  g.board[4][1].tile = g._makeTile('ALTAR', 1);        // RALLY on top
+  const [nc, nr] = neighborCoords(4, 1).find(([c, r]) => !g.board[c][r].rift);
+  g.board[nc][nr].tile = g._makeTile('THICKET', 1);
+  const withRally = g.effectiveBase(nc, nr);
+  g.hands[1] = [g._makeTile('OUTCROP', 1)];            // bury the ALTAR
+  g.placeFromHand(1, 0, 4, 1);
+  assert.equal(g.effectiveBase(nc, nr), withRally - CONFIG.RALLY_BONUS, 'buried RALLY stops buffing');
+});
+
+test('peel: capturing a stack removes one tier, attacker card bounces', () => {
+  const g = playState('peel');
+  // P1 tower: THICKET with SKIRMISHER buried
+  g.board[3][0].tile = g._makeTile('SKIRMISHER', 1);
+  g.currentPlayer = 1; g.placementsLeft = 1;
+  g.hands[1] = [g._makeTile('THICKET', 1)];
+  g.placeFromHand(1, 0, 3, 0);
+  // crush it: enemy COLOSSUS adjacent → rel = max(0, 2+1−4) = 0 → capturable
+  const [nc, nr] = neighborCoords(3, 0).find(([c, r]) => !g.board[c][r].rift);
+  g.board[nc][nr].tile = g._makeTile('COLOSSUS', 2);
+  assert.equal(g.isCapturable(3, 0, 2), true);
+  g.currentPlayer = 2; g.placementsLeft = 1;
+  g.hands[2] = [g._makeTile('OUTCROP', 2)];
+  const res = g.placeFromHand(2, 0, 3, 0);
+  assert.equal(res.peeled, true);
+  assert.equal(res.removed.type, 'THICKET', 'top tier removed');
+  assert.equal(g.board[3][0].tile.type, 'SKIRMISHER', 'buried tile resurfaces, still P1');
+  assert.equal(g.board[3][0].tile.owner, 1);
+  assert.equal(g.hands[2].length, 1, 'attacker card bounced');
+});
+
+test('capitals cannot be stacked on', () => {
+  const { } = {};
+  const g = playState('capstack');
+  g.currentPlayer = 1;
+  const cap = g._makeCapital(1);
+  g.board[4][0].tile = cap;
+  g.hands[1] = [g._makeTile('THICKET', 1)];
+  assert.equal(g.canPlace(1, g.hands[1][0], 4, 0), false);
+});
+
 console.log('rites');
 
 test('SUNDER destroys a weak enemy tile anywhere; capitals immune', () => {
