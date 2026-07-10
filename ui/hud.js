@@ -1,6 +1,6 @@
 // HTML overlay UI: hand strip, turn banner, log, win screen, menu.
 // Talks to main.js through callbacks; renders from game state.
-import { KEYWORDS } from '../data/tiles.js';
+import { KEYWORDS, RITE_INFO } from '../data/tiles.js';
 import { CONFIG } from '../core/config.js';
 
 const RARITY_COLOR = { common: '#8b9bb4', uncommon: '#4fa3ff', rare: '#f2c14e', capital: '#f2c14e' };
@@ -88,13 +88,15 @@ export class Hud {
       card.style.borderColor = RARITY_COLOR[tile.rarity];
       const kws = tile.keywords.map(k =>
         `<span class="kw" title="${(KEYWORDS[k]?.desc || '').replace(/"/g, '&quot;')}">${KEYWORDS[k]?.name || k}</span>`).join('');
+      const isRite = tile.kind === 'rite';
       card.innerHTML = `
         <div class="card-art" style="background-image:url('./assets/tiles/${tile.type}.jpg')"></div>
-        <div class="card-name">${tile.type}</div>
-        <div class="card-inf">${tile.influence}</div>
-        <div class="card-kws">${kws}</div>
-        <div class="card-rarity" style="color:${RARITY_COLOR[tile.rarity]}">${tile.rarity}</div>
+        <div class="card-name">${tile.type.replace(/_/g, ' ')}</div>
+        <div class="card-inf">${isRite ? '✦' : tile.influence}</div>
+        <div class="card-kws">${isRite ? `<span class="kw" title="${(RITE_INFO[tile.type]?.desc || '').replace(/"/g, '&quot;')}">Rite</span>` : kws}</div>
+        <div class="card-rarity" style="color:${RARITY_COLOR[tile.rarity]}">${isRite ? 'rite · ' : ''}${tile.rarity}</div>
       `;
+      if (isRite) card.title = RITE_INFO[tile.type]?.desc || 'A rite — cast it as your turn\'s action.';
       card.onclick = () => this.onSelectTile && this.onSelectTile(i === this.selectedIndex ? null : i);
       card.oncontextmenu = (e) => { e.preventDefault(); this.onDiscard && this.onDiscard(i); };
       strip.appendChild(card);

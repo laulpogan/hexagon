@@ -63,6 +63,20 @@ export function tileTemplate(type) {
   return byType.get(type) || null;
 }
 
+// Extend the pool at runtime (node meta sims load data/cards_gen.json here;
+// the shipped browser game stays on the curated base pool).
+export function registerCards(cards) {
+  let added = 0;
+  for (const c of cards) {
+    if (byType.has(c.type)) continue;
+    const entry = { count: 0, keywords: [], ...c };
+    TILE_POOL.push(entry);
+    byType.set(entry.type, entry);
+    added++;
+  }
+  return added;
+}
+
 export function defaultDeckComposition() {
   const comp = {};
   for (const t of TILE_POOL) if (t.count > 0) comp[t.type] = t.count;

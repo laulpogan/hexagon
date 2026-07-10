@@ -63,7 +63,11 @@ function currentHighlights() {
     }
   } else if (g.phase === 'play' && hud.selectedIndex !== null) {
     const tile = g.hands[g.currentPlayer][hud.selectedIndex];
-    if (tile) {
+    if (tile && tile.kind === 'rite') {
+      for (const t of g.legalRiteTargets(g.currentPlayer, hud.selectedIndex)) {
+        if (t.col !== null) out.push({ col: t.col, row: t.row, kind: 'capture' });
+      }
+    } else if (tile) {
       for (let c = 0; c < g.board.length; c++) {
         for (let r = 0; r < g.board[0].length; r++) {
           if (g.canPlace(g.currentPlayer, tile, c, r)) {
@@ -106,13 +110,18 @@ function handleClick({ col, row }) {
   }
   const before = g.currentPlayer;
   const handIndex = hud.selectedIndex;
-  const res = g.placeFromHand(g.currentPlayer, handIndex, col, row);
+  const selected = g.hands[g.currentPlayer][handIndex];
+  const isRite = selected?.kind === 'rite';
+  const res = isRite
+    ? g.castRite(g.currentPlayer, handIndex, col, row)
+    : g.placeFromHand(g.currentPlayer, handIndex, col, row);
   if (!res.ok) {
     sound.error();
-    hud.hint(`Can't place there: ${res.reason}.`);
+    hud.hint(isRite ? `Can't cast there: ${res.reason}.` : `Can't place there: ${res.reason}.`);
     return;
   }
-  if (mode === 'mp') net.sendAction({ kind: 'place', handIndex, col, row });
+  if (mode === 'mp') net.sendAction(isRite ? { kind: 'rite', handIndex, col, row } : { kind: 'place', handIndex, col, row });
+  if (isRite) sound.rift();
   hud.selectedIndex = null;
   hud.hint('');
   if (res.wardBlocked) sound.ward();
@@ -135,6 +144,7 @@ function applyRemoteAction(action) {
   let res;
   if (action.kind === 'capital') res = game.placeCapital(p, action.col, action.row);
   else if (action.kind === 'place') res = game.placeFromHand(p, action.handIndex, action.col, action.row);
+  else if (action.kind === 'rite') res = game.castRite(p, action.handIndex, action.col, action.row);
   else if (action.kind === 'discard') res = game.discardRedraw(p, action.handIndex);
   else if (action.kind === 'pass') res = game.pass(p);
   if (!res?.ok) {

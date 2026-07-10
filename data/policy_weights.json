@@ -1,0 +1,30 @@
+{
+  "features": [
+    "bias",
+    "ownRelAfter",
+    "selfZero",
+    "captureValue",
+    "capitalCapture",
+    "pressureKills",
+    "pressureDrop",
+    "capitalMarch",
+    "riftAttunement",
+    "homeDefense",
+    "wardPop"
+  ],
+  "weights": [
+    0.022439337937043266,
+    1.4922498824699797,
+    -8.185610657835639,
+    7.864793416795325,
+    999.7043891287793,
+    9.081515658709286,
+    0.7678296091234793,
+    0.5232893013105391,
+    0.7994952272542347,
+    3.897402955651821,
+    -11.797811200775799
+  ],
+  "fitness": 0.625,
+  "trainedAt": "2026-07-10T19:27:53.855Z"
+}
