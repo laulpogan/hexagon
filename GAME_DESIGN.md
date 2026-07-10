@@ -58,6 +58,9 @@ Costs were the brake on strong tiles. Replacement, simplest first:
 
 - **Render:** Three.js. Hex prism board, GLB model per tile type sitting on the prism,
   low-poly PS1-adjacent look, two-palette reality split, emissive glitch shader on rift seam.
+  (Babylon.js considered — 2026 consensus favors it for physics-heavy games, but Limen is
+  turn-based/no-physics; Three.js wins on bundle (~168KB vs ~1.4MB), LLM training corpus,
+  and the proven capybara-workflow precedent [S, cinevva/logrocket, 55].)
 - **Structure:** ES modules, no build step, static-hostable:
   `core/` (rules, state — renderer-agnostic, headless-runnable), `render/` (Three.js),
   `net/` (Supabase, ported as-is), `ui/` (hand, deckbuilder, HUD), `data/tiles.js`.
@@ -66,22 +69,39 @@ Costs were the brake on strong tiles. Replacement, simplest first:
 
 ## Asset pipeline
 
-- **Concept art per tile:** gpt-image (OPENAI_API_KEY, vault) / slancha-studio / Vertex
-  Imagen (ADC). One style-anchor prompt reused across all tiles for consistency.
-- **3D models:** open-source image-to-3D, self-hosted on the Dell (RTX PRO 6000, 96GB).
-  Candidates: Hunyuan3D-2.x, TRELLIS, TripoSR — run `sota-check` at asset-phase start
-  before committing. Output GLB → decimate → Three.js.
-- **Music:** Suno free tier, manual gen (4 tracks: theme, build, rift tension, win sting).
-- **SFX:** ElevenLabs (key in vault): place, capture, rift pulse, win.
+- **Concept art per tile:** gpt-image-2 (OPENAI_API_KEY, vault) — top of blind-vote image
+  arena as of 2026-07 [S, llm-stats.com, 60]. One style-anchor prompt reused across all
+  tiles for consistency. If cross-tile consistency drifts, switch to FLUX Kontext
+  (open-weights, edit-consistency strength, self-hostable on Dell) [S, fluxnote/siliconflow, 55].
+  slancha-studio / Vertex Imagen = fallbacks.
+- **3D models (sota-checked + last30days 2026-07-10):** **TRELLIS.2-4B** primary —
+  `microsoft/TRELLIS.2` GitHub + `microsoft/TRELLIS.2-4B` HF, MIT, released 2025-12-16,
+  8.6K stars [P, GitHub/HF, 95]. Wins ~68% vs Hunyuan3D in 2026 comparisons; fastest
+  (1–3 min/model), full PBR, handles hollow/thin/complex topology, GLB out [S, 3daistudio +
+  trellis2.app, 55]. Community: ComfyUI one-click installs + rigging pipelines already
+  circulating (r/SideProject, r/TopologyAI). Self-host on Dell (RTX PRO 6000, 96GB).
+  **Hunyuan3D-2.1** fallback for multi-view/text-to-3D and max-detail hero pieces
+  (40K–1.5M face control) — note: Hunyuan3D 3.x is hosted-API only, NOT open weights;
+  the open line stops at 2.x [P, hunyuan3d.cc + Replicate, 80].
+- **Music:** Suno free tier, MANUAL gen — confirmed no public API as of 2026-07;
+  partner-program intake only opened 2026-07-01 [P, MBW/DMN, 85]. 4 tracks: theme,
+  build, rift tension, win sting. Third-party Suno APIs exist but legally dicey — skip.
+- **SFX:** ElevenLabs SFX v2 (key in vault): 0.5–30s clips, seamless looping, 48kHz
+  [P, elevenlabs.io docs, 90]. Place, capture, rift pulse, win. Commercial royalty-free
+  requires PAID plan — verify plan tier before ship.
 - **Video:** slancha-studio for trailer at ship time.
 
 ## Model routing (ease Claude strain)
 
 - **Claude (this):** architecture, game rules, Three.js scene, multiplayer, taste calls.
-- **DeepSeek v4-flash (`llm deepseek`):** mechanical bulk — tile data tables, localization,
-  boilerplate expansion, doc drafts. Remember `"thinking":{"type":"disabled"}`.
-- **Gemini Flash-Lite (Vertex, `llm gemini`):** vision QA — judge rendered tile art/model
-  screenshots against style anchor in batch.
+- **DeepSeek V4 Flash (`llm deepseek`):** mechanical bulk — tile data tables, localization,
+  boilerplate expansion, doc drafts. Confirmed cheapest verified tier 2026-07: $0.14/M in
+  ($0.0028 cache hit), $0.28/M out [P, api-docs.deepseek.com, 90]. Remember
+  `"thinking":{"type":"disabled"}`.
+- **Gemini 2.5 Flash-Lite (Vertex, `llm gemini`):** vision QA — judge rendered tile art/model
+  screenshots against style anchor in batch. Still the cheap pick at $0.10/$0.40 per M;
+  Gemini 3.1 Flash-Lite exists but costs 2.5× ($0.25/$1.50) — not worth it for batch QA
+  [P, blog.google + ai.google.dev pricing, 85].
 - **slancha-delegate:** read-only research/synthesis tasks.
 
 ## Phase plan
