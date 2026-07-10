@@ -78,7 +78,14 @@ Costs were the brake on strong tiles. Replacement, simplest first:
   `core/` (rules, state — renderer-agnostic, headless-runnable), `render/` (Three.js),
   `net/` (Supabase, ported as-is), `ui/` (hand, deckbuilder, HUD), `data/tiles.js`.
   `core/` headless = balance simulator comes free.
-- **Multiplayer:** keep Supabase realtime; same sync model, new payload shape.
+- **Multiplayer:** Supabase realtime, rebuilt as an **action-log relay** (better than
+  the original's full-state sync): the core is deterministic given seed + decks, so
+  clients replay each other's actions from an append-only `actions` jsonb column on
+  `limen_rooms`. Ordered, durable, tiny payloads. Table has open anon RLS policies
+  (WARN by design: casual anonymous rooms, throwaway game state, no user data —
+  advisor lints acknowledged 2026-07-10). Hidden hands are soft-hidden (a devtools
+  user could derive the opponent's hand from the seed — accepted for v1, same class
+  of leak as the original's full-state sync).
   Project: `limen` (ref `kghzdnspdsxrheuckizp`, us-west-1, free tier, created 2026-07-10).
   URL `https://kghzdnspdsxrheuckizp.supabase.co`, publishable key
   `sb_publishable_TTNv39Gsg8o20dmCOj2lfQ_rttaEvPR` (client-safe by design).

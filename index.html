@@ -150,6 +150,28 @@
   .db-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
   .db-actions #dbSave { background: #2a5c3c; border-color: #3fae6a; }
 
+  /* Multiplayer modal */
+  #mpOverlay {
+    position: fixed; inset: 0; z-index: 97; display: flex;
+    justify-content: center; align-items: center; background: rgba(8,9,14,0.92);
+  }
+  #mpOverlay input {
+    padding: 11px 14px; border: 1px solid #3a4152; border-radius: 8px;
+    background: #10131b; color: #e8e8ee; font-size: 15px; width: 190px;
+    margin-right: 8px; text-transform: uppercase;
+  }
+  #mpOverlay button {
+    padding: 11px 20px; font-size: 14px; background: #1d222e; color: #e8e8ee;
+    border: 1px solid #3a4152; border-radius: 8px; cursor: pointer;
+  }
+  #mpOverlay button:hover { border-color: #6fe09a; }
+  #mpBadge {
+    position: absolute; bottom: 16px; left: 16px; font-size: 12px;
+    color: #9aa; background: rgba(14,16,22,0.7); border: 1px solid #2a2f3c;
+    border-radius: 8px; padding: 6px 10px;
+  }
+  #mpBadge b { color: #f2c14e; letter-spacing: 2px; }
+
   /* Help modal */
   #helpOverlay {
     position: fixed; inset: 0; z-index: 96; display: flex;
@@ -193,7 +215,7 @@
     <p>a hex-tile duel across the threshold</p>
     <button id="hotseatBtn">Hotseat · 2 players, 1 screen</button>
     <button id="botBtn">vs Bot · you are Verdant</button>
-    <button id="mpBtn" disabled>Multiplayer · coming soon</button>
+    <button id="mpBtn">Multiplayer · play a friend</button>
     <button id="deckBtn">Deck Builder</button>
     <button id="helpBtn">How to Play</button>
   </div>
@@ -215,6 +237,25 @@
 
   <div id="deckOverlay" class="hidden"></div>
 
+  <div id="mpOverlay" class="hidden">
+    <div class="win-box" style="text-align:center;">
+      <h2>Multiplayer</h2>
+      <p style="color:#9aa; font-size:13px;">Play a friend over the rift. Custom decks apply.</p>
+      <div style="margin: 14px 0;">
+        <input id="mpHostCode" placeholder="Room name (optional)" maxlength="8">
+        <button id="mpHostBtn">Host Game</button>
+      </div>
+      <hr style="border-color:#2a2f3c;">
+      <div style="margin: 14px 0;">
+        <input id="mpJoinCode" placeholder="Room code" maxlength="8">
+        <button id="mpJoinBtn">Join Game</button>
+      </div>
+      <div id="mpStatus" style="min-height:40px; font-size:14px; color:#ffcf7a;"></div>
+      <button id="mpCancelBtn" style="background:#2a2230;">Back</button>
+    </div>
+  </div>
+
+  <script src="./vendor/supabase.min.js"></script>
   <script type="module" src="./main.js"></script>
 </body>
 </html>
