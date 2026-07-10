@@ -26,7 +26,26 @@ rounds that mine MTG-analog mechanics into an evergreen Limen base set.
   policy (evolution strategies over feature weights — retrainable per rules rev).
 
 ## Iteration counter (bump each design round; cap 3 per session)
-Round: 0 (substrate)
+Round: 1 COMPLETE (2026-07-10)
+
+## Round 1 verdicts (arena: 967-card pool, 4 PSRO rounds, ~1150 games)
+- All success criteria 1-5 met (arena matrix, retrain-without-arena-edits,
+  967 validated cards, per-card impact, this report).
+- Agent ladder: search2 > greedy; trained policy* ties search2, beats greedy
+  (13-11). Styles diverge (search2 hyper-aggro 6.5 cap/game).
+- Keyword meta band 48.9%–57.3% — NO degenerate keyword, NO dead keyword.
+  **All 11 keywords confirmed evergreen.** Rites live in engine + shipped UI.
+- Tune next gen round: RALLY hot (57.0% @ 5288g → raise gen power cost
+  1.5→2.0); SCOUT cold (48.9% @ 5800g, most-played → drop cost 1.0→0.5);
+  vanilla premium healthy (59.5% — the budget system rewards clean stats).
+- Deck-meta diversity: inverse-Simpson 24.3/32 (flat, healthy; no archetype
+  lock-in at this sample size).
+- Card-gen validator skewed rarity to 73/16/10 (target 55/30/15) — loosen
+  uncommon/rare budgets or retry rejected cards next round.
+- Round 2 backlog: WING + MENACE (anti-aggro pair — gate on captures/match
+  staying up), BREACH/UNMAKE/BLOCKADE/FLARE rites (FLARE needs a duration
+  subsystem), RIFT-FALL trigger design, bot rift-hunt vision, per-card
+  Clopper-Pearson CIs in meta.js, Nash-averaging over archetype clusters.
 
 ## MTG → Limen analog candidates (seed list for design rounds)
 - Targeted removal (bolt/murder) → 'rite': destroy enemy tile w/ relInf ≤ X

@@ -8343,5 +8343,1470 @@
 "FORTIFIED"
 ],
 "flavor": "Petrified wood that wards the edges of reality."
+},
+{
+"type": "HUNTRESS",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "She treads where light barely reaches."
+},
+{
+"type": "FOLIAGE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"DOUBLESTRIKE"
+],
+"flavor": "A dense thicket that chokes the path twice over."
+},
+{
+"type": "MIRAGESHARD",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "It reveals paths not yet walked."
+},
+{
+"type": "FUMEDANCER",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "Whirling in the fumes of the Rift."
+},
+{
+"type": "MOONBEAM",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "A shaft of silver light, inspiring."
+},
+{
+"type": "CASCADE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SUSTAIN"
+],
+"flavor": "Each capture deepens the rift's hunger."
+},
+{
+"type": "TEAR-IN-TIME",
+"kind": "tile",
+"influence": 5,
+"rarity": "rare",
+"keywords": [
+"UNTOUCHABLE"
+],
+"flavor": "It exists outside the flow of causality."
+},
+{
+"type": "RIFT-WISP",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "A fleeting glow that drifts across the board."
+},
+{
+"type": "RIFT-WALL",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "A barrier of solidified space."
+},
+{
+"type": "GLITCH",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"DOUBLESTRIKE"
+],
+"flavor": "Reality stutters around it."
+},
+{
+"type": "WARP",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "Space bends to its will."
+},
+{
+"type": "RIFT-SPARK",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"DOUBLESTRIKE"
+],
+"flavor": "A tiny spark that punches twice its weight."
+},
+{
+"type": "TEAR-ESSENCE",
+"kind": "tile",
+"influence": 4,
+"rarity": "rare",
+"keywords": [
+"UNTOUCHABLE",
+"ATTUNED"
+],
+"flavor": "Pure essence of a torn dimension."
+},
+{
+"type": "CRACKLE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"DOUBLESTRIKE"
+],
+"flavor": "Sparks of magenta fire arc between targets."
+},
+{
+"type": "ECHO-SHARD",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"ATTUNED",
+"SCOUT"
+],
+"flavor": "A fragment of forgotten song, humming with latent power."
+},
+{
+"type": "SKY-TEAR",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "Torn from the heavens, it fell into the wrong hands."
+},
+{
+"type": "WEEPING-IDOL",
+"kind": "tile",
+"influence": 1,
+"rarity": "uncommon",
+"keywords": [
+"SUSTAIN",
+"WARD"
+],
+"flavor": "Its tears water the battlefield yet drown the unwary."
+},
+{
+"type": "CATACOMB-KEY",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "Unlocks paths not meant for the living."
+},
+{
+"type": "SOUL-BRIDGE",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"ATTUNED",
+"WARD"
+],
+"flavor": "Connects the departed to the present, a fragile tether."
+},
+{
+"type": "DUSK-FLASK",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "Drink deep of twilight's last embrace."
+},
+{
+"type": "MIRROR-PACT",
+"kind": "tile",
+"influence": 1,
+"rarity": "uncommon",
+"keywords": [
+"DOUBLESTRIKE",
+"WARD"
+],
+"flavor": "Reflection and reality swap places in a treacherous dance."
+},
+{
+"type": "PHOENIX-FEATHER",
+"kind": "tile",
+"influence": 2,
+"rarity": "rare",
+"keywords": [
+"SUSTAIN",
+"RALLY"
+],
+"flavor": "Burning bright, it rises again from its own ashes."
+},
+{
+"type": "GRAVE-TONGUE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "Whispers secrets only the dead can hear."
+},
+{
+"type": "FUNGAL-CROWN",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "Justice served cold, with a hint of rot."
+},
+{
+"type": "SPLINTER-SHIELD",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "Made from the shattered fragments of a lost army."
+},
+{
+"type": "ECHO-VEIL",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"ATTUNED",
+"FLANK"
+],
+"flavor": "Woven from silence and forgotten sounds."
+},
+{
+"type": "CLAW-AMULET",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"FLANK"
+],
+"flavor": "A predator's instinct, worn as a talisman."
+},
+{
+"type": "RIFT-CORE",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"ATTUNED",
+"SCOUT"
+],
+"flavor": "A stabilized tear between worlds, pulsing with energy."
+},
+{
+"type": "FARSIGHT-LENS",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "Through this lens, destiny is revealed in fragments."
+},
+{
+"type": "LODE-STONE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "Magnetic convergence turns chaos into order."
+},
+{
+"type": "GALE-SEED",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"SCOUT",
+"RALLY"
+],
+"flavor": "Planted in a storm, it grows into hurricanes."
+},
+{
+"type": "DREAM-CATCHER",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"WARD"
+],
+"flavor": "Entangles nightmares, leaving only hope."
+},
+{
+"type": "STONE-TEAR",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "The clenched fist of a mountain's sorrow."
+},
+{
+"type": "SENTINEL-EYE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "An unblinking guardian, always watching."
+},
+{
+"type": "GEODE-LORD",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "Its crystalline armor reflects the light of a thousand dawns."
+},
+{
+"type": "MIST-SHAPER",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "The fog obeys its whispered commands."
+},
+{
+"type": "SHADOW-WISP",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "Light fears to touch it."
+},
+{
+"type": "CRYSTAL-PYTHON",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"FLANK"
+],
+"flavor": "Coiled among the shards, it strikes without warning."
+},
+{
+"type": "STORM-CALLER",
+"kind": "tile",
+"influence": 3,
+"rarity": "uncommon",
+"keywords": [
+"DOUBLESTRIKE"
+],
+"flavor": "Clouds gather at its summons, crackling with wrath."
+},
+{
+"type": "AQUA-SENTINEL",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "Flowing like water, it slips through the cracks."
+},
+{
+"type": "FLAME-LURKER",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "Heat shimmers betray its hiding place."
+},
+{
+"type": "BLOOM-MYSTIC",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "Petals unfurl where it treads, awakening life."
+},
+{
+"type": "SUNSTONE-MYRMIDON",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "Its blade reflects the unforgiving sun."
+},
+{
+"type": "RIFT-JELLY",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "It drifts through the Rift, a shimmering veil."
+},
+{
+"type": "TIDAL-SPIRIT",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"FLANK"
+],
+"flavor": "It surges with the moon's pull, relentless."
+},
+{
+"type": "FUNGAL-SWARM",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "Spores spread silently, claiming the decaying."
+},
+{
+"type": "EMBER-SENTRY",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "A vigilant spark in the gloom."
+},
+{
+"type": "SILVER-WISP",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "Guiding lost souls with a gentle glow."
+},
+{
+"type": "BASILISK-ROOT",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"WARD"
+],
+"flavor": "Deep below, it petrifies any who disturb its slumber."
+},
+{
+"type": "SAND-WRAITH",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "It shifts like the dunes, never where expected."
+},
+{
+"type": "THORN-BUG",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "Tiny but deadly, it infects the rift's essence."
+},
+{
+"type": "WOLF-PACK",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "The forest echoes with their synchronized howls."
+},
+{
+"type": "SUNSTAG",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "A herald of dawn across the battlefields."
+},
+{
+"type": "MISTWRAITH",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"UNTOUCHABLE"
+],
+"flavor": "Fading into fog when cornered."
+},
+{
+"type": "CRYSTAL-ORACLE",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "Refracting truths within the Rift."
+},
+{
+"type": "IRON-BEETLE",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "Carapace harder than Umbral steel."
+},
+{
+"type": "PHOENIX-CALF",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SUSTAIN"
+],
+"flavor": "A spark of hope amid the ashes."
+},
+{
+"type": "GLOW-MOTH",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "Orb of gentle light, but not harmless."
+},
+{
+"type": "HOMUNCULUS",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SUSTAIN"
+],
+"flavor": "A tiny servant of arcane will, forever reknitting."
+},
+{
+"type": "SOUL-CAGE",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"FLANK"
+],
+"flavor": "Trapped souls boil within, seeking any release."
+},
+{
+"type": "CLOCKWORK-BEETLE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "Its tick-tocking legs scuttle across the hexes unseen."
+},
+{
+"type": "SPELL-ANCHOR",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"ATTUNED",
+"FORTIFIED"
+],
+"flavor": "Rooted in the Rift, it channels power through the land."
+},
+{
+"type": "AMBER-GOLEM",
+"kind": "tile",
+"influence": 3,
+"rarity": "uncommon",
+"keywords": [
+"SUSTAIN"
+],
+"flavor": "Preserved within amber, it infinitely repairs itself."
+},
+{
+"type": "RIFT-STATUE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "It hums with the Rift's melody, growing stronger."
+},
+{
+"type": "DOUBLE-GOLEM",
+"kind": "tile",
+"influence": 3,
+"rarity": "rare",
+"keywords": [
+"DOUBLESTRIKE",
+"RALLY"
+],
+"flavor": "Two minds in one body, each doubling the other's effort."
+},
+{
+"type": "WATCHER",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "An ever-open eye that reports all movements."
+},
+{
+"type": "CRYSTAL-STALWART",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "A shard of the Crystal Mountains, immobile but unbreakable."
+},
+{
+"type": "DOPPELGANGER",
+"kind": "tile",
+"influence": 1,
+"rarity": "uncommon",
+"keywords": [
+"RALLY",
+"SCOUT"
+],
+"flavor": "Creates mirror images that confuse and enhance."
+},
+{
+"type": "BOUND-SPIRIT",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "A captured soul forced to scout ahead."
+},
+{
+"type": "SHADOW-CONSTRUCT",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"UNTOUCHABLE"
+],
+"flavor": "Made of pure darkness, no rite can affect it."
+},
+{
+"type": "BLINK-CONSTRUCT",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "It flashes between hexes, always just ahead."
+},
+{
+"type": "SPITE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SUSTAIN"
+],
+"flavor": "A lingering grudge given form."
+},
+{
+"type": "POLTER",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "A petty spirit, full of mischief."
+},
+{
+"type": "FEAR-SHADE",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "Lurking at the edge of vision, it amplifies dread."
+},
+{
+"type": "GRUDGE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"UNTOUCHABLE"
+],
+"flavor": "Hatred unbound by the grave."
+},
+{
+"type": "LARVA-SOUL",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SUSTAIN"
+],
+"flavor": "An infant hunger given form."
+},
+{
+"type": "SHIVERR",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "A cold touch that foreshadows death."
+},
+{
+"type": "LURK",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "Patient and patient, waiting to pounce."
+},
+{
+"type": "SIGH",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "A soft exhale that stirs the weary."
+},
+{
+"type": "MEMORY-WRAITH",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "It haunts places of significance."
+},
+{
+"type": "OBSESSION",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SUSTAIN"
+],
+"flavor": "A thought that refuses to fade."
+},
+{
+"type": "SPORE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SUSTAIN"
+],
+"flavor": "Feeds on the essence of conquered ground."
+},
+{
+"type": "TULIP",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"DOUBLESTRIKE",
+"ATTUNED"
+],
+"flavor": "Perfect symmetry amplifies the Rift's hum."
+},
+{
+"type": "WEED",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"UNTOUCHABLE"
+],
+"flavor": "Resilient in neglect, ignored by rites."
+},
+{
+"type": "HYACINTH",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "Thick clusters hold the line against darkness."
+},
+{
+"type": "DAFFODIL",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"RALLY",
+"ATTUNED"
+],
+"flavor": "First bloom of spring, attuned to new growth."
+},
+{
+"type": "WILLOW",
+"kind": "tile",
+"influence": 3,
+"rarity": "rare",
+"keywords": [
+"SUSTAIN",
+"SCOUT"
+],
+"flavor": "Weeps into the Rift, drawing power, never touched."
+},
+{
+"type": "MINT",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "Fresh scent revives weary allies."
+},
+{
+"type": "JASMINE",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "Night-blooming, it thrives in the Rift's glow."
+},
+{
+"type": "PALISADE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "An anchored defense that thrives at the frontier."
+},
+{
+"type": "FOCUSED",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "Harnesses the Rift's wild energy to bolster its strength."
+},
+{
+"type": "INVADER",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"TRAMPLE"
+],
+"flavor": "Bursts through the front line to assault the next hex."
+},
+{
+"type": "TETHER",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "Bonds with the Rift to gain incremental power."
+},
+{
+"type": "MENDER",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SUSTAIN"
+],
+"flavor": "Repairs and reinforces, growing stronger with each victory."
+},
+{
+"type": "PIKEMAN",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "A disciplined formation that holds its ground."
+},
+{
+"type": "WARSCRIPT",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"ATTUNED",
+"FLANK"
+],
+"flavor": "Ancient runes guide precise encircling maneuvers."
+},
+{
+"type": "RANGER",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "A lone wanderer who charts the wilderness."
+},
+{
+"type": "VOIDWALK",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "It treads where borders blur."
+},
+{
+"type": "GAP",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "Holes draw the unwary close."
+},
+{
+"type": "NULLIFY",
+"kind": "tile",
+"influence": 4,
+"rarity": "rare",
+"keywords": [
+"WARD"
+],
+"flavor": "It denies the laws of two worlds."
+},
+{
+"type": "RIFTSEED",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "A kernel of chaos, waiting to sprout."
+},
+{
+"type": "RESONANCE",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "The rift hums with stolen harmonies."
+},
+{
+"type": "STUTTER",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "A moment repeats, drawing allies closer."
+},
+{
+"type": "VISION",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "Glimpses of what could be."
+},
+{
+"type": "PULSESLAVE",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "Drawn to the beat of the rift."
+},
+{
+"type": "TEARBUILDER",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "It mends tears by making new ones."
+},
+{
+"type": "VOIDSTONE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"UNTOUCHABLE"
+],
+"flavor": "A fragment of nothingness that defies all influence."
+},
+{
+"type": "IRONHEART",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "A core of ancient resilience, bound to edges."
+},
+{
+"type": "TWINPRISM",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"DOUBLESTRIKE"
+],
+"flavor": "It splits the light of allegiance into two shimmering streams."
+},
+{
+"type": "CROWNTHORN",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SUSTAIN"
+],
+"flavor": "Growing stronger with every contested hex."
+},
+{
+"type": "MIRAGEBOX",
+"kind": "tile",
+"influence": 1,
+"rarity": "uncommon",
+"keywords": [
+"SCOUT"
+],
+"flavor": "It reveals paths hidden in the rift's reflections."
+},
+{
+"type": "ECHOCHIME",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "It sings with the resonance of nearby rifts."
+},
+{
+"type": "VOIDSEAL",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"FORTIFIED",
+"ATTUNED"
+],
+"flavor": "Bound to the rift's edge, it pulses with dual energy."
+},
+{
+"type": "WEEPINGIDOL",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "Tears of obsidian that guide wandering shadows."
+},
+{
+"type": "RIFTCROSS",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [],
+"flavor": "Mark of the threshold, favored by scouts."
+},
+{
+"type": "THORNBRACE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"WARD"
+],
+"flavor": "A bracer of briars that repels the grasping hand."
+},
+{
+"type": "UNDEADCANDEL",
+"kind": "tile",
+"influence": 3,
+"rarity": "rare",
+"keywords": [
+"SUSTAIN",
+"UNTOUCHABLE"
+],
+"flavor": "A candle that never gutters, fed on eternal ties."
+},
+{
+"type": "SILVERZYTE",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "A sliver of crystal that amplifies the rift's hum."
+},
+{
+"type": "CRYSTALANTLER",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "Antlers of a beast of light, inspiring the herd."
+},
+{
+"type": "DRAGONEYE",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"SCOUT",
+"WARD"
+],
+"flavor": "A watchful orb that reveals and protects."
+},
+{
+"type": "MAELSTONIUM",
+"kind": "tile",
+"influence": 3,
+"rarity": "rare",
+"keywords": [
+"DOUBLESTRIKE",
+"FLANK"
+],
+"flavor": "Chaos forged into a weapon that strikes twice and surrounds."
+},
+{
+"type": "ASTERBLOOM",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SUSTAIN"
+],
+"flavor": "A perennial relic that flourishes with each capture."
+},
+{
+"type": "SHROUDCOIN",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "A coin that weights fate toward the edges."
+},
+{
+"type": "GILDELAMP",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"ATTUNED",
+"SCOUT"
+],
+"flavor": "A lantern that burns with the light of distant rifts."
+},
+{
+"type": "WYRMSTONE",
+"kind": "tile",
+"influence": 3,
+"rarity": "rare",
+"keywords": [
+"UNTOUCHABLE",
+"WARD"
+],
+"flavor": "A fossil of primordial wyrm, immune to coercion."
+},
+{
+"type": "SIBYLFOCUS",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "A focus that sharpens the caster's connection."
+},
+{
+"type": "SIGHSTONE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "A stone that whispers encouragement to those nearby."
+},
+{
+"type": "TERRASPARK",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "A spark of Verdant life that bolsters the soil."
+},
+{
+"type": "OBSIDGOLEM",
+"kind": "tile",
+"influence": 2,
+"rarity": "common",
+"keywords": [
+"FORTIFIED"
+],
+"flavor": "Carved from Umbral stone, it stands unyielding at the edge."
+},
+{
+"type": "RIFTWISP",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "A flicker of magenta light that dances where it wills."
+},
+{
+"type": "SAPLINGWARD",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"WARD"
+],
+"flavor": "A young tree that repels the first shadow."
+},
+{
+"type": "ECLIPSECHASER",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"ATTUNED",
+"FLANK"
+],
+"flavor": "It thrives in the twilight between realms."
+},
+{
+"type": "GLACIERWRATH",
+"kind": "tile",
+"influence": 3,
+"rarity": "rare",
+"keywords": [
+"SIEGE",
+"FORTIFIED"
+],
+"flavor": "Frozen malice that creeps from the border."
+},
+{
+"type": "VOLTSPARK",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "A crackling mote that quickens allies."
+},
+{
+"type": "DEEPLURKER",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "From below, it maps the unseen paths."
+},
+{
+"type": "MIRRORSHARD",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"DOUBLESTRIKE",
+"ATTUNED"
+],
+"flavor": "A fragment of the Rift that reflects and refracts."
+},
+{
+"type": "GEOWISP",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "A geomantic spirit that reveals hidden places."
+},
+{
+"type": "RIFT-BEACON",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"ATTUNED"
+],
+"flavor": "A beacon that hums with planar energy."
+},
+{
+"type": "BLOSSOMGUARD",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"WARD"
+],
+"flavor": "A delicate flower that shields its kin."
+},
+{
+"type": "NEXUSSENTINEL",
+"kind": "tile",
+"influence": 3,
+"rarity": "rare",
+"keywords": [
+"WARD",
+"FORTIFIED"
+],
+"flavor": "The nexus itself holds the line."
+},
+{
+"type": "MOSSPACK",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"RALLY"
+],
+"flavor": "A mat of moss that invigorates the ground."
+},
+{
+"type": "SHADOW-MOTE",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"SCOUT"
+],
+"flavor": "A speck of darkness that slips between the cracks."
+},
+{
+"type": "CRYSTAL-WARDEN",
+"kind": "tile",
+"influence": 2,
+"rarity": "uncommon",
+"keywords": [
+"FORTIFIED",
+"WARD"
+],
+"flavor": "A crystalline sentinel that defends the borders."
+},
+{
+"type": "UMBRAL-IMP",
+"kind": "tile",
+"influence": 1,
+"rarity": "common",
+"keywords": [
+"FLANK"
+],
+"flavor": "A mischievous fiend that harries from the flanks."
 }
 ]

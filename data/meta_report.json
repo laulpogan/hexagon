@@ -1,298 +1,297 @@
 {
-  "rounds": 2,
-  "popSize": 12,
-  "diversityInvSimpson": 9.6,
-  "maxDiversity": 12,
+  "rounds": 4,
+  "popSize": 32,
+  "diversityInvSimpson": 24.3,
+  "maxDiversity": 32,
   "topCards": [
     {
-      "type": "MIRRORSAINT",
-      "games": 38,
-      "winRate": 0.711
-    },
-    {
-      "type": "GLINTSHARD",
-      "games": 48,
-      "winRate": 0.646
-    },
-    {
-      "type": "PULSAR-CRYSTAL",
-      "games": 56,
-      "winRate": 0.643
-    },
-    {
-      "type": "CHITIN-PLATE",
-      "games": 38,
-      "winRate": 0.632
-    },
-    {
-      "type": "PALISADE",
-      "games": 80,
-      "winRate": 0.625
-    },
-    {
-      "type": "MOONGLOWMUSHROOM",
-      "games": 40,
-      "winRate": 0.625
-    },
-    {
-      "type": "CRYSTALSENTINEL",
-      "games": 40,
-      "winRate": 0.625
-    },
-    {
-      "type": "EMBERHOUND",
-      "games": 110,
-      "winRate": 0.618
-    },
-    {
-      "type": "MAGNETICORE",
+      "type": "SHADOWSTALKER",
       "games": 78,
-      "winRate": 0.615
+      "winRate": 0.872
     },
     {
-      "type": "ETHEREAL-FERN",
-      "games": 96,
-      "winRate": 0.615
+      "type": "VINEKIN",
+      "games": 78,
+      "winRate": 0.872
     },
     {
-      "type": "SPHINX",
-      "games": 44,
-      "winRate": 0.614
+      "type": "MOSSHELM",
+      "games": 78,
+      "winRate": 0.872
     },
     {
-      "type": "OBSIDIANKNIGHT",
-      "games": 44,
-      "winRate": 0.614
+      "type": "STUTTER",
+      "games": 78,
+      "winRate": 0.872
     },
     {
-      "type": "SWIFT-VINE",
-      "games": 72,
-      "winRate": 0.611
-    },
-    {
-      "type": "DREAMSTONE",
+      "type": "SPARKFLY",
       "games": 56,
-      "winRate": 0.607
+      "winRate": 0.857
     },
     {
-      "type": "CORAL-SPINE",
-      "games": 50,
-      "winRate": 0.6
+      "type": "MILKWEED",
+      "games": 38,
+      "winRate": 0.842
+    },
+    {
+      "type": "PHANTOMWING",
+      "games": 178,
+      "winRate": 0.826
+    },
+    {
+      "type": "WHISP",
+      "games": 86,
+      "winRate": 0.826
+    },
+    {
+      "type": "SHADOWLURKER",
+      "games": 80,
+      "winRate": 0.825
+    },
+    {
+      "type": "PARAGONUNIT",
+      "games": 86,
+      "winRate": 0.814
+    },
+    {
+      "type": "VOIDWALK",
+      "games": 86,
+      "winRate": 0.802
+    },
+    {
+      "type": "GHOST-LIGHT",
+      "games": 86,
+      "winRate": 0.802
+    },
+    {
+      "type": "RANGER",
+      "games": 30,
+      "winRate": 0.8
+    },
+    {
+      "type": "LIGHT-TRAP",
+      "games": 66,
+      "winRate": 0.773
+    },
+    {
+      "type": "TWINVINE",
+      "games": 86,
+      "winRate": 0.756
     }
   ],
   "bottomCards": [
     {
-      "type": "ECHOHUSK",
+      "type": "EMBERFOX",
+      "games": 30,
+      "winRate": 0.067
+    },
+    {
+      "type": "SOULVINE",
+      "games": 40,
+      "winRate": 0.125
+    },
+    {
+      "type": "RIFTSTALKER",
+      "games": 36,
+      "winRate": 0.139
+    },
+    {
+      "type": "THORNROOTS",
       "games": 30,
       "winRate": 0.2
     },
     {
-      "type": "RIFT-WALKERS",
-      "games": 46,
-      "winRate": 0.217
+      "type": "DEEPLURKER",
+      "games": 50,
+      "winRate": 0.22
     },
     {
-      "type": "RIFT-THIEF",
+      "type": "CRYSTALSENTRY",
       "games": 36,
       "winRate": 0.222
     },
     {
-      "type": "DARKEMBER",
+      "type": "SHADOW-CLOAK",
       "games": 44,
-      "winRate": 0.25
+      "winRate": 0.227
     },
     {
-      "type": "LANTERN",
-      "games": 36,
-      "winRate": 0.278
+      "type": "GLADEHOARDER",
+      "games": 52,
+      "winRate": 0.231
     },
     {
-      "type": "STARGLINT",
-      "games": 36,
-      "winRate": 0.306
-    },
-    {
-      "type": "GREENSKIN",
+      "type": "RIFT-ASSASSIN",
       "games": 30,
-      "winRate": 0.333
+      "winRate": 0.233
+    },
+    {
+      "type": "JASMINE",
+      "games": 34,
+      "winRate": 0.235
     },
     {
       "type": "MISTSHROUD",
-      "games": 44,
-      "winRate": 0.364
+      "games": 62,
+      "winRate": 0.242
     },
     {
-      "type": "WILLOWISP",
+      "type": "RIFT-FLASK",
+      "games": 32,
+      "winRate": 0.25
+    },
+    {
+      "type": "CRAGCLAW",
+      "games": 58,
+      "winRate": 0.259
+    },
+    {
+      "type": "OBSIDIAN-SHARD",
       "games": 38,
-      "winRate": 0.368
+      "winRate": 0.263
     },
     {
-      "type": "RIFTSPAWN",
-      "games": 52,
-      "winRate": 0.404
-    },
-    {
-      "type": "GLIMMERWING",
+      "type": "IRON-BLOOM",
       "games": 34,
-      "winRate": 0.412
-    },
-    {
-      "type": "LENS-OF-TRUTH",
-      "games": 42,
-      "winRate": 0.429
-    },
-    {
-      "type": "SUNDER",
-      "games": 30,
-      "winRate": 0.433
-    },
-    {
-      "type": "SHADOWMOTH",
-      "games": 30,
-      "winRate": 0.433
-    },
-    {
-      "type": "SAPLING",
-      "games": 34,
-      "winRate": 0.441
+      "winRate": 0.265
     }
   ],
   "keywords": [
     {
-      "kw": "TRAMPLE",
-      "games": 110,
-      "winRate": 0.618
-    },
-    {
-      "kw": "WARD",
-      "games": 94,
-      "winRate": 0.607
-    },
-    {
-      "kw": "DOUBLESTRIKE",
-      "games": 142,
-      "winRate": 0.599
-    },
-    {
-      "kw": "RALLY",
-      "games": 294,
-      "winRate": 0.582
-    },
-    {
-      "kw": "FORTIFIED",
-      "games": 450,
-      "winRate": 0.558
+      "kw": "(vanilla)",
+      "games": 850,
+      "winRate": 0.595
     },
     {
       "kw": "UNTOUCHABLE",
-      "games": 180,
-      "winRate": 0.556
+      "games": 1530,
+      "winRate": 0.573
+    },
+    {
+      "kw": "RALLY",
+      "games": 5288,
+      "winRate": 0.57
+    },
+    {
+      "kw": "DOUBLESTRIKE",
+      "games": 1756,
+      "winRate": 0.553
+    },
+    {
+      "kw": "TRAMPLE",
+      "games": 752,
+      "winRate": 0.544
     },
     {
       "kw": "FLANK",
-      "games": 112,
-      "winRate": 0.545
-    },
-    {
-      "kw": "SUSTAIN",
-      "games": 264,
-      "winRate": 0.496
-    },
-    {
-      "kw": "ATTUNED",
-      "games": 326,
-      "winRate": 0.485
-    },
-    {
-      "kw": "SCOUT",
-      "games": 524,
-      "winRate": 0.471
+      "games": 1440,
+      "winRate": 0.536
     },
     {
       "kw": "SIEGE",
-      "games": 172,
-      "winRate": 0.471
+      "games": 734,
+      "winRate": 0.533
     },
     {
-      "kw": "(vanilla)",
-      "games": 74,
-      "winRate": 0.459
+      "kw": "FORTIFIED",
+      "games": 4694,
+      "winRate": 0.524
+    },
+    {
+      "kw": "ATTUNED",
+      "games": 3848,
+      "winRate": 0.518
+    },
+    {
+      "kw": "SUSTAIN",
+      "games": 2352,
+      "winRate": 0.51
+    },
+    {
+      "kw": "WARD",
+      "games": 1564,
+      "winRate": 0.505
+    },
+    {
+      "kw": "SCOUT",
+      "games": 5800,
+      "winRate": 0.489
     }
   ],
   "topDecks": [
     {
-      "winRate": 0.833,
+      "winRate": 1,
       "comp": {
-        "SPHINX": 1,
-        "OBSIDIANKNIGHT": 1,
-        "DREAMSTONE": 1,
-        "DRIZZLEFAWN": 1,
-        "FROSTSHARD": 1,
-        "SWIFT-VINE": 1,
-        "CORAL-SPINE": 1,
-        "EMBERHOUND": 1,
-        "CLIFFHEATHER": 1,
-        "MAGNETICORE": 1,
-        "PALISADE": 1,
-        "FORGE-ANVIL": 1,
-        "MIRAGE-GEM": 1,
-        "PULSAR-CRYSTAL": 1,
-        "DARK-SENTRIES": 1,
-        "TINMECH": 1,
-        "LEECHROOT": 1,
-        "ETHEREAL-FERN": 1,
-        "RIFTSPORE": 1,
-        "SKIRMISHER": 1
+        "BASALT-SIGIL": 1,
+        "CRYSTAL-HEART": 1,
+        "MOON-TEAR": 1,
+        "SPORE_WALKER": 1,
+        "GEYSER": 1,
+        "WILDSHIFT": 1,
+        "FEAR-SHADE": 1,
+        "SOULSHARD": 1,
+        "GEARSPINNER": 1,
+        "AMULET": 1,
+        "MUD-BOAR": 1,
+        "FALSE-DAWN": 1,
+        "TINMECH": 2,
+        "CRYSTAL-WYRM": 1,
+        "VEIL": 1,
+        "ECHO-GOLEM": 1,
+        "RUIN-HORN": 1,
+        "WILLOW-WISP": 1,
+        "HAUNTED-CRYSTAL": 1
       }
     },
     {
-      "winRate": 0.667,
+      "winRate": 1,
       "comp": {
-        "MIRRORSAINT": 1,
-        "RIFTWARDEN": 1,
-        "RIFTWING": 1,
-        "CHROMABLOOM": 1,
-        "WISPTHISTLE": 1,
-        "CLIFFHEATHER": 1,
-        "PALISADE": 1,
-        "SWIFT-VINE": 1,
-        "STONEWARD": 1,
-        "BRASSHOUND": 1,
-        "ETHEREAL-FERN": 1,
-        "ROOTSEEKER": 1,
-        "VOIDRAVEN": 1,
-        "GLINTSHARD": 1,
-        "NIGHTGLIDER": 1,
-        "MAGNETICORE": 1,
-        "EMBERHOUND": 1,
-        "STONECRACK": 1,
-        "LENS-OF-TRUTH": 1,
-        "PAWNSHROOM": 1
+        "TREMBLEVINE": 1,
+        "PULSAR": 1,
+        "MIRAGE-TOTEM": 1,
+        "SHADOWFORM": 1,
+        "FLUXENGINE": 1,
+        "BARRIERMOSS": 1,
+        "WAVESHELL": 1,
+        "BRAMBLE-SHIELD": 1,
+        "SORROW": 1,
+        "STONE-SCALES": 1,
+        "MALACHITEWARDEN": 1,
+        "MOURNING": 1,
+        "FANG-HORDE": 1,
+        "DARK-SENTRIES": 1,
+        "LAVENDER": 1,
+        "TWILIGHT-FORGE": 1,
+        "PARCHMENT": 1,
+        "PAWNSHROOM": 1,
+        "BEAST": 1,
+        "IRONBARK": 1
       }
     },
     {
-      "winRate": 0.625,
+      "winRate": 0.9,
       "comp": {
-        "SPHINX": 1,
-        "OBSIDIANKNIGHT": 1,
-        "DREAMSTONE": 1,
-        "DRIZZLEFAWN": 1,
-        "SWIFT-VINE": 1,
-        "CORAL-SPINE": 1,
-        "EMBERHOUND": 1,
-        "CLIFFHEATHER": 1,
-        "MAGNETICORE": 1,
-        "PALISADE": 1,
-        "FORGE-ANVIL": 1,
-        "MIRAGE-GEM": 1,
-        "PULSAR-CRYSTAL": 1,
-        "DARK-SENTRIES": 1,
-        "TINMECH": 1,
-        "LEECHROOT": 1,
-        "ETHEREAL-FERN": 1,
-        "SKIRMISHER": 1,
-        "STONEWARD": 1,
-        "GLINTSHARD": 1
+        "GOLDEN-SCEPTER": 1,
+        "VEILWALKER": 1,
+        "LIFEBINDER": 1,
+        "WILDSHIFT": 1,
+        "OBSIDIAN-ELEMENTAL": 1,
+        "BARKHIDE": 1,
+        "SHELL": 1,
+        "SENTINELS": 1,
+        "CHITIN-WHELP": 1,
+        "RIFTALIGNER": 1,
+        "OBSIDIAN-HELM": 1,
+        "BLINK-HOUND": 1,
+        "VINE-CRAWLER": 1,
+        "BLOOM": 1,
+        "TWIN-BLADE": 1,
+        "GLIMMERWING": 1,
+        "FROST-GHOST": 1,
+        "NEXUS": 1,
+        "CLOCKWORK-FANE": 1,
+        "INCUBUS": 1
       }
     }
   ]

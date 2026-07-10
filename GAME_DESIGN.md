@@ -38,8 +38,16 @@ Decisions here override the README.
 - C/M/R/F resource types, tile costs, income, tap/untap, `usedThisTurn`.
 - Resource-coupled keywords: MERCHANT, HASTE, VIGILANT (all defined in terms of paying/tapping).
 - Resource UI: resourcesPanel, cost pips, produces pips.
-- Keyword *chassis* stays — repopulate with influence-flavored keywords later
-  (e.g. AURA, ANCHOR, VOLATILE). Not v1-blocking.
+- Keyword *chassis* stays — repopulated 2026-07-10 (design round 1, MTG analogs):
+  FLANK (deathtouch), SUSTAIN (lifelink), TRAMPLE, UNTOUCHABLE (hexproof) +
+  the **rite** card category (spells cast as your placement: SUNDER targeted
+  removal, FORESIGHT cycling, RALLYING_CRY buff; capitals rite-immune).
+  New mechanics land in core/mechanics.js hooks + data/tiles.js — game.js
+  core paths stay frozen. Evergreen set = the 11 keywords, arena-validated
+  (48.9–57.3% win band, no degenerate, no dead — see ARENA_PLAN.md).
+  Arena: `npm run arena|train|meta` (greedy/search/ES-policy agents, PSRO-lite
+  deck meta over data/cards_gen.json — 967 DeepSeek-generated cards, sim-only;
+  the shipped browser pool stays curated).
 
 ## Pacing valve (replaces cost)
 

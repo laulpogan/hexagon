@@ -83,3 +83,22 @@ hexagon 2D prototype in one autonomous session on branch `limen-design`
   `-c http.postBuffer=157286400`.
 - Backlog: FLANK keyword (sim first), THICKET/OUTCROP twins, bot rift-hunt
   scan, trailer cut from gameplay + clips, TRELLIS 3D models still pending.
+
+## Round 3 (same day) — arena, 967-card pool, design round 1
+
+- SOTA spike confirmed the stack: cheap ES-heuristic agents for bulk meta sims
+  (Cardiverse pattern), deterministic search for accuracy (random-rollout UCT
+  lost 9-1 to greedy — replaced with depth-2 lookahead), PSRO-lite for meta
+  hunts, inverse-Simpson + win-rate matrix as health metrics (field standard).
+  No off-the-shelf skill runs match sims — arena hand-built. LLM combo-detection
+  is unreliable (arXiv 2508.19484) → sim stays the ground truth.
+- Built: core/agents/{greedy,search,policy}, tools/{arena,train,meta}.js,
+  Game.clone(), core/mechanics.js hook registry, rite category end-to-end
+  (engine → agents → shipped UI with target highlighting → MP relay).
+- Wave-1 mechanics: FLANK/SUSTAIN/TRAMPLE/UNTOUCHABLE + SUNDER/FORESIGHT/
+  RALLYING_CRY. 36→42 tests green.
+- DeepSeek generated 967 validated cards (~$0.15); power-budget validator
+  rejected over/under-budget chaff; rarity skewed 73/16/10 — loosen next round.
+- Design round 1 verdict: all 11 keywords evergreen (48.9–57.3% band, ~1150
+  games), diversity 24.3/32, RALLY hot / SCOUT cold as gen-cost tunings.
+  Full verdicts + round-2 backlog in ARENA_PLAN.md.
