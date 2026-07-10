@@ -139,7 +139,7 @@ Costs were the brake on strong tiles. Replacement, simplest first:
 | 3 | Rift mechanic + bot opponent | full loop vs AI | ✅ `a87f252` (rift landed in 1–2; bot+sim here) |
 | 4 | Port Supabase MP onto new core | 3D multiplayer | ✅ `2e244bc` — action-log relay, 2-client verified |
 | 5 | Asset pipeline batch (art → 3D → audio) | real look + sound | ⏭ next session — TRELLIS.2 on the Dell; prism look ships v1 |
-| 6 | Balance sim + daily play loop | tuned tiers/rift | 🔁 sim built + first finding fixed (influence victory); open knob: P2 wins 59% of bot mirrors |
+| 6 | Balance sim + daily play loop | tuned tiers/rift | ✅ round 1 (2026-07-10, 2-persona review + seed-paired sweeps): **150/150 at n=300**, captures 2.5→3.8, 0 stalls. Changes: pass only when stuck (kills hoard-lock), SCOUT banned from enemy heartland (kills turn-1 capital rush), ward pops bounce the card back (turn cost, not card cost), SIEGE 2→5, bot capitals deep, P1 resolution bonus 1. Open: FLANK keyword idea (designer #3), THICKET/OUTCROP twins, bot can't hunt rift-weakened tiles beyond adjacency |
 | 7 | Ship: GH Pages (only — no itch.io, decided 2026-07-10), trailer, thumbnail | public URL | ✅ **https://laulpogan.github.io/hexagon/** (serves `limen-design`; trailer/thumbnail ride with phase 5) |
 
 Shipped 2026-07-10 ahead of assets on purpose: a public playable loop beats a private

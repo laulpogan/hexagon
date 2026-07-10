@@ -22,9 +22,9 @@ function scoreMove(game, player, move, rand) {
 
   // Winning move: capture the enemy capital.
   if (target && target.capital) return Infinity;
-  // Ward walls: spending a tile to pop a ward is occasionally right,
-  // but greedy shouldn't do it while better moves exist.
-  if (target && target.keywords.includes('WARD') && !target.wardConsumed) return -50 + rand();
+  // Ward pops cost a turn (the card bounces back to hand) — cheap but rarely
+  // better than developing; mildly negative so it happens only when quiet.
+  if (target && target.keywords.includes('WARD') && !target.wardConsumed) return -12 + rand();
 
   let score = 0;
   if (target) score += 6 + target.influence * 2; // captures are tempo + material
@@ -62,12 +62,14 @@ function scoreMove(game, player, move, rand) {
 export function botTakeTurn(game, player, rand) {
   if (game.phase === 'capital') {
     if (game.currentPlayer !== player) return { kind: 'not-my-turn' };
-    // Aggressive-but-sane: middle column, closest legal row to the seam.
+    // Deep and central: back row first (shallow capitals were the exploitable
+    // 30%-KO diet — 2026-07-10 balance round), middle columns preferred.
     const mid = midRow();
-    const row = player === 1 ? mid - CONFIG.CAPITAL_MIN_DIST_FROM_SEAM : mid + CONFIG.CAPITAL_MIN_DIST_FROM_SEAM;
+    const deep = player === 1 ? 0 : CONFIG.GRID_H - 1;
+    const shallow = player === 1 ? mid - CONFIG.CAPITAL_MIN_DIST_FROM_SEAM : mid + CONFIG.CAPITAL_MIN_DIST_FROM_SEAM;
     const cols = [6, 5, 7, 4, 8, 3, 9, 2, 10, 1, 11, 0, 12];
     for (const col of cols) {
-      for (const r of player === 1 ? [row, row - 1, row - 2] : [row, row + 1, row + 2]) {
+      for (const r of player === 1 ? [deep, deep + 1, shallow] : [deep, deep - 1, shallow]) {
         if (game.isLegalCapitalCell(player, col, r)) {
           const res = game.placeCapital(player, col, r);
           if (res.ok) return { kind: 'capital', col, row: r };

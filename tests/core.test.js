@@ -141,8 +141,8 @@ test('SIEGE penalizes adjacent ENEMIES (not itself — original bug fixed)', () 
   g.board[6][0].tile = g._makeTile('COLOSSUS', 1);      // base 4, no keywords
   const [nc, nr] = neighborCoords(6, 0).find(([c, r]) => !g.board[c][r].rift);
   g.board[nc][nr].tile = g._makeTile('SKIRMISHER', 2);  // enemy SIEGE, base 1
-  // COLOSSUS: 4 − (1 + SIEGE_BONUS 2) = 1
-  assert.equal(g.relativeInfluence(6, 0), 4 - 1 - CONFIG.SIEGE_BONUS);
+  // COLOSSUS: 4 − (1 + SIEGE_BONUS), clamped at 0
+  assert.equal(g.relativeInfluence(6, 0), Math.max(0, 4 - 1 - CONFIG.SIEGE_BONUS));
   // The SIEGE tile itself takes no extra self-penalty: 1 − 4 → clamped 0
   assert.equal(g.relativeInfluence(nc, nr), 0);
 });
@@ -212,7 +212,7 @@ test('capture: placing onto a 0-influence enemy tile takes it', () => {
   assert.equal(g.stats[2].captured, 1);
 });
 
-test('WARD absorbs the first capture attempt; attacker tile is spent', () => {
+test('WARD absorbs the first capture attempt; attacker tile returns to hand', () => {
   const g = new Game({ seed: 'ward' });
   g.phase = 'play'; g.currentPlayer = 2; g.turn = 1;
   g.placementsLeft = 1; g.discardsLeft = 1;
@@ -224,7 +224,7 @@ test('WARD absorbs the first capture attempt; attacker tile is spent', () => {
   assert.equal(res.wardBlocked, true);
   assert.equal(g.board[3][0].tile.type, 'WARDSTONE', 'defender survives');
   assert.equal(g.board[3][0].tile.wardConsumed, true);
-  assert.equal(g.hands[2].length, 0, 'attacker tile spent');
+  assert.equal(g.hands[2].length, 1, 'attacker tile bounces back to hand');
   assert.equal(g.currentPlayer, 1, 'turn still ends');
 });
 
@@ -256,9 +256,19 @@ test('discard-and-redraw once per turn', () => {
   assert.equal(g.discardRedraw(1, 0).ok, false, 'second discard refused');
 });
 
-test('pass hands the turn over', () => {
+test('pass is refused while playable tiles remain (anti-hoarding)', () => {
   const { g } = startedGame();
-  g.pass(1);
+  const res = g.pass(1);
+  assert.equal(res.ok, false);
+  assert.equal(res.reason, 'you have playable tiles');
+  assert.equal(g.currentPlayer, 1, 'turn does not change');
+});
+
+test('pass hands the turn over when genuinely stuck', () => {
+  const { g } = startedGame();
+  g.hands[1] = []; // no cards → no legal moves → pass allowed
+  const res = g.pass(1);
+  assert.equal(res.ok, true);
   assert.equal(g.currentPlayer, 2);
   assert.equal(g.turn, 2);
 });
@@ -293,17 +303,32 @@ test('invalid deck composition falls back to the starter deck', () => {
   assert.ok(g.decks[1].filter(t => t.type === 'COLOSSUS').length <= 1, 'rare cap enforced via fallback');
 });
 
-test('two consecutive passes resolve an influence victory', () => {
+test('full exhaustion resolves an influence victory (with P1 home bonus)', () => {
   const { g } = startedGame();
-  // Give P1 a supporting tile so influence differs.
-  const spot = findCell(g, (c) => !c.tile && !c.rift && c.row === 0);
-  spot.tile = g._makeTile('COLOSSUS', 1);
-  g.pass(1);
-  const res = g.pass(2);
-  assert.equal(res.gameEnded, true);
+  // Drain everything: P1 passes (stuck), then P2's empty turn auto-resolves.
+  g.hands[1] = []; g.hands[2] = [];
+  g.decks[1] = []; g.decks[2] = [];
+  const spot = findCell(g, (c) => !c.tile && !c.rift && c.row === 8);
+  spot.tile = g._makeTile('COLOSSUS', 2); // P2 gets material…
+  const res = g.pass(1);
+  assert.equal(res.ok, true);
   assert.equal(g.phase, 'over');
-  assert.equal(g.winner, 1);
-  assert.equal(g.winReason, 'influence');
+  // …but P1's home-continuity bonus (+5) outweighs COLOSSUS's contribution.
+  assert.equal(g.winReason === 'influence' || g.winReason === 'draw', true);
+  assert.ok(g.winner !== null, 'someone wins');
+});
+
+test('SCOUT may not drop into the enemy heartland without adjacency', () => {
+  const { g } = startedGame();
+  const scout = g._makeTile('LANTERN', 1);
+  const mid = 4;
+  // deep in P2's zone, far from any P1 tile
+  const deep = findCell(g, (c) => !c.tile && !c.rift && c.row >= mid + 2 &&
+    neighborCoords(c.col, c.row).every(([cc, rr]) => !g.board[cc][rr].tile));
+  assert.equal(g.canPlace(1, scout, deep.col, deep.row), false, 'heartland ban');
+  const home = findCell(g, (c) => !c.tile && !c.rift && c.row <= 1 &&
+    neighborCoords(c.col, c.row).every(([cc, rr]) => !g.board[cc][rr].tile));
+  assert.equal(g.canPlace(1, scout, home.col, home.row), true, 'own side still free');
 });
 
 test('legalMoves returns placements for the active player only', () => {

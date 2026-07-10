@@ -148,17 +148,31 @@ export class Game {
     return row >= mid + CONFIG.CAPITAL_MIN_DIST_FROM_SEAM;
   }
 
+  // Is (col,row) inside `player`'s OPPONENT's capital-zone rows?
+  _inEnemyHeartland(player, row) {
+    const mid = midRow();
+    return player === 1
+      ? row >= mid + CONFIG.CAPITAL_MIN_DIST_FROM_SEAM
+      : row <= mid - CONFIG.CAPITAL_MIN_DIST_FROM_SEAM;
+  }
+
   // Placement legality during normal play (capture and expansion).
   canPlace(player, tile, col, row) {
     if (this.phase !== 'play') return false;
     const cell = this.cellAt(col, row);
     if (!cell) return false;
     if (cell.tile) return this.isCapturable(col, row, player);
-    if (this.hasKeyword(tile, 'SCOUT')) return true;
-    return neighborCoords(col, row).some(([c, r]) => {
+    const adjacent = neighborCoords(col, row).some(([c, r]) => {
       const nt = this.board[c][r].tile;
       return nt && nt.owner === player;
     });
+    if (adjacent) return true;
+    // SCOUT ignores adjacency — but not into the enemy heartland (turn-1
+    // capital-rush exploit, killed 2026-07-10 balance round).
+    if (this.hasKeyword(tile, 'SCOUT')) {
+      return !(CONFIG.SCOUT_HEARTLAND_BAN && this._inEnemyHeartland(player, row));
+    }
+    return false;
   }
 
   // All legal moves for the active player — drives both bot and UI hints.
@@ -240,10 +254,13 @@ export class Game {
     this.placementsLeft--;
     this.consecutivePasses = 0; // any card-spending action is a real action (incl. ward-blocked attacks)
 
-    // WARD: the defender absorbs the attack; attacker's tile is spent.
+    // WARD: the defender absorbs the attack. The attacker's tile bounces back
+    // to hand — popping a ward costs the turn, not the card (2026-07-10
+    // balance round: card-loss made attacking wards strictly dominated).
     if (target && this.hasKeyword(target, 'WARD') && !target.wardConsumed) {
       target.wardConsumed = true;
-      this._log(player, `attacked ${target.type} at (${col},${row}) but its Ward absorbed the attack`);
+      this.hands[player].push(tile);
+      this._log(player, `attacked ${target.type} at (${col},${row}) — its Ward absorbed the attack (${tile.type} returns to hand)`);
       const result = { ok: true, wardBlocked: true, target };
       this._afterAction();
       return result;
@@ -292,6 +309,12 @@ export class Game {
   pass(player) {
     if (this.phase !== 'play') return { ok: false, reason: 'wrong phase' };
     if (player !== this.currentPlayer) return { ok: false, reason: 'not your turn' };
+    // Passing while holding playable tiles enabled a hoard-and-mop-up lock
+    // (stall your own deck, then place uncontested once the opponent runs
+    // dry). Pass is only for the genuinely stuck (2026-07-10 balance round).
+    if (this.legalMoves(player).length > 0) {
+      return { ok: false, reason: 'you have playable tiles' };
+    }
     this._log(player, 'passed');
     this.consecutivePasses++;
     if (this.consecutivePasses >= 2) {
@@ -306,6 +329,10 @@ export class Game {
   // threshold. Capital capture is the knockout; this is the decision.
   _resolveInfluenceVictory() {
     const s = this.boardSummary();
+    // Home-continuity bonus: P2 structurally owns the final placement before
+    // resolution (last-mover edge, 59/41 in bot mirrors). Flat P1 bonus in
+    // the resolution snapshot only — never visible mid-game.
+    s[1].influence += CONFIG.INFLUENCE_TIEBREAK_BONUS_P1;
     this.phase = 'over';
     if (s[1].influence !== s[2].influence) {
       this.winner = s[1].influence > s[2].influence ? 1 : 2;

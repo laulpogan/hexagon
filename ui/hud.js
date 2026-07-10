@@ -65,7 +65,14 @@ export class Hud {
       el.innerHTML = `Game over`;
       el.className = '';
     }
-    this.root.querySelector('#passBtn').style.display = g.phase === 'play' ? 'block' : 'none';
+    const passBtn = this.root.querySelector('#passBtn');
+    passBtn.style.display = g.phase === 'play' ? 'block' : 'none';
+    if (g.phase === 'play') {
+      // Pass is only legal when genuinely stuck (anti-hoarding rule).
+      const stuck = g.legalMoves(g.currentPlayer).length === 0;
+      passBtn.disabled = !stuck;
+      passBtn.title = stuck ? 'No playable tiles — pass the turn' : 'You have playable tiles — passing is not allowed';
+    }
   }
 
   _renderHand() {

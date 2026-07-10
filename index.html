@@ -29,6 +29,11 @@
     justify-content: center; align-items: center; flex-direction: column;
     background: radial-gradient(ellipse at 30% 20%, #16241c 0%, #101218 45%, #191026 100%);
   }
+  #menuVideo {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; opacity: 0.38; pointer-events: none;
+  }
+  #menu > *:not(#menuVideo) { position: relative; z-index: 1; }
   #menu h1 {
     font-size: 72px; letter-spacing: 18px; margin: 0; font-weight: 300;
     background: linear-gradient(90deg, #6fe09a 0%, #e8e8ee 48%, #b18aff 100%);
@@ -222,6 +227,8 @@
   <div id="hud"></div>
 
   <div id="menu">
+    <video id="menuVideo" autoplay muted loop playsinline
+           src="./assets/video/limen_rift.mp4" poster="./assets/tiles/THICKET.jpg"></video>
     <h1>LIMEN</h1>
     <p>a hex-tile duel across the threshold</p>
     <button id="hotseatBtn">Hotseat · 2 players, 1 screen</button>
