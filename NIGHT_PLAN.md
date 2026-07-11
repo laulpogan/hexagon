@@ -27,6 +27,17 @@ User order (verbatim intent, do not drift):
    contested chokepoints visibly tower = the landscape effect + wow moment.
    Design round decides exact numbers (height bonus, whether ruins decay
    folds in or dies) — sim-gated like everything else.
+6. **Battlefield set-dressing (user order, mid-flight, verbatim intent):
+   "i want rubble and interesting stuff showing up on the battlefield, i
+   also want a DETAILED background that's CLOSE UP to the board to make
+   this feel like two worlds really crashing together."** — (a) rubble/
+   debris props appear on fought-over cells (ties into elevation: battle
+   scars are physical objects, not just tint); scatter props between hexes
+   as fights happen. (b) Replace/augment the distant backdrop dome with a
+   CLOSE-UP high-detail environment hugging the board perimeter — verdant
+   crystal forest crowding one side, obsidian ember spires the other,
+   visibly tearing/colliding at the rift line behind the board (MTG Arena
+   style arena-at-board's-edge). Owned by wave C3 (render agent) + art gen.
 
 ## Tier: HIGH (auth + core rules + product-quality deliverable)
 Gate #1 = persona review of the unified design before building.
