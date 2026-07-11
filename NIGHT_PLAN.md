@@ -144,3 +144,15 @@ GATE2_ROUNDS: 0
   Pending triggers: C1 pool40.json commit -> orchestrator starts C4 art gen;
   C1 completion -> C2b (generated SQL + How-to-Play rewrite) + C3 render
   wave; media env-GLB manifest ping -> C3 consumes.
+- 2026-07-11 ~08:55: C1 LANDED — zero-capture 51%->3.6%, Drama Index
+  64.4->78.2, captures/game 3.81->6.09, 61 tests, policy 60.8% vs greedy.
+  Deck size REVERTED to 20 (24 failed length gate); pool 24->42 types is
+  the "bigger". Misses in BLOCKERS.md: first-capture T9-10 vs T8 (geometric
+  floor), corner-turtle winrate below band (turtling LOSES — exploit dead).
+  C2a landed earlier (full shell, migration applied, guest loop verified,
+  fixed pre-existing menu z-index bug). C4 landed (37/37 assets, 7055799).
+  Media: lore 44 entries pushed, GLTFLoader vendored. NOW RUNNING: C2b
+  (SQL gen from final pool + How-to-Play rewrite + repricing, via shell
+  agent resume) + C3 render wave (V1-V8, new agent). Then: gate #2 panel
+  (fun score), media INTEGRATION_NOTES landing, push, live verify, morning
+  report.
