@@ -157,3 +157,10 @@ GATE2_ROUNDS: 1
   agent resume) + C3 render wave (V1-V8, new agent). Then: gate #2 panel
   (fun score), media INTEGRATION_NOTES landing, push, live verify, morning
   report.
+- 2026-07-11 ~closeout: gate #2 CLOSED (GATE2_ROUNDS: 2). Shell verifier PASS
+  all 6; completeness audit fully actioned; fun judge 6/10 with 1 BLOCKER
+  (chip/badge overlap) FIXED + confirmed readable live. Live GH Pages smoke:
+  playable end-to-end, found 2 bugs (WILL-O'-WISP blank art from apostrophe in
+  CSS url; intro auto-gate over menu) — BOTH FIXED + redeployed + hash-verified
+  live. All pushed; main.js/hud.js hash-match origin+Pages. Morning report,
+  session log, handoff, memory all written. CAMPAIGN COMPLETE.
