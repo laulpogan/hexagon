@@ -113,9 +113,17 @@ with the units manifest (silent skip, zero 4xx after). Fresh-eyes judge agent:
   `_poptest.html`, `glb_test.html`, `integ_harness.html`, `analysis/lore_raw_gen.log`.
 
 ## Open / next session
-- Trees/spires round-2 GLBs → env manifest wave 2 (generating at close).
-- 18 new R8-card popout models (need campaign A's committed `*_512.png` sprites
-  + a free GPU) → completes popout to 36/40 types.
+- **Trees/spires env props: DROPPED (2 fidelity fails).** Diorama-crop
+  conditioning → flat reliefs; isolated LTX single-object stills → still flat
+  blobs (LTX makes cinematic near-shots, not clean turntables; Hunyuan can't
+  reconstruct a tree/spire from them). Per the two-strikes rule I stopped and
+  repurposed the GPU. Env manifest stays wave-1 (rift shards + rubble). Real
+  fix needs a turntable-still or text-to-3D pipeline — else campaign A's
+  billboard fallback covers the perimeter. Flat GLBs left untracked, not shipped.
+- **R8-card popouts (round 3): generating at close** — 18 new-card GLBs from
+  campaign A's committed sprites; on landing → convert + optimize + manifest
+  update → popout covers 36/40 types (all non-rite). Same pipeline that gave
+  the 18 hero models a clean pass.
 - ElevenLabs licensing gate still applies before any *commercial* framing;
   MusicGen/Hunyuan/LTX weights used here are research/non-commercial — fine for
   the free Pages game, revisit if monetized.
