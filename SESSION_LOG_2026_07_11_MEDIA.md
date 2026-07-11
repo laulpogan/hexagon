@@ -120,10 +120,12 @@ with the units manifest (silent skip, zero 4xx after). Fresh-eyes judge agent:
   repurposed the GPU. Env manifest stays wave-1 (rift shards + rubble). Real
   fix needs a turntable-still or text-to-3D pipeline — else campaign A's
   billboard fallback covers the perimeter. Flat GLBs left untracked, not shipped.
-- **R8-card popouts (round 3): generating at close** — 18 new-card GLBs from
-  campaign A's committed sprites; on landing → convert + optimize + manifest
-  update → popout covers 36/40 types (all non-rite). Same pipeline that gave
-  the 18 hero models a clean pass.
+- **R8-card popouts (round 3): DONE** — 18/18 GLBs (0 fail) from campaign A's
+  sprites, converted + optimized + committed (3d0cfab). manifest.json now 36
+  types; popout covers ALL non-rite cards. Verified in-situ: APEXWARDEN renders
+  via popout.show + manifest, rites skip silently, zero 4xx. units/ = 25MB (34MB
+  total new media, over the 25MB plan guardrail — deliberate: all lazy-loaded,
+  initial page load unchanged, repo grew for the requested detailed-3D set).
 - ElevenLabs licensing gate still applies before any *commercial* framing;
   MusicGen/Hunyuan/LTX weights used here are research/non-commercial — fine for
   the free Pages game, revisit if monetized.
