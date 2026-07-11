@@ -7,15 +7,31 @@ import { Hud } from './ui/hud.js';
 import { sound } from './ui/sound.js';
 import { music } from './ui/music.js';
 import { initDeckbuilder, loadSavedDeck } from './ui/deckbuilder.js';
+import { initAccount } from './ui/account.js';
+import { initCollection } from './ui/collection.js';
 import { KEYWORDS, RITE_INFO } from './data/tiles.js';
 import { riftNeighborCount } from './core/board.js';
 import { NetSession, generateRoomCode } from './net/supabase.js';
+import { bootAuth, currentUser, migrateLocalDeckIfNeeded } from './net/auth.js';
+import {
+  recordMatchResult, pullCloudState, getLocalProgress, getLocalCollection,
+  computeMotePrices, nextUnlock, unlockCard,
+} from './net/progress.js';
 
 let game, renderer, hud;
 let mode = 'hotseat';          // 'hotseat' | 'bot' | 'mp'
 let botRand = null;
 let net = null;                // NetSession in mp mode
 let myPlayer = null;           // 1|2 in mp mode; null otherwise
+
+// debug/test handle — startGame() Object.assigns match state into this same
+// object, so __limen.progress stays reachable before/during/after a game.
+window.__limen = {
+  progress: {
+    getLocalProgress, getLocalCollection, computeMotePrices, nextUnlock,
+    recordMatchResult, unlockCard,
+  },
+};
 
 // The local human may act when...
 function inputLocked() {
@@ -171,6 +187,19 @@ function checkGameOver() {
   sound.victory();
   hud.showWin(game.winner, game.stats, game.turn, game.winReason);
   if (mode === 'mp' && net) net.finish().catch(() => {});
+
+  // Progression (SHELL_SPEC.md §5.3): only bot/mp have a single "you" —
+  // hotseat records nothing. Never blocks the win screen already shown
+  // above; the reward strip is a bonus layer that appears once the async
+  // record (local-instant for guests, an RPC round-trip when signed in)
+  // resolves.
+  if (mode === 'bot' || mode === 'mp') {
+    const result = game.winner === null ? 'draw'
+      : (mode === 'bot' ? game.winner === 1 : game.winner === myPlayer) ? 'win' : 'loss';
+    recordMatchResult(result)
+      .then((prog) => hud.showRewardStrip(result, prog))
+      .catch(() => {});
+  }
   return true;
 }
 
@@ -339,7 +368,7 @@ function startGame(opts) {
   hud.onRestart = () => location.reload();
 
   update();
-  window.__limen = { game, renderer, hud, update, handleClick, scheduleBot, net, myPlayer }; // debug/test handle
+  Object.assign(window.__limen, { game, renderer, hud, update, handleClick, scheduleBot, net, myPlayer });
 }
 
 // ─── Menu wiring ────────────────────────────────────────────────────────
@@ -359,6 +388,44 @@ const deckbuilder = initDeckbuilder(document.getElementById('deckOverlay'));
 document.getElementById('deckBtn').onclick = () => deckbuilder.open();
 document.getElementById('helpBtn').onclick = () => document.getElementById('helpOverlay').classList.remove('hidden');
 document.getElementById('helpCloseBtn').onclick = () => document.getElementById('helpOverlay').classList.add('hidden');
+
+const account = initAccount(document.getElementById('accountOverlay'));
+document.getElementById('accountBtn').onclick = () => account.open();
+const collection = initCollection(document.getElementById('collectionOverlay'));
+document.getElementById('collectionBtn').onclick = () => collection.open();
+
+// Every overlay is Escape-closable.
+const OVERLAY_IDS = ['helpOverlay', 'deckOverlay', 'mpOverlay', 'accountOverlay', 'collectionOverlay'];
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  for (const id of OVERLAY_IDS) {
+    const el = document.getElementById(id);
+    if (el && !el.classList.contains('hidden')) { el.classList.add('hidden'); return; }
+  }
+});
+
+// ─── Account boot + player strip (title/menu §7.1) ─────────────────────
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function renderPlayerStrip() {
+  const user = await currentUser();
+  const p = getLocalProgress();
+  const stripEl = document.getElementById('playerStrip');
+  stripEl.innerHTML = `
+    <span class="ps-name">${user?.email ? escapeHtml(user.email) : 'Guest'}</span>
+    <span class="ps-motes">◆ ${p.motes}</span>
+    <span class="ps-wins">${p.wins}W / ${p.losses}L</span>`;
+}
+
+renderPlayerStrip(); // instant, local-only paint — never waits on the network (§3.6)
+
+bootAuth(async (user) => {
+  await migrateLocalDeckIfNeeded(user.id);
+  await pullCloudState(user.id);
+  renderPlayerStrip();
+}).then(renderPlayerStrip);
 
 // Cheat sheet keyword list generated from the data — can't go stale.
 document.getElementById('helpKeywords').innerHTML =
