@@ -2,14 +2,9 @@
 // Both clients build the same Game from the row's seed + deck compositions,
 // then replay each other's actions from the append-only `actions` log.
 // Durable (refresh-safe on the wire), ordered (log index), tiny payloads.
+import { sb } from './client.js';
 
-const SUPABASE_URL = 'https://kghzdnspdsxrheuckizp.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_TTNv39Gsg8o20dmCOj2lfQ_rttaEvPR'; // client-safe by design
-
-function client() {
-  if (!window.supabase) throw new Error('supabase-js not loaded');
-  return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-}
+const client = sb; // one shared instance for the whole app — see net/client.js
 
 export function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
