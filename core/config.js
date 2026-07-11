@@ -11,11 +11,13 @@ export const CONFIG = {
   PLACEMENTS_PER_TURN: 1,
   DISCARDS_PER_TURN: 1,
 
-  // Deck construction (the pacing valve — replaces resource costs). R8: 20→24
-  // (working default pending the A10 20-vs-24 sim gate), rarity caps per R8
-  // spec (2 rare / 8 uncommon per deck — up from 6 uncommon to fit the
-  // expanded pool without starving common-slot variety).
-  DECK_SIZE: 24,
+  // Deck construction (the pacing valve — replaces resource costs). A10 sim
+  // gate (seed-paired, n=600, greedy mirror, RULES-7): 24-card median length
+  // 46 plies, 72% of games over the 45-ply ceiling — FAILS. 20-card median
+  // 38, comfortably inside 25-45 — PASSES. Ships 20 per the binding gate,
+  // not the R8 proposal's "modest 20→24" (A13: honor what the sim actually
+  // supports). Rarity caps still per R8 spec (2 rare / 8 uncommon per deck).
+  DECK_SIZE: 20,
   MAX_RARE: 2,
   MAX_UNCOMMON: 8,
   COPY_CAP: { common: 3, uncommon: 2, rare: 1 },

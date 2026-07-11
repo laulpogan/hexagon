@@ -33,14 +33,18 @@ export const RITE_INFO = {
 // count: copies in the default starter deck (sums to CONFIG.DECK_SIZE).
 // R8 starter rebuild (2026-07-11): the old 20-card starter shipped ZERO
 // rite/wave-1 copies (the tension mechanics were invisible in game one —
-// tumble-dry finding). This 24-card default includes FLANK (WILL-O'-WISP),
-// WING (POLLENCLOUD), SUSTAIN (LEECHSPRITE), 1 SUNDER, 1 RALLYING_CRY, and
+// tumble-dry finding). This default includes FLANK (WILL-O'-WISP), WING
+// (POLLENCLOUD), SUSTAIN (LEECHSPRITE), 1 SUNDER, 1 RALLYING_CRY, and
 // APEXWARDEN to put a new R3 (high-ground) showcase card in every game one.
 // THICKET/OUTCROP were flagged as redundant "vanilla twins" (ARENA_PLAN) —
-// OUTCROP dropped to 0, its slot given to real texture instead.
+// OUTCROP dropped to 0, its slot given to real texture instead. Deck size
+// stayed 20, not R8's proposed 24 — the A10 sim gate failed at 24 (median
+// length 46 plies, 72% of games over the 45-ply ceiling at n=600); this is
+// the same card mix trimmed by one copy each on 4 of the least-differentiated
+// slots (THICKET/ECHO/RIFT-WALL/PETRIFIED-ROSE), not a different design.
 export const TILE_POOL = [
   // ─── COMMON ─────────────────────────────────────────────────────────
-  { type: 'THICKET',     influence: 2, rarity: 'common',   count: 2, keywords: [] },
+  { type: 'THICKET',     influence: 2, rarity: 'common',   count: 1, keywords: [] },
   { type: 'OUTCROP',     influence: 2, rarity: 'common',   count: 0, keywords: [] },
   { type: 'LANTERN',     influence: 1, rarity: 'common',   count: 0, keywords: ['SCOUT'] },
   { type: 'PALISADE',    influence: 1, rarity: 'common',   count: 0, keywords: ['FORTIFIED'] },
@@ -49,7 +53,7 @@ export const TILE_POOL = [
 
   // ─── UNCOMMON ───────────────────────────────────────────────────────
   { type: 'WARDSTONE',   influence: 1, rarity: 'uncommon', count: 0, keywords: ['WARD'] },
-  { type: 'ECHO',        influence: 2, rarity: 'uncommon', count: 2, keywords: ['DOUBLESTRIKE'] },
+  { type: 'ECHO',        influence: 2, rarity: 'uncommon', count: 1, keywords: ['DOUBLESTRIKE'] },
   { type: 'HERALD',      influence: 2, rarity: 'uncommon', count: 2, keywords: ['RALLY'] },
   { type: 'REAVER',      influence: 2, rarity: 'uncommon', count: 0, keywords: ['SIEGE'] },
   { type: 'BASTION',     influence: 2, rarity: 'uncommon', count: 0, keywords: ['FORTIFIED', 'WARD'] },
@@ -77,10 +81,10 @@ export const TILE_POOL = [
   // ─── R8 POOL: 14 sim-validated promotions (analysis/pool40.json) ─────
   { type: 'EMBERSLINGER',   influence: 2, rarity: 'common',   count: 2, keywords: ['SCOUT'] },
   { type: 'SPRITE',         influence: 1, rarity: 'common',   count: 0, keywords: ['RALLY'] },
-  { type: 'RIFT-WALL',      influence: 2, rarity: 'common',   count: 2, keywords: ['FORTIFIED'] },
+  { type: 'RIFT-WALL',      influence: 2, rarity: 'common',   count: 1, keywords: ['FORTIFIED'] },
   { type: 'FLAME-LURKER',   influence: 2, rarity: 'common',   count: 0, keywords: ['ATTUNED'] },
   { type: 'BANEBERRY',      influence: 1, rarity: 'common',   count: 2, keywords: ['SIEGE'] },
-  { type: 'PETRIFIED-ROSE', influence: 1, rarity: 'common',   count: 2, keywords: ['WARD'] },
+  { type: 'PETRIFIED-ROSE', influence: 1, rarity: 'common',   count: 1, keywords: ['WARD'] },
   { type: "WILL-O'-WISP",   influence: 1, rarity: 'common',   count: 2, keywords: ['FLANK'] },
   { type: 'POLLENCLOUD',    influence: 1, rarity: 'common',   count: 2, keywords: ['WING'] },
   { type: 'FOXGLOVE',       influence: 3, rarity: 'uncommon', count: 0, keywords: ['DOUBLESTRIKE'] },
