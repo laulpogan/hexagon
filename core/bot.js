@@ -64,6 +64,17 @@ function scoreMove(game, player, move, rand) {
   const enemyCap = findCapital(game, enemy);
   if (enemyCap) score += Math.max(0, 10 - hexDistance(move.col, move.row, enemyCap.col, enemyCap.row)) * 0.5;
 
+  // R5: a small pull toward the seam. Riftlight only pays off at the
+  // boardSummary/victory level (A6), which this 1-ply heuristic never looks
+  // at — without a nudge here it only ever sees the RIFT_AURA combat penalty
+  // and never approaches, the exact "nothing rewards going near the rift"
+  // failure tumble-dry's F3 diagnosed. Small and flat: a taste of the
+  // Riftlight payoff, not a substitute for actually holding the ground.
+  if (game.board[move.col][move.row].rift ||
+      neighborCoords(move.col, move.row).some(([c, r]) => game.board[c][r].rift)) {
+    score += 3;
+  }
+
   // Never leave own capital capturable.
   const ownCap = findCapital(game, player);
   if (ownCap && game.relativeInfluence(ownCap.col, ownCap.row) === 0) score -= 1000;

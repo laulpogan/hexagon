@@ -295,8 +295,8 @@ test('ward-blocked attack resets the pass counter (no premature endgame)', () =>
 });
 
 test('deck shuffle is canonical: composition key order cannot desync clients', () => {
-  const comp1 = { THICKET: 3, OUTCROP: 3, LANTERN: 2, PALISADE: 2, ALTAR: 2, SKIRMISHER: 2,
-    WARDSTONE: 1, ECHO: 1, HERALD: 1, REAVER: 1, RIFTWALKER: 1, COLOSSUS: 1 };
+  const comp1 = { THICKET: 3, OUTCROP: 3, LANTERN: 3, PALISADE: 3, ALTAR: 2, SKIRMISHER: 3,
+    WARDSTONE: 1, ECHO: 2, HERALD: 1, REAVER: 1, RIFTWALKER: 1, COLOSSUS: 1 }; // sums to CONFIG.DECK_SIZE (24)
   const comp2 = Object.fromEntries(Object.entries(comp1).reverse());
   const a = new Game({ seed: 'order', decks: { 1: comp1, 2: comp1 } });
   const b = new Game({ seed: 'order', decks: { 1: comp2, 2: comp2 } });
