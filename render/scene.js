@@ -703,7 +703,10 @@ export class BoardRenderer {
   // falls back to primitive shards, tinted per-shard via a coord hash.
   _buildRubbleShards(col, row, count) {
     const group = new THREE.Group();
-    const manifestRubble = this._envManifest?.rubble;
+    // Accept both manifest shapes: the PATCH_NOTES contract {rubble:[files]}
+    // and the shipped media manifest {props:[{file, kind, ...}]}.
+    const manifestRubble = this._envManifest?.rubble
+      || this._envManifest?.props?.filter((p) => p.kind === 'rubble').map((p) => p.file);
     for (let i = 0; i < count; i++) {
       const hx = hashCoord(col, row, i * 7 + 1), hy = hashCoord(col, row, i * 7 + 2),
             hz = hashCoord(col, row, i * 7 + 3), hs = hashCoord(col, row, i * 7 + 4),
