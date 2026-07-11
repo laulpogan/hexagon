@@ -404,12 +404,8 @@ document.getElementById('deckBtn').onclick = () => deckbuilder.open();
 document.getElementById('helpBtn').onclick = () => document.getElementById('helpOverlay').classList.remove('hidden');
 document.getElementById('codexBtn').onclick = () => codex.open();
 document.getElementById('introBtn').onclick = () => cinematics.playIntro();
-// First-visit nudge: click-to-begin overlay, skippable, no-op if the intro
-// asset hasn't landed yet (INTEGRATION_NOTES.md #2).
-if (!localStorage.getItem('limen-intro-seen')) {
-  localStorage.setItem('limen-intro-seen', '1');
-  cinematics.playIntro();
-}
+// No first-visit auto-play: it painted a black gate over the menu on the
+// very first load (gate-2 live smoke). The intro is opt-in via its button.
 document.getElementById('helpCloseBtn').onclick = () => document.getElementById('helpOverlay').classList.add('hidden');
 
 const account = initAccount(document.getElementById('accountOverlay'));

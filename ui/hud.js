@@ -121,7 +121,7 @@ export class Hud {
         `<span class="kw" title="${(KEYWORDS[k]?.desc || '').replace(/"/g, '&quot;')}">${KEYWORDS[k]?.name || k}</span>`).join('');
       const isRite = tile.kind === 'rite';
       card.innerHTML = `
-        <div class="card-art" style="background-image:url('./assets/tiles/${tile.type}.jpg')"></div>
+        <div class="card-art" style="background-image:url('./assets/tiles/${encodeURIComponent(tile.type)}.jpg')"></div>
         <div class="card-name">${tile.type.replace(/_/g, ' ')}</div>
         <div class="card-inf">${isRite ? '✦' : tile.influence}</div>
         <div class="card-kws">${isRite ? `<span class="kw" title="${(RITE_INFO[tile.type]?.desc || '').replace(/"/g, '&quot;')}">Rite</span>` : kws}</div>

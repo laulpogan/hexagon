@@ -109,7 +109,7 @@ export function initDeckbuilder(overlayEl, onClose) {
               <div class="db-card ${n > 0 ? 'picked' : ''} ${locked ? 'db-locked' : ''}" data-type="${tpl.type}"
                    style="border-color:${RARITY_COLOR[tpl.rarity]}">
                 <span class="db-count">${n || ''}</span>
-                <div class="card-art" style="background-image:url('./assets/tiles/${tpl.type}.jpg')"></div>
+                <div class="card-art" style="background-image:url('./assets/tiles/${encodeURIComponent(tpl.type)}.jpg')"></div>
                 ${locked ? '<div class="col-lock">&#128274;</div>' : ''}
                 <div class="db-name">${tpl.type}</div>
                 <div class="db-inf">${tpl.influence}</div>
