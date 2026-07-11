@@ -12,6 +12,20 @@ let current = null;             // { type, root }
 let loaderPromise = null;
 const missing = new Set();      // types confirmed absent — never re-fetch
 
+// Available-model allow-list (manifest.json = ["RIFTWALKER", ...]). Loaded
+// once; show() skips silently for any type not in it, so cards without a GLB
+// (e.g. rites, unmodeled pool cards) never fire a 404. Missing manifest → the
+// per-type missing-set still catches 404s, just noisier.
+let available = null;           // Set<string> | null (null = not yet loaded)
+let availablePromise = null;
+function loadAvailable() {
+  availablePromise ||= fetch(`${MODEL_DIR}manifest.json`)
+    .then(r => (r.ok ? r.json() : []))
+    .then(list => { available = new Set(list); })
+    .catch(() => { available = new Set(); });
+  return availablePromise;
+}
+
 function ensure() {
   if (dom) return;
   dom = document.createElement('div');
@@ -66,6 +80,8 @@ function tick() {
 export const popout = {
   async show(type) {
     if (!type || missing.has(type)) return;
+    if (!available) await loadAvailable();
+    if (!available.has(type)) return;   // no model for this type — silent skip
     ensure();
     if (current?.type === type) { dom.style.opacity = '1'; return; }
     loaderPromise ||= import('../vendor/jsm/loaders/GLTFLoader.js');
