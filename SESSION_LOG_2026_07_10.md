@@ -111,3 +111,30 @@ hexagon 2D prototype in one autonomous session on branch `limen-design`
   RALLY_STACK_CAP=2 → 58.3%, diversity 21.7→24.1, baseline sim unmoved.
 - Policy retrained post-rules-change with zero arena edits (the modularity
   guarantee held twice now).
+
+## Round 5 (same day) — ruins, media blitz, visual persona loop
+
+- Design reversal (user call): captures REPLACE enemy tiles again; stacking is
+  friendly-only Ascension. Every destroyed tile (capture, peel, SUNDER) leaves
+  ruins on the cell: −1 influence per layer (RUIN_CAP 2), ATTUNED immune.
+  Ruins double as anti-ping-pong decay. Tiebreak knob re-swept to −2. 45 tests.
+- Media: 23 transparent standing sprites (gpt-image-1; gpt-image-2 refuses
+  transparency), MTG-Arena-style backdrop dome, MusicGen-small ran NATIVELY on
+  the Spark (sm_121 fine, PYTHONNOUSERSITE=1 trap) → menu/verdant/umbral loops.
+- Hand tooltips (hud.onCardHover → same reminder panel as board hover).
+- Visual persona loop round 1: art director 4/10, juice designer (line-level
+  scene.js fixes), stream viewer "No". Fixes: backdrop visible, rift dark-fill
+  + magenta rims, contact shadows + owner glow pools, badge-chip numbers,
+  capture flash/cam-kick/squash/shockwave, bloom chain needs OutputPass or
+  colors flatten. Round-2 screenshot transformed; before/after sent to user.
+- 2D→3D SOTA banked (ARENA_PLAN): Hunyuan3D-2.1 dr-vij Docker CONFIRMED on
+  GB10 (faster than TRELLIS.2 there), Mesh2Motion (browser MIT) for rigging,
+  LTX-2.3 loops fallback; spconv tools (UniRig/SAM3D) → Dell.
+
+## Round 6 (same day) — backlog burn-down
+
+- GAME_DESIGN.md core loop rewritten for ruins (was stale subjugation text).
+- Live deploy verified: music/sprites/backdrop 200 on GH Pages.
+- Parallel agents: visual juice (mote bursts, win camera, unify grade) +
+  balance (tower/ruins-aware policy features, retrain, FLANK buff sweep).
+  Results appended below / in ARENA_PLAN.md when landed.
