@@ -97,7 +97,8 @@ export class Game {
   // + trophy value (R4/A5 — buried ENEMY tiers only; self-stacking is free
   // height, not free influence).
   effectiveBase(col, row) {
-    const tile = this.cellAt(col, row)?.tile;
+    const cell = this.cellAt(col, row);
+    const tile = cell?.tile;
     if (!tile) return 0;
     let inf = tile.influence;
     if (this.hasKeyword(tile, 'FORTIFIED') && isEdge(col, row)) {
@@ -112,6 +113,14 @@ export class Game {
     }
     inf += Math.min(rally, CONFIG.RALLY_STACK_CAP); // aura stacking capped (round 2)
     inf += this.trophyValue(col, row) * CONFIG.TIER_BONUS;
+    // SUMMIT (R8/R3 showcase): bonus while this cell stands tall.
+    if (this.hasKeyword(tile, 'SUMMIT') && this.cellHeight(col, row) >= CONFIG.SUMMIT_HEIGHT_THRESHOLD) {
+      inf += CONFIG.SUMMIT_BONUS;
+    }
+    // SEAMBOUND (R8/R5 showcase): bonus for garrisoning the rift hex itself.
+    if (this.hasKeyword(tile, 'SEAMBOUND') && cell.rift) {
+      inf += CONFIG.SEAMBOUND_BONUS;
+    }
     return inf;
   }
 
@@ -159,7 +168,10 @@ export class Game {
         // neighbor presses harder, a shorter one presses weaker — composed
         // into the pressure sum BEFORE WING halves it (A4 order).
         const dH = this.cellHeight(c, r) - myHeight;
-        const heightBonus = Math.max(-CONFIG.HIGH_CAP, Math.min(CONFIG.HIGH_CAP, dH));
+        let heightBonus = Math.max(-CONFIG.HIGH_CAP, Math.min(CONFIG.HIGH_CAP, dH));
+        // SUREFOOT (R8/R3 showcase): a climber that never loses its footing —
+        // the uphill penalty (attacking a taller defender) never applies to it.
+        if (heightBonus < 0 && this.hasKeyword(nt, 'SUREFOOT')) heightBonus = 0;
         total -= modifyIncoming(tile, nt, contribution + siege + heightBonus); // WING halves incoming
       }
     }

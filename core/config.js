@@ -86,4 +86,10 @@ export const CONFIG = {
   // (0 = flat pulse forever; >0 = each firing hits harder).
   RIFT_STIRS_INTERVAL: 12,
   RIFT_STIRS_ESCALATION: 0,
+
+  // R8 pool: the 4 new R3/R5-showcase keywords (analysis/pool40.json).
+  SUMMIT_HEIGHT_THRESHOLD: 3,  // SUMMIT: bonus while this cell's height is at least this tall
+  SUMMIT_BONUS: 2,
+  SEAMBOUND_BONUS: 3,          // SEAMBOUND: bonus while standing directly on a rift hex
+  TIDEBOUND_BONUS: 1,          // TIDEBOUND: permanent influence gain per rift-adjacent capture
 };

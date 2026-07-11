@@ -418,6 +418,83 @@ test('the pulse hits rift-adjacent tiles only while active; ATTUNED inverts it',
   assert.equal(g.relativeInfluence(nc, nr), attunedQuiet + 1, 'ATTUNED feeds on the pulse instead');
 });
 
+console.log('R8 pool keywords — SUREFOOT / TIDEBOUND / SUMMIT / SEAMBOUND');
+
+test('SUREFOOT ignores the uphill penalty (R3 showcase)', () => {
+  const g = playState('surefoot');
+  const defender = g._makeTile('THICKET', 1);
+  defender.influence = 10; // stay comfortably positive so the clamp-at-0 floor never hides the delta
+  g.board[5][0].tile = defender;
+  g.board[5][0].stack.push(g._makeTile('OUTCROP', 1), g._makeTile('ALTAR', 1)); // height 3
+  const [nc, nr] = neighborCoords(5, 0).find(([c, r]) => !g.board[c][r].rift);
+  const plain = g._makeTile('COLOSSUS', 2); // ordinary attacker, height 1 — attacking uphill (dH = -HIGH_CAP)
+  plain.influence = 4;
+  g.board[nc][nr].tile = plain;
+  const withoutSurefoot = g.relativeInfluence(5, 0);
+  const climber = g._makeTile('STONETREADER', 2);
+  climber.influence = 4; // identical raw pressure, isolate the keyword's effect
+  g.board[nc][nr].tile = climber;
+  const withSurefoot = g.relativeInfluence(5, 0);
+  assert.ok(withSurefoot < withoutSurefoot, 'SUREFOOT presses harder uphill than an ordinary attacker of equal strength');
+  assert.equal(withoutSurefoot - withSurefoot, CONFIG.HIGH_CAP, 'exactly cancels the clamped uphill penalty');
+});
+
+test('TIDEBOUND grows permanently on a rift-adjacent capture, not elsewhere (R5 showcase)', () => {
+  const g = new Game({ seed: 'tidebound' });
+  const rift = findCell(g, (c) => c.rift);
+  const [nc, nr] = neighborCoords(rift.col, rift.row).find(([c, r]) => !g.board[c][r].rift);
+  g.phase = 'play'; g.currentPlayer = 2; g.turn = 1; g.placementsLeft = 1; g.discardsLeft = 1;
+  g.board[nc][nr].tile = g._makeTile('SKIRMISHER', 1); // weak P1 target, rift-adjacent
+  const support = neighborCoords(nc, nr).find(([c, r]) => !g.board[c][r].rift && !(c === rift.col && r === rift.row));
+  const atk = g._makeTile('COLOSSUS', 2);
+  atk.influence = 20;
+  g.board[support[0]][support[1]].tile = atk; // makes it capturable, adjacency satisfied (R2)
+  const seamdrinker = g._makeTile('SEAMDRINKER', 2);
+  const before = seamdrinker.influence;
+  g.hands[2] = [seamdrinker];
+  const res = g.placeFromHand(2, 0, nc, nr);
+  assert.equal(res.ok, true);
+  assert.equal(seamdrinker.influence, before + CONFIG.TIDEBOUND_BONUS, 'grew from the rift-adjacent capture');
+
+  // a capture far from the rift should NOT grow it — the rift always sits
+  // near the mid row (jitter ±1), so row 0 is always well clear of it
+  const g2 = new Game({ seed: 'tidebound-far' });
+  g2.phase = 'play'; g2.currentPlayer = 2; g2.turn = 1; g2.placementsLeft = 1; g2.discardsLeft = 1;
+  const target = g2.board[6][0];
+  assert.ok(!target.rift && neighborCoords(6, 0).every(([c, r]) => !g2.board[c][r].rift), 'sanity: not rift-adjacent');
+  target.tile = g2._makeTile('SKIRMISHER', 1);
+  const [c2, r2] = neighborCoords(6, 0)[0];
+  const atk2 = g2._makeTile('COLOSSUS', 2);
+  atk2.influence = 20;
+  g2.board[c2][r2].tile = atk2;
+  const seamdrinker2 = g2._makeTile('SEAMDRINKER', 2);
+  const before2 = seamdrinker2.influence;
+  g2.hands[2] = [seamdrinker2];
+  g2.placeFromHand(2, 0, 6, 0);
+  assert.equal(seamdrinker2.influence, before2, 'no growth away from the rift');
+});
+
+test('SUMMIT rewards a tall stack; SEAMBOUND rewards garrisoning the rift hex itself', () => {
+  const g = playState('summit-seambound');
+  g.board[6][2].tile = g._makeTile('APEXWARDEN', 1);
+  const belowThreshold = g.effectiveBase(6, 2);
+  assert.equal(belowThreshold, 2, 'no SUMMIT bonus below the height threshold');
+  g.currentPlayer = 1; g.placementsLeft = 1; g.hands[1] = [g._makeTile('APEXWARDEN', 1)];
+  g.placeFromHand(1, 0, 6, 2); // height 2
+  g.currentPlayer = 1; g.placementsLeft = 1; g.hands[1] = [g._makeTile('APEXWARDEN', 1)];
+  g.placeFromHand(1, 0, 6, 2); // height 3 — SUMMIT threshold
+  assert.equal(g.cellHeight(6, 2), CONFIG.SUMMIT_HEIGHT_THRESHOLD);
+  assert.equal(g.effectiveBase(6, 2), 2 + CONFIG.SUMMIT_BONUS, 'SUMMIT bonus kicks in at tier-3');
+
+  const g2 = new Game({ seed: 'seambound' });
+  const rift = findCell(g2, (c) => c.rift);
+  rift.tile = g2._makeTile('SEAMKEEPER', 1);
+  assert.equal(g2.effectiveBase(rift.col, rift.row), 1 + CONFIG.SEAMBOUND_BONUS, 'SEAMBOUND bonus while garrisoning the rift hex');
+  const [oc, or] = neighborCoords(rift.col, rift.row).find(([c, r]) => !g2.board[c][r].rift);
+  g2.board[oc][or].tile = g2._makeTile('SEAMKEEPER', 1);
+  assert.equal(g2.effectiveBase(oc, or), 1, 'no SEAMBOUND bonus one hex off the rift — must be ON it');
+});
+
 console.log('rites');
 
 test('SUNDER (A2): may only target a tile adjacent to one of the caster\'s own tiles', () => {

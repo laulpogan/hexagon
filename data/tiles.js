@@ -16,6 +16,11 @@ export const KEYWORDS = {
   SUSTAIN:     { name: 'Sustain',      desc: 'Each capture this tile makes permanently raises its base influence by 1.' },
   TRAMPLE:     { name: 'Trample',      desc: 'When this captures, the weakest other adjacent enemy tile permanently loses 2 base influence.' },
   UNTOUCHABLE: { name: 'Untouchable',  desc: 'Cannot be targeted by enemy rites.' },
+  // RULES-7 / R8 pool — showcase the height (R3) and rift (R5) systems.
+  SUREFOOT:    { name: 'Surefoot',     desc: 'Never suffers the uphill penalty when pressing a taller enemy.' },
+  TIDEBOUND:   { name: 'Tidebound',    desc: 'Each capture made on or beside the rift permanently raises its base influence by 1.' },
+  SUMMIT:      { name: 'Summit',       desc: '+2 influence while its cell stands 3 tiers tall or higher.' },
+  SEAMBOUND:   { name: 'Seambound',    desc: '+3 influence while standing directly on a rift hex.' },
 };
 
 export const RITE_INFO = {
@@ -61,6 +66,28 @@ export const TILE_POOL = [
   { type: 'SUNDER',       influence: 0, rarity: 'common',   count: 0, keywords: [], kind: 'rite' },
   { type: 'FORESIGHT',    influence: 0, rarity: 'common',   count: 0, keywords: [], kind: 'rite' },
   { type: 'RALLYING_CRY', influence: 0, rarity: 'uncommon', count: 0, keywords: [], kind: 'rite' },
+
+  // ─── R8 POOL: 14 sim-validated promotions (analysis/pool40.json) ─────
+  { type: 'EMBERSLINGER',   influence: 2, rarity: 'common',   count: 0, keywords: ['SCOUT'] },
+  { type: 'SPRITE',         influence: 1, rarity: 'common',   count: 0, keywords: ['RALLY'] },
+  { type: 'RIFT-WALL',      influence: 2, rarity: 'common',   count: 0, keywords: ['FORTIFIED'] },
+  { type: 'FLAME-LURKER',   influence: 2, rarity: 'common',   count: 0, keywords: ['ATTUNED'] },
+  { type: 'BANEBERRY',      influence: 1, rarity: 'common',   count: 0, keywords: ['SIEGE'] },
+  { type: 'PETRIFIED-ROSE', influence: 1, rarity: 'common',   count: 0, keywords: ['WARD'] },
+  { type: "WILL-O'-WISP",   influence: 1, rarity: 'common',   count: 0, keywords: ['FLANK'] },
+  { type: 'POLLENCLOUD',    influence: 1, rarity: 'common',   count: 0, keywords: ['WING'] },
+  { type: 'FOXGLOVE',       influence: 3, rarity: 'uncommon', count: 0, keywords: ['DOUBLESTRIKE'] },
+  { type: 'VEILWALKER',     influence: 3, rarity: 'uncommon', count: 0, keywords: ['UNTOUCHABLE'] },
+  { type: 'SOUL-ENGINE',    influence: 3, rarity: 'uncommon', count: 0, keywords: ['SUSTAIN'] },
+  { type: 'SPLINTER',       influence: 1, rarity: 'uncommon', count: 0, keywords: ['DOUBLESTRIKE', 'MENACE'] },
+  { type: 'MAELSTONIUM',    influence: 3, rarity: 'rare',     count: 0, keywords: ['DOUBLESTRIKE', 'FLANK'] },
+  { type: 'TEAR-ESSENCE',   influence: 4, rarity: 'rare',     count: 0, keywords: ['UNTOUCHABLE', 'ATTUNED'] },
+
+  // ─── R8 POOL: 4 new designs showcasing R3 (high ground) / R5 (Riftlight) ──
+  { type: 'STONETREADER', influence: 2, rarity: 'uncommon', count: 0, keywords: ['SUREFOOT'] },
+  { type: 'SEAMDRINKER',  influence: 2, rarity: 'uncommon', count: 0, keywords: ['TIDEBOUND'] },
+  { type: 'APEXWARDEN',   influence: 2, rarity: 'rare',     count: 0, keywords: ['SUMMIT'] },
+  { type: 'SEAMKEEPER',   influence: 1, rarity: 'uncommon', count: 0, keywords: ['SEAMBOUND'] },
 ];
 
 const byType = new Map(TILE_POOL.map(t => [t.type, t]));

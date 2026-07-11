@@ -54,6 +54,20 @@ export const KEYWORD_HOOKS = {
   UNTOUCHABLE: {
     targetable() { return false; },
   },
+  // R8/R5 showcase: feeds on the wound between worlds — every capture made
+  // rift-or-rift-adjacent permanently grows it. SUMMIT and SEAMBOUND are
+  // simple static bonuses (like RALLY/FORTIFIED) and live inline in
+  // game.js's effectiveBase; SUREFOOT lives inline in relativeInfluence.
+  // TIDEBOUND is onPlacement-shaped (like SUSTAIN), so it belongs here.
+  TIDEBOUND: {
+    onPlacement({ game, tile, col, row, captured }) {
+      if (!captured) return;
+      const cell = game.board[col][row];
+      if (cell.rift || riftNeighborCount(game.board, col, row) > 0) {
+        tile.influence += CONFIG.TIDEBOUND_BONUS;
+      }
+    },
+  },
 };
 
 // captureGate aggregation across the attacker's board (called from isCapturable)
