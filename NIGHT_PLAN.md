@@ -17,6 +17,16 @@ User order (verbatim intent, do not drift):
 4. **Full online shell by morning**: menu screens, account creation,
    deck building, collection screen, unlock/progression loop that motivates
    play. "Everything screens you would expect."
+5. **Battleground elevation (user order, mid-flight, verbatim intent):
+   "frequent battleground tiles should stack higher and higher and become
+   harder to combat, maybe even providing advantage from highground to
+   others."** — Repeated combat on a cell raises its elevation (capture
+   caps a layer on top → the stack IS the terrain). Tall cells: harder to
+   take, and grant high-ground advantage vs adjacent lower tiles. This
+   unifies with directive #1 (capture-caps-on-top) into ONE system:
+   contested chokepoints visibly tower = the landscape effect + wow moment.
+   Design round decides exact numbers (height bonus, whether ruins decay
+   folds in or dies) — sim-gated like everything else.
 
 ## Tier: HIGH (auth + core rules + product-quality deliverable)
 Gate #1 = persona review of the unified design before building.
