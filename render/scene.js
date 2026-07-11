@@ -79,7 +79,7 @@ function makeTextSprite(lines, opts = {}) {
   tex.anisotropy = 4;
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
   const sprite = new THREE.Sprite(mat);
-  sprite.scale.set(1.35, 1.35, 1);
+  sprite.scale.set(1.15, 1.15, 1);
   return sprite;
 }
 
@@ -194,7 +194,7 @@ export class BoardRenderer {
     const center = this._boardCenter();
     this.center = center;
     this.camera = new THREE.PerspectiveCamera(46, container.clientWidth / container.clientHeight, 0.1, 200);
-    this.camDist = 17;
+    this.camDist = 19;
     this.camYaw = 0;
     this.camPitch = 0.82; // radians above horizon — low enough to see the world
     this._applyCamera();
@@ -467,7 +467,7 @@ export class BoardRenderer {
     group.userData.sprite = fresh;
     // punch-in when the number changes (the most-read pixel on screen)
     if (!document.hidden) {
-      fresh.scale.set(2.3, 2.3, 1);
+      fresh.scale.set(1.9, 1.9, 1);
       this._popAnims.push({ sprite: fresh, start: performance.now() });
     }
     // capturable tiles pulse dark
@@ -773,16 +773,11 @@ export class BoardRenderer {
     this._flashAnims = this._flashAnims.filter(a => !a.done);
     for (const a of this._popAnims) {
       const p = Math.min(1, (now - a.start) / 220);
-      const over = 1.35 + (2.3 - 1.35) * (1 - p) * Math.cos(p * 5);
-      a.sprite.scale.set(Math.max(1.35, over), Math.max(1.35, over), 1);
-      if (p >= 1) { a.sprite.scale.set(1.35, 1.35, 1); a.done = true; }
+      const over = 1.15 + (1.9 - 1.15) * (1 - p) * Math.cos(p * 5);
+      a.sprite.scale.set(Math.max(1.15, over), Math.max(1.15, over), 1);
+      if (p >= 1) { a.sprite.scale.set(1.15, 1.15, 1); a.done = true; }
     }
     this._popAnims = this._popAnims.filter(a => !a.done);
-    // decaying camera kick (capture punch)
-    if (this._camKick.lengthSq() > 0.00001) {
-      this.camera.position.add(this._camKick);
-      this._camKick.multiplyScalar(0.8);
-    }
     // billboards idle-bob (the "alive" read); halo tracks its subject
     for (const g of this.tileMeshes.values()) {
       const u = g.userData;
@@ -831,6 +826,15 @@ export class BoardRenderer {
       wc.lastNow = now;
       this._applyCamera();
     }
+    // Decaying camera kick (capture punch) — applied only for this frame's
+    // render, then removed. A persistent position.add would displace the
+    // camera a little more with every capture and drift the board off-frame.
+    const kicking = this._camKick.lengthSq() > 0.00001;
+    if (kicking) this.camera.position.add(this._camKick);
     this.composer.render();
+    if (kicking) {
+      this.camera.position.sub(this._camKick);
+      this._camKick.multiplyScalar(0.8);
+    }
   }
 }
