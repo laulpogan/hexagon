@@ -35,11 +35,12 @@ export const CONFIG = {
   SIEGE_BONUS: 5,   // 2→5 (2026-07-10 balance round): at 2, aggression never paid.
                     // Seed-paired sim n=300: captures/match 2.5→3.8, split unmoved.
 
-  // Influence-victory equalizer. After this round's structural fixes (deep bot
-  // capitals, scout heartland ban, stuck-only pass) the old 41/59 P2 edge is
-  // gone on its own — seed-paired n=300: T0 143/154, T1 147/149 (even). Keep 1
-  // as a hair of first-mover compensation; re-sweep if tiles change.
-  INFLUENCE_TIEBREAK_BONUS_P1: -2, // signed; re-swept post-subjugation: -2 = 148/151 paired (P2 side gets it now)
+  // Influence-victory equalizer. RULES-7 re-sweep (greedy mirror, this
+  // round's starter deck): noisy at n<=1200 (readings for -1 ranged
+  // 49.1-52.5% across different seed sets/n), so decided on the largest
+  // stable sample — n=2000 at -1 read 49.55% P1, solidly inside the 48-52%
+  // band. (0 trended high ~52%, -4 trended low ~45.5%.)
+  INFLUENCE_TIEBREAK_BONUS_P1: -1, // signed; RULES-7 re-sweep, n=2000: 49.55% P1
 
   // Scouts may ignore adjacency anywhere EXCEPT the enemy heartland (the
   // opponent's capital-zone rows) — kills the turn-1 scout capital rush.
