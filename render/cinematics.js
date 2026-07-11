@@ -24,6 +24,7 @@ const CSS = `
 `;
 
 let styled = false;
+let introOpen = false;          // reentrancy guard for playIntro
 function ensureStyle() {
   if (styled) return;
   const s = document.createElement('style');
@@ -42,7 +43,11 @@ export const cinematics = {
   // onDone always fires exactly once (end, skip, or missing asset).
   async playIntro(onDone) {
     ensureStyle();
-    if (!(await available(INTRO_SRC))) { onDone?.(); return; }
+    // reentrancy guard: a double-click or the first-visit auto-nudge racing a
+    // manual click must not stack two overlays (each with its own ESC listener).
+    if (introOpen) { onDone?.(); return; }
+    introOpen = true;
+    if (!(await available(INTRO_SRC))) { introOpen = false; onDone?.(); return; }
     const el = document.createElement('div');
     el.id = 'introOverlay';
     el.innerHTML = `<button id="introBegin">▶ &nbsp;THE MEETING</button>`;
@@ -51,6 +56,7 @@ export const cinematics = {
     const finish = () => {
       if (finished) return;
       finished = true;
+      introOpen = false;
       const v = el.querySelector('video');
       if (v) { v.pause(); v.removeAttribute('src'); v.load(); }
       el.remove();

@@ -67,21 +67,27 @@ export function initCodex() {
       onerror="this.remove()" alt="">`;
   }
 
+  // LORE prose is model-generated (tools/gen_lore_data.js). Escape every
+  // free-text field before it touches innerHTML — the pipeline can regenerate
+  // this data with only a human taste-pass, so treat it as untrusted at render.
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
   function show(id) {
     nav.querySelectorAll('.cdx-item').forEach(n => n.classList.toggle('active', n.dataset.id === id));
     if (id.startsWith('act')) {
       const a = LORE.acts[+id.slice(3)];
-      body.innerHTML = `<h2>${a.title}</h2><p>${a.text}</p>`;
+      body.innerHTML = `<h2>${esc(a.title)}</h2><p>${esc(a.text)}</p>`;
     } else if (id.startsWith('cdx_')) {
       const c = LORE.codices[id.slice(4)];
-      body.innerHTML = `<h2>${c.title}</h2><p>${c.text}</p>`;
+      body.innerHTML = `<h2>${esc(c.title)}</h2><p>${esc(c.text)}</p>`;
     } else {
       const t = id.slice(5);
       const u = LORE.units[t];
-      body.innerHTML = `${artFor(t)}<h2>${t.replace(/_/g, ' ')}</h2>
-        <div class="cdx-epigraph">“${u.epigraph}”</div>
-        <p>${u.vignette}</p>
-        ${u.note ? `<div class="cdx-note">${u.note}</div>` : ''}`;
+      body.innerHTML = `${artFor(t)}<h2>${esc(t.replace(/_/g, ' '))}</h2>
+        <div class="cdx-epigraph">“${esc(u.epigraph)}”</div>
+        <p>${esc(u.vignette)}</p>
+        ${u.note ? `<div class="cdx-note">${esc(u.note)}</div>` : ''}`;
     }
     body.scrollTop = 0;
   }

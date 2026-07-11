@@ -10,6 +10,7 @@ const SIZE = 210;
 let dom = null, renderer = null, scene = null, camera = null, raf = 0;
 let current = null;             // { type, root }
 let loaderPromise = null;
+let showGen = 0;                // request generation — a stale async load drops itself
 const missing = new Set();      // types confirmed absent — never re-fetch
 
 // Available-model allow-list (manifest.json = ["RIFTWALKER", ...]). Loaded
@@ -80,10 +81,16 @@ function tick() {
 export const popout = {
   async show(type) {
     if (!type || missing.has(type)) return;
+    const gen = ++showGen;              // this call's ticket; a newer show() supersedes it
     if (!available) await loadAvailable();
+    if (gen !== showGen) return;
     if (!available.has(type)) return;   // no model for this type — silent skip
     ensure();
-    if (current?.type === type) { dom.style.opacity = '1'; return; }
+    if (current?.type === type) {       // already loaded — reveal + resume spin
+      dom.style.opacity = '1';
+      if (!raf) tick();
+      return;
+    }
     loaderPromise ||= import('../vendor/jsm/loaders/GLTFLoader.js');
     let gltf;
     try {
@@ -91,8 +98,10 @@ export const popout = {
       gltf = await new GLTFLoader().loadAsync(`${MODEL_DIR}${type}.glb`);
     } catch {
       missing.add(type);
+      if (gen === showGen) this.hide();  // don't leave the prior model showing under a card that has none
       return;
     }
+    if (gen !== showGen) return;         // a newer hover won the race — drop this result
     disposeCurrent();
     const root = gltf.scene;
     // normalize: fit into a unit box, feet at y=0
