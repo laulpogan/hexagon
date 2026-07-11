@@ -12,6 +12,12 @@ import { initCollection } from './ui/collection.js';
 import { KEYWORDS, RITE_INFO } from './data/tiles.js';
 import { riftNeighborCount } from './core/board.js';
 import { NetSession, generateRoomCode } from './net/supabase.js';
+// Media-campaign modules (INTEGRATION_NOTES.md) — all no-op if assets absent.
+import { initCodex } from './ui/codex.js';
+import { cinematics } from './render/cinematics.js';
+import { popout } from './render/popout.js';
+
+const codex = initCodex();
 import { bootAuth, currentUser, migrateLocalDeckIfNeeded } from './net/auth.js';
 import {
   recordMatchResult, pullCloudState, getLocalProgress, getLocalCollection,
@@ -187,6 +193,7 @@ function checkGameOver() {
   update();
   sound.victory();
   hud.showWin(game.winner, game.stats, game.turn, game.winReason);
+  cinematics.playWin(game.winner);
   if (mode === 'mp' && net) net.finish().catch(() => {});
 
   // Progression (SHELL_SPEC.md §5.3): only bot/mp have a single "you" —
@@ -266,6 +273,9 @@ function updateBoardTip(hit) {
 
 // Hand-card reminder tooltip (same panel, card-flavored content)
 function showCardTip(tile) {
+  if (!(mode === 'mp' && game && game.currentPlayer !== myPlayer)) {
+    tile ? popout.show(tile.type) : popout.hide();
+  }
   if (!tile) { boardTip.style.display = 'none'; return; }
   const isRite = tile.kind === 'rite';
   const kwHtml = isRite
@@ -392,6 +402,14 @@ document.getElementById('botBtn').onclick = () => {
 const deckbuilder = initDeckbuilder(document.getElementById('deckOverlay'));
 document.getElementById('deckBtn').onclick = () => deckbuilder.open();
 document.getElementById('helpBtn').onclick = () => document.getElementById('helpOverlay').classList.remove('hidden');
+document.getElementById('codexBtn').onclick = () => codex.open();
+document.getElementById('introBtn').onclick = () => cinematics.playIntro();
+// First-visit nudge: click-to-begin overlay, skippable, no-op if the intro
+// asset hasn't landed yet (INTEGRATION_NOTES.md #2).
+if (!localStorage.getItem('limen-intro-seen')) {
+  localStorage.setItem('limen-intro-seen', '1');
+  cinematics.playIntro();
+}
 document.getElementById('helpCloseBtn').onclick = () => document.getElementById('helpOverlay').classList.add('hidden');
 
 const account = initAccount(document.getElementById('accountOverlay'));
