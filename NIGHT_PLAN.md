@@ -46,7 +46,7 @@ thing (account → deck → play → unlock), plus judge screenshot review.
 Iteration cap: 3 rounds per gate; blockers → BLOCKERS.md; round counter in
 this file (bump on every gate round):
 GATE1_ROUNDS: 1
-GATE2_ROUNDS: 0
+GATE2_ROUNDS: 1
 
 ## Success criteria (falsifiable, checked before morning report)
 - [ ] Capturing a tile or stack places the attacker's card ON TOP; buried

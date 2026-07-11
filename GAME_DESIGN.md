@@ -102,22 +102,30 @@ seed-paired sweep + policy retrain + meta check before shipping.
 1. Capital placement phase — each player places capital (own half, ≥2 rows off the
    seam, never on a rift hex).
 2. Turns: draw 1 → place 1 tile from hand → influence resolves → captures resolve.
-   Placement may instead **Ascend** (round 3, 2026-07-10): stack onto your own
-   non-capital tile (max 3 high, +1 influence per buried tier, only the top
-   tile's keywords active). Captures **replace** the enemy tile (round 4,
-   2026-07-10 — subjugation/liberation reverted by design call) and every
-   destroyed tile leaves **ruins** on its cell: the occupant loses 1 influence
-   per ruin layer (cap 2) whoever holds it; ATTUNED tiles ignore ruins.
-   Capturing a height≥2 tower **peels** one tier instead — the attacker's card
-   bounces to hand, the tower drops a layer, the cell scars. Towers fall one
-   turn at a time; the landscape remembers every battle, and contested ground
-   decays until nobody profits from ping-pong recaptures.
-   Once per turn a card may be discarded and redrawn (right-click; carried from
-   hexagon iteration 14 — kept, it's the hand-smoothing valve).
-3. Influence system unchanged: base influence ± friendly/enemy neighbors; tile at ≤0
-   relative influence is capturable. **Captures do not require adjacency** (carried
-   from hexagon; a revolting tile anywhere can be taken — rift-drained tiles are
-   deliberately snipeable, the rift is dangerous ground).
+   (RULES-7, 2026-07-11 — full spec + amendments in DESIGN_ROUND_7.md;
+   plain-language version in analysis/rules7_summary.md.)
+   Captures **bury** (cap the stack): the enemy tile goes under yours,
+   permanently — no replace, no peel, no bounce, the attacker's card is
+   always spent. WARD is the single exception (once per tile, the attempt
+   bounces). **Captures require adjacency** — you must already hold a
+   neighboring tile; SUNDER obeys the same gate. Placement may instead
+   **Ascend**: stack onto your own non-capital tile (max 3 high) — height
+   only, no influence; only buried ENEMY tiers pay +1 each (war trophies,
+   cap 3, live-stack only). Total height caps at 5; beyond it the oldest
+   tier crumbles out as rubble. **High ground** (elevation): a taller stack
+   presses +min(dH,2) harder on lower adjacent enemies and takes that much
+   less from below — battlegrounds tower and become genuinely harder to
+   take. Rubble is a render-only battle scar (ruins decay removed).
+   Once per turn a card may be discarded and redrawn (right-click; carried
+   from hexagon iteration 14 — kept, it's the hand-smoothing valve).
+3. Influence: base ± friendly/enemy neighbor contributions ± rift aura ±
+   height asymmetry; tile at ≤0 relative influence is capturable (adjacency
+   gate applies). **The rift is the prize**: rift hexes are placeable, and
+   every rift/rift-adjacent cell you hold adds +2 **Riftlight** to your
+   final score (per-player cap 8, tallied at game end only — never affects
+   capturability). Every 12 plies **THE RIFT STIRS** (telegraphed 2 plies
+   ahead): rift-adjacent tiles take −1 for the round, ATTUNED gain +1.
+   Capitals need ≥3 open neighbors (no corner fortresses).
 4. **Win (knockout):** capture the enemy capital.
 5. **Win (decision, added 2026-07-10 after the first 100-match sim ran 100% stalls):**
    two consecutive passes, or all cards spent on both sides, ends the game — higher
