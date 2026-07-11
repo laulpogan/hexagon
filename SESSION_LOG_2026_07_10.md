@@ -138,3 +138,15 @@ hexagon 2D prototype in one autonomous session on branch `limen-design`
 - Parallel agents: visual juice (mote bursts, win camera, unify grade) +
   balance (tower/ruins-aware policy features, retrain, FLANK buff sweep).
   Results appended below / in ARENA_PLAN.md when landed.
+- Landed: juice (bursts/win-cine/grade/halos, +1 real bug fixed in
+  spriteTexture cache-hit path), balance (policy 11→15 features, beats greedy
+  65%, search2 gap = structural, FLANK arm D 45.1→48.2%, knob −2 holds),
+  beginner cheat sheet (data-generated keyword list + in-game ? button),
+  Threshold narrative + 4-mechanic flavor slate (RIFTBORN / RIFT STIRS /
+  DOMINION / REMEMBRANCE, each with iconic animation spec — proposed).
+- Judge round 3: 5.5/10, found BLOCKER camera-kick drift (position.add per
+  frame, never re-based — +0.85y per capture). Fixed: kick applied only
+  around render call; badges 1.35→1.15; camDist 17→19. Re-verified in-situ:
+  0 drift across 5,800 frames / 8 captures. Revised 6.5/10. Remaining minors:
+  capture-effect legibility at distance, win-orbit framing, hand fan covers
+  far capital.
