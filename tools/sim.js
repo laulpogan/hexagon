@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { Game } from '../core/game.js';
 import { botTakeTurn } from '../core/bot.js';
 import { mulberry32, hashSeed } from '../core/rng.js';
-import { createTracker, recordPly, finishTracker, dramaIndex, formatDramaIndex } from './metrics.js';
+import { createTracker, recordPly, finishTracker, dramaIndex, formatDramaIndex, funIndex, formatFunIndex } from './metrics.js';
 
 const PLY_CAP = 400;
 
@@ -67,6 +67,7 @@ export function runBatch(n, prefix = 'sim') {
     avgTurns: +(totalTurns / n).toFixed(1),
     avgCaptures: +(totalCaptures / n).toFixed(1),
     drama: dramaIndex(results.map(r => r.tracker)),
+    fun: funIndex(results.map(r => r.tracker)),
     results,
   };
 }
@@ -78,5 +79,6 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   console.log(`P1 wins: ${b.p1Wins}  P2 wins: ${b.p2Wins}  draws: ${b.draws}  stalls: ${b.stalls}`);
   console.log(`by capital: ${b.byCapital}  by influence: ${b.byInfluence}`);
   console.log(`avg turns: ${b.avgTurns}  avg captures/match: ${b.avgCaptures}`);
+  console.log(formatFunIndex(b.fun));
   console.log(formatDramaIndex(b.drama));
 }

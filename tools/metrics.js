@@ -8,6 +8,8 @@
 // "before" baseline on current rules and the "after" number once RULES-7
 // lands — no baked-in assumption about which fields a rules version has.
 import { riftNeighborCount } from '../core/board.js';
+import { CONFIG } from '../core/config.js';
+import { roadPressure } from '../core/roads.js';
 
 export function createTracker() {
   return {
@@ -20,6 +22,10 @@ export function createTracker() {
     lastLeadSign: 0,
     influenceSamples: [],           // [{turn, p1, p2}]
     riftTouched: { 1: false, 2: false }, // A11 mutual-turtle: ever placed rift-adjacent
+    seamAdvanceTurns: [],           // R8/P1: plies where a seam tick fired (A/B narrative)
+    roadSamples: [],                // R8/P2: [{turn, m1, m2, loop1, loop2, pressureActive}]
+    placementRows: [],              // R8/P2: [{player, row}] — R5 lateral-share input
+    endTrigger: null,               // R8/P2: 'double-pass' | 'exhaustion' — R4 slice key
     recaptureCounts: new Map(),     // "col,row" -> capture count on that cell
     maxTrophy: 0,                   // A11: highest trophyValue() observed on any placement
     winner: null, winReason: null, stalled: false,
@@ -32,8 +38,37 @@ export function createTracker() {
 // game.stats[player].captured read BEFORE the turn was taken).
 export function recordPly(tracker, game, player, action, capturedBefore) {
   tracker.turns = game.turn;
+  // R8/P1: seamAdvance sets this transient cue when its tick fires
+  if (game.seamAdvancedThisTurn > 0 &&
+      tracker.seamAdvanceTurns[tracker.seamAdvanceTurns.length - 1] !== game.turn) {
+    tracker.seamAdvanceTurns.push(game.turn);
+  }
+  // R8/P2: road telemetry for the sweep's committed metrics (loop-first-ply,
+  // %-looped, %-plies-with-pressure). Zero-cost when the knob is off.
+  if (game.roads) {
+    let pressureActive = false;
+    if (CONFIG.ROAD_PRESSURE_ON) {
+      outer:
+      for (let c = 0; c < CONFIG.GRID_W; c++) {
+        for (let r = 0; r < CONFIG.GRID_H; r++) {
+          const t = game.board[c][r].tile;
+          if (t && !t.capital && roadPressure(game, c, r, t.owner) > 0) {
+            pressureActive = true;
+            break outer;
+          }
+        }
+      }
+    }
+    tracker.roadSamples.push({
+      turn: game.turn,
+      m1: game.roads.momentum[1], m2: game.roads.momentum[2],
+      loop1: game.roads.loop[1], loop2: game.roads.loop[2],
+      pressureActive,
+    });
+  }
   if (action?.kind === 'place') {
     tracker.placements++;
+    if (action.row != null) tracker.placementRows.push({ player, row: action.row }); // R8/P2 R5
     if (action.ascend) tracker.ascends++;
     const capturedNow = game.stats[player].captured - capturedBefore;
     if (action.col != null) {
@@ -59,7 +94,7 @@ export function recordPly(tracker, game, player, action, capturedBefore) {
       if (tracker.lastLeadSign !== 0 && sign !== tracker.lastLeadSign) tracker.leadChanges++;
       tracker.lastLeadSign = sign;
     }
-    tracker.influenceSamples.push({ turn: game.turn, p1: s[1].influence, p2: s[2].influence });
+    tracker.influenceSamples.push({ turn: game.turn, player, p1: s[1].influence, p2: s[2].influence });
   }
 }
 
@@ -67,6 +102,7 @@ export function recordPly(tracker, game, player, action, capturedBefore) {
 export function finishTracker(tracker, game) {
   tracker.winner = game.winner;
   tracker.winReason = game.winReason;
+  tracker.endTrigger = game.endTrigger || null; // R8/P2: R4 bank-the-lead slice
   tracker.turns = game.turn;
   tracker.stalled = game.phase !== 'over';
   tracker.mutualTurtle = !tracker.riftTouched[1] && !tracker.riftTouched[2];
@@ -162,4 +198,143 @@ export function formatDramaIndex(d) {
     `  captures/game ${d.capturesPerGame}  medianFirstCapture T${d.medianFirstCaptureTurn ?? '—'}  leadChanges ${d.leadChangeCount}  comebackRate ${d.comebackRate}%\n` +
     `  zeroCaptureRate ${d.zeroCaptureGameRate}%  stallRate ${d.stallRate}%  mutualTurtleRate ${d.mutualTurtleRate}%\n` +
     `  recaptureCycles/game ${d.recaptureCycleCount}  maxTrophyBonus ${d.maxTrophyBonus}  ascendRate ${d.ascendRate}%  riftlightMarginShare ${d.riftlightMarginShare}%`;
+}
+
+// ---- Fun Index (RULES-8 gate instrument, analysis/fun_metric_spec.md) ----------
+// Browne (2008) empirical predictors of human-perceived game quality, computed from
+// the deterministic per-ply influence log. REPLACES the dramaIndex composite as the
+// gate (dramaIndex stays callable as a legacy diagnostic). Seed-paired A/B-able since
+// the rng is fully seeded. LEAD_CHANGE_TARGET is the one constant to CALIBRATE against
+// the RULES-7 baseline distribution in phase 0 (Browne fit his empirically; so do we).
+const LEAD_CHANGE_TARGET = 0.25; // P0 calibration knob — Limen's lead is sticky
+const M_PREF = 35;               // midpoint of the 25-45 ply target band (duration)
+
+// Per-game quality terms from one tracker's influenceSamples. Returns null if too short.
+function perGameFun(t) {
+  const s = t.influenceSamples;
+  const M = s.length;
+  if (M < 2) return null;
+  const lead = s.map(x => x.p1 - x.p2);      // signed P1-perspective lead per ply
+  let L = 1;
+  for (const d of lead) L = Math.max(L, Math.abs(d)); // per-game peak |lead|, guards /0
+  const w = t.winner;                         // 1 | 2 | null
+
+  // U (Uncertainty-Late) + K (Killer Moves) — winner-perspective, decided games only.
+  let U = null, K = null;
+  if (w === 1 || w === 2) {
+    const nwl = lead.map(d => (w === 1 ? d : -d) / L); // winner lead, normalized [-1,1]
+    let num = 0, den = 0;
+    for (let n = 0; n < M; n++) {
+      const frac = M > 1 ? n / (M - 1) : 0;
+      const e = (nwl[n] + 1) / 2;             // winner lead mapped to [0,1]
+      const wt = frac * frac;                 // Browne late-weighting, k=2
+      num += wt * Math.min(1, Math.abs(frac - e));
+      den += wt;
+    }
+    U = den > 0 ? num / den : 0;
+    let k = 0;
+    for (let n = 1; n < M; n++) k = Math.max(k, Math.abs(nwl[n] - nwl[n - 1]));
+    K = k;
+  }
+
+  // P (Permanence) — a strong move should stick, not be immediately traded back.
+  let P = null;
+  if (M >= 3) {
+    let sum = 0, cnt = 0;
+    for (let n = 1; n <= M - 2; n++) {
+      const sgnN = s[n].player === 1 ? 1 : -1;
+      const sgnN1 = s[n + 1].player === 1 ? 1 : -1;
+      const mDeltaN = sgnN * (lead[n] - lead[n - 1]);       // mover's self-improvement
+      const mDeltaN1 = sgnN1 * (lead[n + 1] - lead[n]);     // next mover's self-improvement
+      const R = clamp01(Math.min(Math.max(0, mDeltaN), Math.max(0, mDeltaN1)) / L);
+      sum += R; cnt++;
+    }
+    P = cnt > 0 ? 1 - sum / cnt : 1;
+  }
+
+  // Lead-change rate (per game) — ties carry the prior sign.
+  let flips = 0, prev = 0;
+  for (let n = 0; n < M; n++) {
+    let sg = Math.sign(lead[n]);
+    if (sg === 0) sg = prev;
+    if (n > 0 && sg !== 0 && prev !== 0 && sg !== prev) flips++;
+    prev = sg;
+  }
+  const lcRate = M > 1 ? flips / (M - 1) : 0;
+
+  const dur = t.turns || M;                    // real game length (charter's 25-45 band)
+  const durDev = clamp01(Math.abs(M_PREF - dur) / M_PREF);
+
+  return { U, K, P, lcRate, durDev };
+}
+
+// Aggregate the batch into the composite + viability gates + charter-gate PASS/FAIL.
+// skillDepthNorm is filled from an arena batch (see tools/arena.js), null from the sim.
+export function funIndex(trackers, { skillDepthNorm = null } = {}) {
+  const G = trackers.length;
+  const per = trackers.map(perGameFun).filter(Boolean);
+  const winsP1 = trackers.filter(t => t.winner === 1).length;
+  const winsP2 = trackers.filter(t => t.winner === 2).length;
+  const decidedN = winsP1 + winsP2;
+  const draws = trackers.filter(t => t.winner == null && !t.stalled).length;
+  const stalls = trackers.filter(t => t.stalled).length;
+
+  const U = avg(per.filter(p => p.U != null).map(p => p.U));
+  const K = avg(per.filter(p => p.K != null).map(p => p.K));
+  const P = avg(per.filter(p => p.P != null).map(p => p.P));
+  const C = G ? decidedN / G : 0;
+  const meanLcRate = avg(per.map(p => p.lcRate));
+  const LC_excess = clamp01(Math.abs(meanLcRate - LEAD_CHANGE_TARGET) / LEAD_CHANGE_TARGET);
+  const Dur_dev = avg(per.map(p => p.durDev));
+
+  const composite = clamp01(0.30 * U + 0.20 * K + 0.15 * P + 0.15 * C - 0.10 * LC_excess - 0.10 * Dur_dev) * 100;
+
+  const balance = decidedN ? 1 - Math.abs(winsP1 - winsP2) / decidedN : 0;
+  const drawishness = G ? draws / G : 0;
+  const p1Rate = decidedN ? winsP1 / decidedN : 0;
+
+  const capturesPerGame = avg(trackers.map(t => t.totalCaptures));
+  const firstCaps = trackers.map(t => t.firstCaptureTurn).filter(x => x != null);
+  const medianFirstCapture = median(firstCaps);
+  const zeroCaptureRate = trackers.filter(t => t.totalCaptures === 0).length / G;
+  const decided = trackers.filter(t => t.winner);
+  const comebackRate = decided.length ? decided.filter(t => t.comeback).length / decided.length : 0;
+  const avgPlies = avg(trackers.map(t => t.turns));
+
+  return {
+    n: G, composite: +composite.toFixed(1),
+    U: +U.toFixed(3), K: +K.toFixed(3), P: +P.toFixed(3), C: +C.toFixed(3),
+    LC_excess: +LC_excess.toFixed(3), Dur_dev: +Dur_dev.toFixed(3),
+    meanLeadChangeRate: +meanLcRate.toFixed(3),
+    balance: +balance.toFixed(3), completion: +C.toFixed(3), drawishness: +drawishness.toFixed(3),
+    p1WinRate: +(p1Rate * 100).toFixed(1),
+    skillDepthNorm,
+    gates: {
+      balanceOK: balance >= 0.80,
+      completionOK: C >= 0.90,
+      drawishnessOK: drawishness <= 0.05,
+      firstCaptureOK: medianFirstCapture != null && medianFirstCapture <= 6,
+      zeroCaptureOK: zeroCaptureRate <= 0.05,
+      plyBandOK: avgPlies >= 25 && avgPlies <= 45,
+      p1BandOK: p1Rate >= 0.48 && p1Rate <= 0.52,
+    },
+    diagnostics: {
+      capturesPerGame: +capturesPerGame.toFixed(2),
+      medianFirstCapture,
+      zeroCaptureRate: +(zeroCaptureRate * 100).toFixed(1),
+      comebackRate: +(comebackRate * 100).toFixed(1),
+      avgPlies: +avgPlies.toFixed(1),
+      stalls, draws,
+    },
+  };
+}
+
+export function formatFunIndex(f) {
+  const g = f.gates, d = f.diagnostics;
+  const mark = b => (b ? 'PASS' : 'FAIL');
+  return `Fun Index: ${f.composite}/100  (n=${f.n})\n` +
+    `  U ${f.U}  K ${f.K}  P ${f.P}  C ${f.C}  -LC ${f.LC_excess}  -Dur ${f.Dur_dev}  (leadChangeRate ${f.meanLeadChangeRate})\n` +
+    `  viability: balance ${f.balance} ${mark(g.balanceOK)}  completion ${f.completion} ${mark(g.completionOK)}  drawishness ${f.drawishness} ${mark(g.drawishnessOK)}\n` +
+    `  charter gates: firstCap<=6 ${mark(g.firstCaptureOK)} (T${d.medianFirstCapture ?? '—'})  zeroCap<=5% ${mark(g.zeroCaptureOK)} (${d.zeroCaptureRate}%)  ply25-45 ${mark(g.plyBandOK)} (${d.avgPlies})  P1 48-52% ${mark(g.p1BandOK)} (${f.p1WinRate}%)\n` +
+    `  skillDepth(arena): ${f.skillDepthNorm == null ? 'n/a — run arena' : f.skillDepthNorm}  ·  comeback ${d.comebackRate}%`;
 }

@@ -77,3 +77,28 @@ visual identity. Scores: tension 6, agency 6, spectacle 7, one-more-game 6.
   done (policy* now beats greedy 60.8%, up from an untrained 0.3xx fitness
   baseline on this ruleset) — closing the search2 gap is a separate,
   larger effort.
+
+## 2026-07-11 — RULES8 P1 plan gate #1 hit iteration cap (3 rounds) — OPEN, operator decision needed
+Plan: RULES8_P1_SEAM.md rev 3. Round-3 scoped verifier: capital aura RESOLVED, but:
+1. **BLOCKER — SCOUT rear-garrison gate is a no-op at deep capitals.** Gate is
+   `seamDistance(placed) <= seamDistance(ownCapitalRow)`; bot/default capitals sit at
+   row 0/8 where seamDistance=4=board max → gate always true → SCOUT still teleports to
+   ring-0 corners turn 1 and garrisons cells the seam should eat. Proposed fix: absolute
+   anchor — `seamDistance(placed) <= CAPITAL_MIN_DIST_FROM_SEAM` (=2).
+2. **MAJOR — ghost-ban window is 1 ply; open garrison window is 3 plies per ring**
+   (ring 0: plies 1-3 unghosted, ordinary lateral placement reaches it legally). Proposed
+   fix: pin "ghosted" to the FULL inter-tick window (ring is doomed from the moment it
+   becomes next-to-fall; ban = ghosted ∧ ¬capital-aura ∧ empty). Consequence: ring 0
+   effectively unbuildable from turn 1 (board opens ~77 cells + aura pockets) — a real
+   design shift the operator should bless.
+3. **MAJOR — T8 vacuous** (sweeps a knob the legality path no longer reads) + Gate #8
+   runnable-line mismatch (sim harness has no capital-liveness fields). Proposed fix:
+   T8 → single-config decoupling regression; T9 carries the invariant; Gate #8 wording
+   points at tests, or add tracker instrumentation.
+Cap rule: only the operator clears/downgrades. Recommended: authorize ONE bounded rev-4
+fold of the three fixes above + final scoped verify limited to them.
+→ RESOLVED 2026-07-11: operator authorized bounded rev-4 (AskUserQuestion). Fixes folded
+into RULES8_P1_SEAM.md rev 4: (1) SCOUT gate anchored absolute to CAPITAL_MIN_DIST_FROM_SEAM;
+(2) ghost-ban = full inter-tick window (ring 0 unbuildable from turn 1 except aura pockets —
+operator-blessed design shift); (3) T8 relabeled decoupling regression, T10 added, gate #8
+points at unit tests not sim. Final scoped verify in flight; build on CLEAR.

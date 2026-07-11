@@ -27,6 +27,39 @@ export const CONFIG = {
   CAPITAL_MIN_DIST_FROM_SEAM: 2, // rows between capital and board mid-line
   CAPITAL_MIN_NEIGHBORS: 3, // A8: corner hill-king block — capitals need ≥3 neighbors
 
+  // R8/P1: THE SEAM ADVANCES — collapsing frontier. From ply SEAM_ADVANCE_START,
+  // every SEAM_ADVANCE_CADENCE plies the outermost ring of empty, non-capital-
+  // adjacent hexes is consumed, up to SEAM_MAX_RINGS (0 disables — the A/B arm).
+  // The next-to-fall ring is "doomed" for its whole inter-tick window: empty
+  // non-aura doomed cells reject placement (telegraph = information, not shelter).
+  //
+  // SHIPPED OFF (2026-07-11 P1 gate result): seed-paired n=300 greedy + n=120×3
+  // arena all agree — seam+frontier CRUSH comeback (19%→8% greedy, 33%→13%
+  // policy mirror), leave firstCap unmoved-or-worse, and drop Fun 38.2→34.3.
+  // The squeeze helps the leader convert; the designed comeback lever
+  // (severance) is a P2 mechanic. Re-evaluate these knobs INSIDE the P2 round.
+  // Machinery + tests + UI stay live behind the knobs (they are the A/B arms).
+  SEAM_ADVANCE_START: 5,
+  SEAM_ADVANCE_CADENCE: 5,
+  SEAM_MAX_RINGS: 0,
+  // R8/P1: frontier-anchored legality — empty placement needs an adjacent anchor
+  // at equal-or-greater seam distance (no retreat) OR adjacency to your capital.
+  FRONTIER_ANCHOR: false,
+
+  // R8/P2: ROADS — chain-slide surge pressure + loop-closure + severance.
+  // The road network is DERIVED (capital-connected same-owner adjacency; no new
+  // action, no protocol change). Enemy tiles adjacent to a linked cell feel
+  // min(CAP, floor(contactRoadPower / DIV)) extra pressure in combat only —
+  // never in the influence-victory tally (boardSummary passes pressure-free;
+  // the Riftlight discipline in reverse). Capitals exempt as defenders until
+  // P5's response window exists. Severance is structural: tiles cut from their
+  // capital stop counting (comeback lever). Gate verdict: RULES8_P2_ROADS.md.
+  ROAD_PRESSURE_ON: true,     // master A/B knob (false = byte-identical RULES-7)
+  ROAD_CHAINSLIDE_REACH: 3,   // hops the surge travels through the network
+  ROAD_MOMENTUM_DIV: 3,       // local roadPower per pressure point
+  ROAD_PRESSURE_CAP: 3,       // max surge pressure per defender
+  LOOP_CLOSURE_MULT: 2,       // roadPower multiplier near a true enclosure
+
   // Keyword magnitudes
   FORTIFIED_BONUS: 2,
   RALLY_BONUS: 1,
@@ -109,4 +142,27 @@ export const CONFIG = {
   SUMMIT_BONUS: 2,
   SEAMBOUND_BONUS: 3,          // SEAMBOUND: bonus while standing directly on a rift hex
   TIDEBOUND_BONUS: 1,          // TIDEBOUND: permanent influence gain per rift-adjacent capture
+
+  // ─── Campaign / Descent roguelite (core/campaign.js — CAMPAIGN_DESIGN.md) ──
+  // All campaign tuning lives here, same all-knobs-in-config discipline the
+  // rest of the file holds. The Descent map is a deterministic branching DAG
+  // generated from a run seed; these knobs shape it. Per-node opponent AGENT
+  // and TIER (skirmish=greedy/1, warden=policy/2, boss=search2/3) are
+  // structural and live in campaign.js, not here. This block is plain data —
+  // the per-match CONFIG snapshot/restore (leak-safety, §10) copies it whole.
+  CAMPAIGN: {
+    STARTING_LIVES: 3,
+    LOSS_PARTIAL_BANK: 1,      // placeholder partial reward banked on a lost duel (Motes: phase 4)
+    DRAFT_SIZE: 3,             // card-pick offers shown per reward
+    PRE_BOSS_COLUMNS: 3,       // branching columns between the entry Skirmish and the Boss sink
+    COL_MIN_NODES: 2,          // min nodes in a branching column
+    COL_MAX_NODES: 3,          // max nodes in a branching column
+    // Node-type weights for the branching middle columns. The entry column is
+    // always a single Skirmish; the final column is always a single Boss.
+    TYPE_WEIGHTS: { skirmish: 5, warden: 2, 'rift-cache': 3 },
+    // Opponent deck strength by node tier — distinct copies added per rarity
+    // before commons fill to DECK_SIZE. Indexed by tier (1..3); index 0 unused.
+    OPP_RARES_BY_TIER: [0, 0, 1, 2],
+    OPP_UNCOMMONS_BY_TIER: [0, 3, 5, 7],
+  },
 };

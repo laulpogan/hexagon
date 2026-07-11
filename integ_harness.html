@@ -1,0 +1,37 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Limen media integration harness</title>
+<script type="importmap">
+{"imports":{"three":"/vendor/three.module.min.js"}}
+</script>
+<style>
+  body{margin:0;background:#101218;color:#e8e8ee;font-family:sans-serif}
+  .hidden{display:none !important}
+  #panel{position:fixed;top:10px;left:10px;z-index:300}
+  button{padding:8px 14px;margin:4px;background:#1d222e;color:#e8e8ee;border:1px solid #3a4152;border-radius:8px;cursor:pointer}
+  #fakeCard{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);width:120px;height:150px;background:#232836;border:2px solid #6fe09a;border-radius:10px;text-align:center;padding-top:60px}
+</style></head>
+<body>
+<div id="panel">
+  <button id="bCodex">CODEX</button>
+  <button id="bIntro">INTRO</button>
+  <button id="bWin1">WIN VERDANT</button>
+  <button id="bWin2">WIN UMBRAL</button>
+  <button id="bPopout">POPOUT DREADMAW</button>
+</div>
+<div id="fakeCard">card</div>
+<script type="module">
+import { initCodex } from '/ui/codex.js';
+import { cinematics } from '/render/cinematics.js';
+import { popout } from '/render/popout.js';
+window.__err = [];
+window.addEventListener('error', e => window.__err.push(String(e.message)));
+window.addEventListener('unhandledrejection', e => window.__err.push('reject:'+String(e.reason)));
+const codex = initCodex();
+document.getElementById('bCodex').onclick = () => codex.open();
+document.getElementById('bIntro').onclick = () => cinematics.playIntro(() => { window.__introDone = true; });
+document.getElementById('bWin1').onclick = () => cinematics.playWin(1);
+document.getElementById('bWin2').onclick = () => cinematics.playWin(2);
+document.getElementById('bPopout').onclick = () => popout.show('DREADMAW');
+window.__ready = true;
+</script>
+</body></html>

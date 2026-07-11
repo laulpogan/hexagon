@@ -1,0 +1,29 @@
+<!DOCTYPE html><html><head><script type="importmap">
+{"imports":{"three":"/vendor/three.module.min.js"}}
+</script></head><body style="margin:0">
+<div id="s" style="width:900px;height:600px"></div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from '/vendor/jsm/loaders/GLTFLoader.js';
+const params = new URLSearchParams(location.search);
+const model = params.get('m') || 'tree_canopy_a';
+const r = new THREE.WebGLRenderer({antialias:true});
+r.setSize(900,600); r.outputColorSpace = THREE.SRGBColorSpace;
+document.getElementById('s').appendChild(r.domElement);
+const sc = new THREE.Scene(); sc.background = new THREE.Color(0x181c26);
+const cam = new THREE.PerspectiveCamera(35, 1.5, 0.05, 100);
+cam.position.set(1.6, 1.2, 2.4); cam.lookAt(0, 0.35, 0);
+sc.add(new THREE.AmbientLight(0xdde4ff, 1.0));
+const k = new THREE.DirectionalLight(0xfff2d9, 2.0); k.position.set(2,3,2); sc.add(k);
+new GLTFLoader().load(`/assets/models/env/${model}.glb`, g => {
+  const root = g.scene;
+  const box = new THREE.Box3().setFromObject(root);
+  const size = box.getSize(new THREE.Vector3());
+  const s = 1.2/Math.max(size.x,size.y,size.z);
+  root.scale.setScalar(s);
+  box.setFromObject(root);
+  root.position.y -= box.min.y; root.position.x -= (box.min.x+box.max.x)/2; root.position.z -= (box.min.z+box.max.z)/2;
+  sc.add(root); r.render(sc, cam);
+  document.title = 'LOADED';
+}, undefined, e => { document.title = 'ERROR ' + e; });
+</script></body></html>

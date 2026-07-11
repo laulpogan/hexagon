@@ -3,7 +3,7 @@
 // Retraining after any rules change is `npm run train` — this is what makes
 // the arena survive mechanics revisions (adaptable agents).
 import { CONFIG } from '../config.js';
-import { neighborCoords, hexDistance, midRow } from '../board.js';
+import { neighborCoords, hexDistance, midRow, ringIndex } from '../board.js';
 
 // A12 (RULES-7 rework): 'ruinsUnder' and 'towerPeel' are dead — R7 removed
 // ruin decay and R1 removed peel entirely (captures always bury now, there
@@ -29,10 +29,18 @@ export const FEATURE_NAMES = [
   'trophyGain',          // R4/A5: trophy value (buried enemy tiers) this move achieves
   'riftlightGain',       // R5: Riftlight this held cell would contribute
   'buryDepth',           // resulting stack depth grown by a capture
+  'seamSafety',          // R8/P1: ring-distance to consumption (rings past the doomed one)
+  // R8/P2 road-network features ("surge" mechanic — distinct from the R3
+  // height-pressure features pressureKills/pressureDrop above). Computed only
+  // where a placement actually resolves on the board; WARD-blocked, capital-
+  // capture, and ascend branches stay 0 (a bounce changes nothing — a phantom
+  // severDamage there is an unlearnable signal for a linear policy).
+  'momentumGain',        // R8/P2: own linked-network growth incl. reconnected orphans
+  'severDamage',         // R8/P2: enemy tiles this capture cuts from their capital
 ];
 
 // Default weights approximate the greedy heuristic — a sane untrained start.
-export const DEFAULT_WEIGHTS = [0, 1, -8, 8, 1000, 9, 1, 0.5, 1, 4, -12, 0.3, 1.5, -0.5, 2, 1.5, 0.5];
+export const DEFAULT_WEIGHTS = [0, 1, -8, 8, 1000, 9, 1, 0.5, 1, 4, -12, 0.3, 1.5, -0.5, 2, 1.5, 0.5, 0.5, 0.5, 2];
 
 function findCapital(game, owner) {
   for (let c = 0; c < CONFIG.GRID_W; c++) {
@@ -51,6 +59,14 @@ export function moveFeatures(game, player, move) {
   const target = cell.tile;
   const f = new Array(FEATURE_NAMES.length).fill(0);
   f[0] = 1;
+  // R8/P1: seam-awareness — set BEFORE the early-return branches (gate-#2
+  // reviewer: capture/ward/ascend paths returned with f[17] stuck at 0,
+  // reading as "about to be eaten" for deep safe moves). Zero while the seam
+  // is OFF: ring position is not a signal without consumption, and the OFF
+  // path must not carry a live positional feature the old policy lacked.
+  f[17] = CONFIG.SEAM_MAX_RINGS > 0
+    ? Math.min(2, Math.max(0, ringIndex(move.col, move.row) - game.seam.ringsConsumed))
+    : 0;
 
   if (target && target.owner !== player) {
     if (target.capital) { f[4] = 1; return f; }
@@ -117,6 +133,71 @@ export function moveFeatures(game, player, move) {
   if (ownCap && hexDistance(move.col, move.row, ownCap.col, ownCap.row) === 1) {
     const capRel = game.relativeInfluence(ownCap.col, ownCap.row);
     if (capRel <= 2) f[9] = 3 - capRel;
+  }
+  // R8/P2 road features — exact bounded BFS on the sim state (gate-#1: a local
+  // recount is blind to reconnection/severance, the exact moves these reward).
+  // Linked flags are start-of-turn (the sim never re-runs refreshRoads); the
+  // resulting one-tile staleness in f[1]/f[5]/f[6]'s surge reads is accepted
+  // heuristic noise — documented, not silent.
+  if (CONFIG.ROAD_PRESSURE_ON) {
+    // momentumGain: does the placed cell touch the linked network (capital
+    // cell counts — it is linked)? Then 1 + every own orphan it reconnects.
+    const linksUp = neighborCoords(move.col, move.row).some(([c, r]) => {
+      const n = game.board[c][r];
+      return n.linked && n.tile?.owner === player;
+    });
+    if (linksUp) {
+      let gain = 1;
+      const seen = new Set([`${move.col},${move.row}`]);
+      const queue = [[move.col, move.row]];
+      while (queue.length) {
+        const [qc, qr] = queue.shift();
+        for (const [c, r] of neighborCoords(qc, qr)) {
+          const key = `${c},${r}`;
+          if (seen.has(key)) continue;
+          const n = game.board[c][r];
+          if (n.tile && n.tile.owner === player && !n.linked && !n.tile.capital) {
+            seen.add(key);
+            queue.push([c, r]);
+            gain++;
+          }
+        }
+      }
+      f[18] = gain;
+    }
+    // severDamage: enemy linked non-capital count (flags; captured cell already
+    // owner-flipped in the sim, so it self-excludes) minus what their capital
+    // still reaches on the post-move board.
+    if (target) {
+      let before = 0;
+      let enemyCap = null;
+      for (let c = 0; c < CONFIG.GRID_W; c++) {
+        for (let r = 0; r < CONFIG.GRID_H; r++) {
+          const n = game.board[c][r];
+          if (n.linked && n.tile?.owner === enemy && !n.tile.capital) before++;
+          if (n.tile?.capital && n.tile.owner === enemy) enemyCap = [c, r];
+        }
+      }
+      if (enemyCap) {
+        const seen = new Set([`${enemyCap[0]},${enemyCap[1]}`]);
+        const queue = [enemyCap];
+        let after = 0;
+        while (queue.length) {
+          const [qc, qr] = queue.shift();
+          for (const [c, r] of neighborCoords(qc, qr)) {
+            const key = `${c},${r}`;
+            if (seen.has(key)) continue;
+            const n = game.board[c][r];
+            if (n.tile && n.tile.owner === enemy) {
+              seen.add(key);
+              queue.push([c, r]);
+              if (!n.tile.capital) after++;
+            }
+          }
+        }
+        f[19] = Math.max(0, before - after);
+      }
+    }
   }
   cell.tile = prev;
   cell.stack.length = prevStackLen;

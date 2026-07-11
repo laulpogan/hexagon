@@ -4,6 +4,7 @@
 // random-rollout UCT lost 9-1 to greedy here (40 actions / 160 iters = 4
 // noisy samples each). Revisit real ISMCTS only if hidden info ever lands.
 import { CONFIG } from '../config.js';
+import { neighborCoords } from '../board.js';
 import { moveFeatures, DEFAULT_WEIGHTS } from './policy.js';
 
 function legalActions(game) {
@@ -66,7 +67,23 @@ function evaluate(game, player) {
       if (t?.capital && game.relativeInfluence(c, r) === 0) {
         lead += t.owner === player ? -30 : 30;
       }
+      // R8/P1: seam-awareness (panel: evaluate was seam-blind). Tiles whose
+      // empty neighbors sit in the doomed ring lose future mobility — small
+      // nudge so depth-2 anticipates the shrink instead of walking into it.
+      if (t && !t.capital && CONFIG.SEAM_MAX_RINGS > 0) {
+        const doomedN = neighborCoords(c, r).filter(([nc, nr]) =>
+          !game.board[nc][nr].tile && game._seamDoomed(nc, nr)).length;
+        lead += (t.owner === player ? -0.3 : 0.3) * doomedN;
+      }
     }
+  }
+  // R8/P2: road-network differential, CAPPED at the point of mechanical
+  // relevance (gate-#1 balance M6: an uncapped term rewards stacking momentum
+  // past where the pressure cap stops caring).
+  if (CONFIG.ROAD_PRESSURE_ON) {
+    const capM = CONFIG.ROAD_MOMENTUM_DIV * CONFIG.ROAD_PRESSURE_CAP;
+    lead += 0.2 * (Math.min(game.roads.momentum[player], capM) -
+                   Math.min(game.roads.momentum[enemy], capM));
   }
   return lead;
 }

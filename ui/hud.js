@@ -32,6 +32,7 @@ export class Hud {
 
     root.innerHTML = `
       <div id="turnBanner"></div>
+      <div id="momentumHud" class="hidden"></div>
       <div id="hudLog"></div>
       <div id="handStrip"></div>
       <div id="hudControls">
@@ -69,8 +70,21 @@ export class Hud {
 
   render() {
     this._renderBanner();
+    this._renderMomentum();
     this._renderHand();
     this._renderLog();
+  }
+
+  // R8/P2: momentum HUD — small persistent per-player readout (capital-
+  // connected non-capital tile count). NEW element; knob-gated so it's
+  // fully absent (hidden, empty innerHTML) when ROAD_PRESSURE_ON is false —
+  // the game must look exactly as before with the knob OFF.
+  _renderMomentum() {
+    const el = this.root.querySelector('#momentumHud');
+    if (!CONFIG.ROAD_PRESSURE_ON) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+    el.classList.remove('hidden');
+    const m = this.game.roads.momentum;
+    el.innerHTML = `<span class="p1name">⚡ ${m[1]}</span><span class="p2name">⚡ ${m[2]}</span>`;
   }
 
   _renderBanner() {

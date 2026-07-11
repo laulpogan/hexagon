@@ -54,6 +54,16 @@ class SoundSystem {
   error()      { this.tone(200, 0.3, 'sawtooth', 0.04); }
   ward()       { this.chord([880, 1108.7], 0.25, 0.05); }
   rift()       { this.tone(140, 0.5, 'sawtooth', 0.04); this.tone(147, 0.5, 'sawtooth', 0.04); }
+  // R8/P1: the Seam tick — a bigger perceptual beat than rift() (descending
+  // sawtooth rumble, ground giving way) since THE SEAM ADVANCES has no
+  // silent-precedent to hide behind like THE RIFT STIRS does.
+  seam()       { this.tone(220, 0.12, 'sawtooth', 0.06); setTimeout(() => this.tone(110, 0.3, 'sawtooth', 0.07), 80); setTimeout(() => this.tone(70, 0.45, 'sawtooth', 0.06), 220); }
+  // R8/P2: loop closure — bright ascending bell (two rising sine tones), the
+  // positive counterpart to seam()'s descending rumble.
+  loop()       { this.tone(880, 0.18, 'sine', 0.06); setTimeout(() => this.tone(1318.51, 0.3, 'sine', 0.07), 90); }
+  // R8/P2: severance — a network cut, falling sawtooth (seam()'s style, one
+  // stage shorter since it marks a local cut, not a board-wide tick).
+  sever()      { this.tone(330, 0.12, 'sawtooth', 0.05); setTimeout(() => this.tone(180, 0.3, 'sawtooth', 0.06), 90); }
   unlock()     { this.chord([659.25, 830.61, 987.77, 1318.51], 0.4, 0.06); }
   victory()    {
     [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => this.tone(f, 0.4, 'sine', 0.08), i * 150));

@@ -17,6 +17,7 @@ const CELL_H = 0.22;               // board slab height
 const TILE_H = 0.5;                // placed tile prism height (the live top face)
 const CAPITAL_H = 0.85;
 const TIER_SLICE_H = 0.34;         // V1: buried war-strata tier thickness
+const SURGE_VISIBLE_MOMENTUM = 3;  // R8/P2: pulse the network only once momentum reads as a real foothold, not the first tile off the capital
 
 // Two-reality palette split
 const COLORS = {
@@ -248,6 +249,8 @@ export class BoardRenderer {
     this.onCellClick = null;
     this.onCellHover = null;
     this.onWow = null; // V8 hookup spec: (kind) => void, fired on first-blood / multi-flip captures — shell wires a chime
+    this.onSeverance = null;   // R8/P2: () => void, fired when syncBoard diffs a tile newly cut from its network
+    this.onLoopClosure = null; // R8/P2: () => void, fired when a player's loop flag flips false→true
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x101218);
@@ -290,6 +293,10 @@ export class BoardRenderer {
     this._popAnims = [];     // badge-number punch-in
     this._burstAnims = [];   // radial mote sprays on landing/capture
     this._cascadeAnims = []; // V4: distance-staggered badge ticks
+    this._surgeFlashAnims = []; // R8/P2: gold pulse across the mover's linked network
+    this._loopFlashAnims = [];  // R8/P2: white flash on ring cells at loop closure
+    this._severFlashAnims = []; // R8/P2: grey flash on newly orphaned tiles
+    this._lastSurgeRef = null;  // R8/P2: object-identity guard — fire once per surge event
     this._camKick = new THREE.Vector3();
     this._cellOwners = new Map(); // "c,r" → tileId|null from last sync (capture detection)
     this._lastOrigin = null;      // V4: cell of the most recent placement (cascade epicenter)
@@ -417,7 +424,7 @@ export class BoardRenderer {
             color: 0x160a1e, emissive: COLORS.rift, emissiveIntensity: 0.14,
             roughness: 0.45, metalness: 0.15,
           });
-          this._riftMats.push(mat);
+          this._riftMats.push({ mat, col: c, row: r }); // R8/P1: coord needed to skip consumed cells
         } else {
           mat = new THREE.MeshStandardMaterial({
             color: COLORS.board, roughness: 0.9, metalness: 0.05,
@@ -439,7 +446,8 @@ export class BoardRenderer {
           })
         );
         edge.position.copy(mesh.position);
-        if (cell.rift) this._riftEdges = (this._riftEdges || []).concat(edge.material);
+        mesh.userData.edge = edge; // R8/P1: consumed-cell dimming/sinking needs the edge ref per cell
+        if (cell.rift) this._riftEdges = (this._riftEdges || []).concat({ mat: edge.material, col: c, row: r });
         this.scene.add(edge);
       }
     }
@@ -585,11 +593,12 @@ export class BoardRenderer {
     sprite.position.y = h + (tile.capital ? 2.5 : 2.0);
     group.add(sprite);
     group.userData = {
-      tileId: tile.id, sprite, prism, mat, baseH: h, tierMeshes,
+      tileId: tile.id, sprite, prism, mat, topMat, baseH: h, tierMeshes,
       stackHeight: stackTiers.length + 1, // R1 cell height — tall-tower ember idle keys off this
       baseColor: this._tileColor(tile),
       billboard: bb, halo, bobPhase: (tile.id * 1.7) % (Math.PI * 2), bobBase: h - 0.02,
       riftAdjacent, riftGlow,
+      orphaned: false, // R8/P2: severance read state, recomputed every syncBoard()
     };
 
     const { x, z } = worldPos(col, row);
@@ -900,6 +909,109 @@ export class BoardRenderer {
         mesh.userData.baseMat.color.setHex(RUIN_COLORS[Math.min(cell.rubble || 0, 3)]);
       }
     }
+    // R8/P1: seam consumed/doomed membership — recomputed EVERY syncBoard()
+    // call (dynamic; the ring advances turn-by-turn, unlike the static
+    // _buildBoard flags like riftAdjacent). Consumed cells sink + go dead
+    // black with no line glow, right here; doomed (next-to-fall ring) cells
+    // just flag membership — _animate() drives the actual ghost pulse.
+    const newlySeamConsumed = [];
+    for (let c = 0; c < CONFIG.GRID_W; c++) {
+      for (let r = 0; r < CONFIG.GRID_H; r++) {
+        const cell = this.game.board[c][r];
+        const mesh = this.cellMeshes[c][r];
+        const mat = mesh.userData.baseMat;
+        const wasConsumed = mesh.userData.consumed;
+        const wasDoomed = mesh.userData.doomed;
+        if (cell.consumed) {
+          if (!wasConsumed) newlySeamConsumed.push([c, r]);
+          mesh.userData.consumed = true;
+          mesh.userData.doomed = false;
+          mat.color.setHex(0x08080a);        // near-black — dead, out of play
+          mat.emissive.setHex(0x000000);
+          mat.emissiveIntensity = 0;
+          mesh.userData.edge.material.opacity = 0.06; // kill the line glow
+          const sunkY = -CELL_H / 2 - 0.14;
+          mesh.position.y = sunkY;
+          mesh.userData.edge.position.y = sunkY;
+        } else {
+          mesh.userData.consumed = false;
+          mesh.userData.doomed = this.game._seamDoomed(c, r);
+          if (wasDoomed && !mesh.userData.doomed) {
+            // no longer next-to-fall (ring advanced past it, or it just got
+            // eaten) — clear the ghost tint so it doesn't stick.
+            mat.emissive.setHex(cell.rift ? COLORS.rift : 0x000000);
+            if (!cell.rift) mat.emissiveIntensity = 0;
+          }
+        }
+      }
+    }
+    // Seam tick: a ring just fell this ply. Ring-eat burst on every
+    // freshly-consumed hex + a camera kick scaled to how much was eaten —
+    // reuses the rift-eruption's burst helper and the existing capture-punch
+    // camera kick (§2 P1 acceptance: keep it under ~1s).
+    if (this.game.seamAdvancedThisTurn > 0 && newlySeamConsumed.length && !document.hidden) {
+      for (const [c, r] of newlySeamConsumed) {
+        const { x, z } = worldPos(c, r);
+        this._spawnBurst(x, z, 0.3, COLORS.rift, 14, 2.4);
+      }
+      const kickMag = Math.min(1.1, 0.35 + newlySeamConsumed.length * 0.05);
+      this._camKick.set((Math.random() - 0.5), 0.5, (Math.random() - 0.5)).multiplyScalar(kickMag);
+    }
+    // R8/P2: severance read — cell.tile && !cell.linked renders desaturated.
+    // Recomputed every syncBoard() call, same per-call pattern as the seam
+    // consumed/doomed membership above. Diffed against the mesh's previous
+    // orphaned flag (newlyOrphaned) to drive the grey-flash + sound.sever()
+    // cue below — the "simplest reliable trigger" the render spec calls for.
+    // Only touches base albedo (.color), never .emissive — leaves _animate's
+    // capturable/rift-warning emissive breathing completely alone.
+    if (CONFIG.ROAD_PRESSURE_ON) {
+      const ORPHAN_TINT = 0x6b6f78;
+      const newlyOrphaned = [];
+      for (const u of toUpdate) {
+        const orphaned = !this.game.board[u.c][u.r].linked;
+        if (orphaned && !u.group.userData.orphaned) newlyOrphaned.push(u);
+        u.group.userData.orphaned = orphaned;
+        u.group.userData.mat.color.setHex(
+          orphaned ? mixHex(u.group.userData.baseColor, ORPHAN_TINT, 0.7) : u.group.userData.baseColor);
+        u.group.userData.topMat.color.setHex(orphaned ? mixHex(0xffffff, ORPHAN_TINT, 0.75) : 0xffffff);
+      }
+      if (newlyOrphaned.length) {
+        for (const u of newlyOrphaned) {
+          this._severFlashAnims.push({ mat: u.group.userData.mat, base: u.group.userData.baseColor, start: performance.now() });
+        }
+        this.onSeverance && this.onSeverance();
+      }
+      // Surge cue: game.roadSurgeThisTurn is a fresh object per real board
+      // mutation (P1 pattern — never cloned, reset to null each onTurnStart).
+      // Object-identity guard fires the pulse exactly once per surge, even
+      // though syncBoard() also runs on non-mutating renders (e.g. card
+      // select) while the same surge object is still live.
+      const surge = this.game.roadSurgeThisTurn;
+      if (surge && surge !== this._lastSurgeRef) {
+        this._lastSurgeRef = surge;
+        if (surge.momentum >= SURGE_VISIBLE_MOMENTUM) {
+          for (let c = 0; c < CONFIG.GRID_W; c++) {
+            for (let r = 0; r < CONFIG.GRID_H; r++) {
+              const cell = this.game.board[c][r];
+              if (!cell.linked || cell.tile.owner !== surge.player) continue;
+              const g = this.tileMeshes.get(cell.tile.id);
+              if (g) this._surgeFlashAnims.push({ mat: g.userData.mat, base: g.userData.baseColor, start: performance.now() });
+            }
+          }
+        }
+        if (surge.closedLoop) {
+          for (let c = 0; c < CONFIG.GRID_W; c++) {
+            for (let r = 0; r < CONFIG.GRID_H; r++) {
+              const cell = this.game.board[c][r];
+              if (!cell.loopside || cell.tile?.owner !== surge.player) continue;
+              const g = this.tileMeshes.get(cell.tile.id);
+              if (g) this._loopFlashAnims.push({ mat: g.userData.mat, base: g.userData.baseColor, start: performance.now() });
+            }
+          }
+          this.onLoopClosure && this.onLoopClosure();
+        }
+      }
+    }
     // Sprite updates run AFTER every group this pass has been created, so
     // _lastOrigin is settled before any cascade-distance math uses it.
     for (const u of toUpdate) this._updateTileSprite(u.group, u.tile, u.c, u.r);
@@ -1203,11 +1315,37 @@ export class BoardRenderer {
     // (upcoming) and spikes hard while THE RIFT STIRS is actually active.
     const stirsMul = stirs?.active ? 3.2 : stirs?.upcoming ? 1.9 : 1.0;
     const pulse = (0.12 + 0.06 * Math.sin(t * 2.4 * stirsMul) + 0.03 * Math.sin(t * 13.7)) * (stirs?.active ? 1.8 : 1);
-    for (const m of this._riftMats) m.emissiveIntensity = pulse;
+    // R8/P1: consumed rift cells stay dead — syncBoard already zeroed them,
+    // don't let the ambient pulse re-light a hex that's out of play.
+    for (const rm of this._riftMats) {
+      if (this.game.board[rm.col][rm.row].consumed) continue;
+      rm.mat.emissiveIntensity = pulse;
+    }
     if (this._riftEdges) {
       const rim = (0.75 + 0.25 * Math.sin(t * 2.4 * stirsMul)) * (stirs?.active ? 1.3 : 1);
-      for (const m of this._riftEdges) m.opacity = Math.min(1, rim);
+      for (const rm of this._riftEdges) {
+        if (this.game.board[rm.col][rm.row].consumed) continue;
+        rm.mat.opacity = Math.min(1, rim);
+      }
     }
+    // R8/P1: doomed (ghost) ring — persistent warning tint on the next-to-
+    // fall ring's empty, non-aura cells. Membership comes from syncBoard's
+    // per-sync recompute (userData.doomed); this just pulses it, harder as
+    // the tick approaches (urgency 0 = just became doomed, 1 = fires next).
+    // Knob-gated: skip the 117-cell walk entirely while the seam ships OFF.
+    if (CONFIG.SEAM_MAX_RINGS > 0) {
+    const nextSeamTick = CONFIG.SEAM_ADVANCE_START + this.game.seam.ringsConsumed * CONFIG.SEAM_ADVANCE_CADENCE;
+    const seamUrgency = Math.max(0, Math.min(1, 1 - (nextSeamTick - this.game.turn) / CONFIG.SEAM_ADVANCE_CADENCE));
+    for (let c = 0; c < CONFIG.GRID_W; c++) {
+      for (let r = 0; r < CONFIG.GRID_H; r++) {
+        const mesh = this.cellMeshes[c][r];
+        if (!mesh.userData.doomed) continue;
+        const mat = mesh.userData.baseMat;
+        mat.emissive.setHex(0xffb020);
+        mat.emissiveIntensity = 0.16 + 0.14 * seamUrgency + (0.08 + 0.1 * seamUrgency) * Math.sin(t * (3 + seamUrgency * 4));
+      }
+    }
+    } // end SEAM_MAX_RINGS gate
     // capturable tiles breathe red; rift-adjacent tiles get a magenta warning
     // shimmer while THE RIFT STIRS is telegraphed; everything else settles.
     for (const g of this.tileMeshes.values()) {
@@ -1301,6 +1439,30 @@ export class BoardRenderer {
       if (p >= 1) { a.mat.emissive.setHex(a.base); a.mat.emissiveIntensity = 0.08; a.done = true; }
     }
     this._flashAnims = this._flashAnims.filter(a => !a.done);
+    // R8/P2: surge/loop/severance flashes — same one-shot emissive-decay
+    // pattern as the capture flash above (must also run after the earlier
+    // settle loop so they aren't stomped the same frame they're queued).
+    for (const a of this._surgeFlashAnims) {
+      const p = Math.min(1, (now - a.start) / 420);
+      a.mat.emissive.setHex(0xf2c14e);
+      a.mat.emissiveIntensity = 0.9 * (1 - p);
+      if (p >= 1) { a.mat.emissive.setHex(a.base); a.mat.emissiveIntensity = 0.08; a.done = true; }
+    }
+    this._surgeFlashAnims = this._surgeFlashAnims.filter(a => !a.done);
+    for (const a of this._loopFlashAnims) {
+      const p = Math.min(1, (now - a.start) / 700);
+      a.mat.emissive.setHex(0xffffff);
+      a.mat.emissiveIntensity = 1.6 * (1 - p);
+      if (p >= 1) { a.mat.emissive.setHex(a.base); a.mat.emissiveIntensity = 0.08; a.done = true; }
+    }
+    this._loopFlashAnims = this._loopFlashAnims.filter(a => !a.done);
+    for (const a of this._severFlashAnims) {
+      const p = Math.min(1, (now - a.start) / 320);
+      a.mat.emissive.setHex(0x888890);
+      a.mat.emissiveIntensity = 1.1 * (1 - p);
+      if (p >= 1) { a.mat.emissive.setHex(a.base); a.mat.emissiveIntensity = 0.08; a.done = true; }
+    }
+    this._severFlashAnims = this._severFlashAnims.filter(a => !a.done);
     for (const a of this._popAnims) {
       const p = Math.min(1, (now - a.start) / 220);
       const over = 1.15 + (1.9 - 1.15) * (1 - p) * Math.cos(p * 5);

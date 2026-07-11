@@ -1,6 +1,12 @@
 // Limen — entry point. Wires core (rules) + render (Three.js) + ui (HUD) + net.
 import { Game } from './core/game.js';
 import { botTakeTurn } from './core/bot.js';
+import { makeGreedy } from './core/agents/greedy.js';
+import { makeSearch } from './core/agents/search.js';
+import { makePolicy } from './core/agents/policy.js';
+import { snapshotConfig, restoreConfig, applyRelics } from './core/campaign.js';
+import { CONFIG } from './core/config.js';
+import { initCampaign } from './ui/campaign.js';
 import { mulberry32, hashSeed } from './core/rng.js';
 import { BoardRenderer } from './render/scene.js';
 import { Hud } from './ui/hud.js';
@@ -10,7 +16,8 @@ import { initDeckbuilder, loadSavedDeck } from './ui/deckbuilder.js';
 import { initAccount } from './ui/account.js';
 import { initCollection } from './ui/collection.js';
 import { KEYWORDS, RITE_INFO } from './data/tiles.js';
-import { riftNeighborCount } from './core/board.js';
+import { riftNeighborCount, neighborCoords } from './core/board.js';
+import { roadPressure } from './core/roads.js';
 import { NetSession, generateRoomCode } from './net/supabase.js';
 // Media-campaign modules (INTEGRATION_NOTES.md) — all no-op if assets absent.
 import { initCodex } from './ui/codex.js';
@@ -25,10 +32,38 @@ import {
 } from './net/progress.js';
 
 let game, renderer, hud;
-let mode = 'hotseat';          // 'hotseat' | 'bot' | 'mp'
+let mode = 'hotseat';          // 'hotseat' | 'bot' | 'mp' | 'campaign'
 let botRand = null;
 let net = null;                // NetSession in mp mode
 let myPlayer = null;           // 1|2 in mp mode; null otherwise
+
+// ─── Campaign (Descent) state ───────────────────────────────────────────
+// campaignCtx is set for the duration of one campaign match: { node, run,
+// onResolve } supplied by ui/campaign.js. campaignAgent is the P2 agent for the
+// current node; configSnapshot backs the CONFIG leak-safety seam (§10).
+let campaignCtx = null;
+let campaignAgent = null;
+let configSnapshot = null;
+// node.agent is a string tag; map it to a fresh agent instance here (core/
+// campaign.js stays free of agent construction).
+const AGENT_FACTORY = {
+  greedy: () => makeGreedy(),
+  policy: () => makePolicy(),
+  search2: () => makeSearch({ depth: 2 }),
+};
+
+// CONFIG leak-safety watchdog (§10). The checkGameOver + next-startGame restores
+// cover a bootstrap throw and a natural match-end, but NOT an exception thrown
+// mid-turn (deep in placeFromHand/castRite or the scheduleBot callback), where
+// game.phase never reaches 'over' and no restore runs. This global backstop
+// force-restores CONFIG on ANY uncaught error/rejection while a snapshot is
+// live, so a phase-3 relic knob (or a future mid-match forfeit) can never bleed
+// into hotseat/bot/MP. Belt to the startGame backstop's suspenders.
+function restoreConfigOnError() {
+  if (configSnapshot) { restoreConfig(configSnapshot); configSnapshot = null; }
+}
+window.addEventListener('error', restoreConfigOnError);
+window.addEventListener('unhandledrejection', restoreConfigOnError);
 
 // debug/test handle — startGame() Object.assigns match state into this same
 // object, so __limen.progress stays reachable before/during/after a game.
@@ -41,27 +76,38 @@ window.__limen = {
 
 // The local human may act when...
 function inputLocked() {
-  if (mode === 'bot' && game.currentPlayer === 2) return true;
+  // Campaign is single-player vs an agent, same as bot mode: the human is P1.
+  if ((mode === 'bot' || mode === 'campaign') && game.currentPlayer === 2) return true;
   if (mode === 'mp' && game.currentPlayer !== myPlayer) return true;
   return false;
 }
 
-// Bot plays Umbral (P2) after a short beat, so moves read as deliberate.
+// Bot plays Umbral (P2) after a short beat, so moves read as deliberate. In
+// campaign mode the node's chosen agent drives P2 instead of the default greedy
+// heuristic (the one edit CAMPAIGN_DESIGN.md §5 calls for) — the agent
+// interface {name, takeTurn(game, player, rand)} is the same one arena uses.
 function scheduleBot() {
-  if (mode !== 'bot' || game.phase === 'over') return;
+  if ((mode !== 'bot' && mode !== 'campaign') || game.phase === 'over') return;
   if (game.currentPlayer !== 2) return;
   setTimeout(() => {
-    const action = botTakeTurn(game, 2, botRand);
+    const action = mode === 'campaign'
+      ? campaignAgent.takeTurn(game, 2, botRand)
+      : botTakeTurn(game, 2, botRand);
     if (action.kind === 'place') {
       if (action.result?.captured) sound.capture();
       else if (action.result?.wardBlocked) sound.ward();
       else sound.place();
     } else if (action.kind === 'capital') {
       sound.place();
+    } else if (action.kind === 'rite') {
+      sound.rift(); // policy/search agents (warden/boss nodes) can cast rites
     }
     update();
     if (checkGameOver()) return;
-    if (game.currentPlayer === 1) sound.turnSwitch();
+    if (game.currentPlayer === 1) {
+      sound.turnSwitch();
+      if (game.seamAdvancedThisTurn > 0) sound.seam(); // R8/P1: the Rift just ate a ring
+    }
     scheduleBot(); // capital phase can hand straight back to the bot's turn logic
   }, 750);
 }
@@ -143,7 +189,24 @@ function handleClick({ col, row }) {
     : g.placeFromHand(g.currentPlayer, handIndex, col, row);
   if (!res.ok) {
     sound.error();
-    hud.hint(isRite ? `Can't cast there: ${res.reason}.` : `Can't place there: ${res.reason}.`);
+    // R8/P1: core only returns one generic 'illegal placement' reason —
+    // differentiate the common seam cases client-side (core stays untouched).
+    const cell = g.board[col][row];
+    if (!isRite && cell.consumed) {
+      hud.hint("Can't place there: ✕ consumed by the Rift — out of play.");
+    } else if (!isRite && g._seamDoomed(col, row)) {
+      hud.hint("Can't place there: ⚠ the Seam advances here soon — cannot build.");
+    } else if (!isRite && CONFIG.FRONTIER_ANCHOR && !cell.tile &&
+               neighborCoords(col, row).some(([c, r]) => {
+                 const nt = g.board[c][r].tile;
+                 return nt && nt.owner === g.currentPlayer;
+               })) {
+      // empty cell, friendly-adjacent, yet illegal → the frontier no-retreat
+      // rule is the only remaining rejector on this path
+      hud.hint("Can't place there: ↩ no retreating — extend from an equal-or-rearer anchor, or beside your capital.");
+    } else {
+      hud.hint(isRite ? `Can't cast there: ${res.reason}.` : `Can't place there: ${res.reason}.`);
+    }
     return;
   }
   if (mode === 'mp') net.sendAction(isRite ? { kind: 'rite', handIndex, col, row } : { kind: 'place', handIndex, col, row });
@@ -159,6 +222,7 @@ function handleClick({ col, row }) {
   if (checkGameOver()) return;
   if (g.currentPlayer !== before) {
     sound.turnSwitch();
+    if (g.seamAdvancedThisTurn > 0) sound.seam(); // R8/P1: the Rift just ate a ring
     if (mode === 'hotseat') hud.showHandover(g.currentPlayer);
   }
   update();
@@ -184,7 +248,10 @@ function applyRemoteAction(action) {
   else if (action.kind === 'capital' || action.kind === 'place') sound.place();
   update();
   if (checkGameOver()) return;
-  if (game.phase === 'play' && game.currentPlayer === myPlayer) sound.turnSwitch();
+  if (game.phase === 'play' && game.currentPlayer === myPlayer) {
+    sound.turnSwitch();
+    if (game.seamAdvancedThisTurn > 0) sound.seam(); // R8/P1: the Rift just ate a ring
+  }
 }
 
 // Any action can end the game (capital capture, influence resolution, draw).
@@ -192,6 +259,22 @@ function checkGameOver() {
   if (game.phase !== 'over') return false;
   update();
   sound.victory();
+
+  // Campaign match: route the result back to the Descent layer (advance node /
+  // lose a life) instead of the normal one-match win screen. The human is P1.
+  // Restore CONFIG first — the leak-safety backstop runs on the win path too,
+  // so no per-match knob (relics, phase 3) can bleed into the next node/hotseat/
+  // MP. Motes are NOT recorded here (that is phase 4, per CAMPAIGN_DESIGN §8).
+  if (mode === 'campaign') {
+    if (configSnapshot) { restoreConfig(configSnapshot); configSnapshot = null; }
+    cinematics.playWin(game.winner);
+    const ctx = campaignCtx;
+    campaignCtx = null;
+    campaignAgent = null;
+    ctx.onResolve(game.winner === 1, game);
+    return true;
+  }
+
   hud.showWin(game.winner, game.stats, game.turn, game.winReason);
   cinematics.playWin(game.winner);
   if (mode === 'mp' && net) net.finish().catch(() => {});
@@ -233,7 +316,15 @@ function updateBoardTip(hit) {
   const cell = g.board[hit.col][hit.row];
   const tile = cell.tile;
   if (!tile) {
-    if (cell.rift) {
+    if (cell.consumed) {
+      // R8/P1: checked before the rift branch — a consumed rift hex still
+      // carries cell.rift=true, but "dead" trumps "hazardous terrain".
+      boardTip.innerHTML = `<div class="bt-title bt-rift">✕ Consumed by the Rift — out of play</div>`;
+      boardTip.style.display = 'block';
+    } else if (g._seamDoomed(hit.col, hit.row)) {
+      boardTip.innerHTML = `<div class="bt-title bt-cap">⚠ The Seam advances here soon — cannot build</div>`;
+      boardTip.style.display = 'block';
+    } else if (cell.rift) {
       boardTip.innerHTML = `
         <div class="bt-title bt-rift">◆ Rift Hex</div>
         <div>Drains <b>1 influence</b> from every adjacent tile — both players.
@@ -260,11 +351,24 @@ function updateBoardTip(hit) {
         `${t.type}${t.owner !== tile.owner ? ' (trophy)' : ''}`).join(', ')}<br>
         <i>Buried keywords are dormant; buried tiles never return. Buried enemy tiers are trophies: +1 influence each (max 3).</i></div>`
     : '';
+  // R8/P2: road-pressure/severance reminder — knob-gated, appended right
+  // after the capturable warning (same "urgent status" slot). Enemy tiles
+  // show the surge they're feeling; your own orphaned tiles show why.
+  let roadHtml = '';
+  if (CONFIG.ROAD_PRESSURE_ON) {
+    if (tile.owner !== g.currentPlayer && !tile.capital) {
+      const pressure = roadPressure(g, hit.col, hit.row, tile.owner);
+      if (pressure > 0) roadHtml = `<div class="bt-cap">⚡ road surge −${pressure}</div>`;
+    } else if (tile.owner === g.currentPlayer && !cell.linked) {
+      roadHtml = `<div class="bt-cap">⛓ cut from your capital — reconnect to restore its road</div>`;
+    }
+  }
   boardTip.innerHTML = `
     <div class="bt-title">${tile.capital ? '♛ CAPITAL' : tile.type.replace(/_/g, ' ')}</div>
     <div>${ownerLabel(tile.owner)} · influence <span class="bt-inf">${rel}</span>
       (base ${tile.influence}${trophies ? ` +${trophies} trophy` : ''}${riftN ? `, rift ${tile.keywords.includes('ATTUNED') ? '+' : '−'}${riftN}` : ''}, ± neighbors &amp; height)</div>
     ${capturable ? '<div class="bt-cap">⚠ In revolt — an adjacent enemy card can bury it!</div>' : ''}
+    ${roadHtml}
     ${kwHtml}
     ${stackHtml}
     ${tile.capital ? '<div class="bt-stack"><i>Lose this and the game ends. Cannot be stacked on or targeted by rites.</i></div>' : ''}`;
@@ -289,7 +393,9 @@ function showCardTip(tile) {
     <div class="bt-title">${tile.type.replace(/_/g, ' ')}</div>
     <div>${isRite ? 'rite' : `influence <span class="bt-inf">${tile.influence}</span>`} · ${tile.rarity}</div>
     ${kwHtml}
-    ${!isRite ? '<div class="bt-stack"><i>Place next to your tiles — or on one of your own to Ascend.</i></div>' : ''}`;
+    ${!isRite ? `<div class="bt-stack"><i>${(CONFIG.SEAM_MAX_RINGS > 0 || CONFIG.FRONTIER_ANCHOR)
+      ? 'Place next to your tiles — or on one of your own to Ascend. Build toward the Seam, never behind your line — the Rift eats the outer ring on a clock.'
+      : 'Place next to your tiles — or on one of your own to Ascend.'}</i></div>` : ''}`;
   boardTip.style.display = 'block';
 }
 
@@ -309,10 +415,33 @@ function handleHover(hit) {
 }
 
 function startGame(opts) {
+  // CONFIG leak-safety backstop (§10): if a prior campaign match left CONFIG
+  // mutated (relic applied then the match abandoned mid-turn — refresh, quit),
+  // hard-restore before starting ANYTHING new so nothing bleeds into this
+  // match, hotseat, or MP. No-op unless a snapshot is still pending.
+  if (configSnapshot) { restoreConfig(configSnapshot); configSnapshot = null; }
+
   mode = opts.mode;
   net = opts.net || null;
   myPlayer = opts.myPlayer || null;
   document.getElementById('menu').classList.add('hidden');
+  document.getElementById('campaignOverlay').classList.add('hidden');
+
+  // Campaign bootstrap: wrap the whole match in the snapshot → apply-relics →
+  // (run match) → restore-relics contract. The snapshot is taken BEFORE
+  // `new Game` so a future config-knob relic shapes board/deck too; restore
+  // happens on match end (checkGameOver) and on the next startGame (above).
+  if (mode === 'campaign') {
+    campaignCtx = opts.campaign;
+    campaignAgent = AGENT_FACTORY[campaignCtx.node.agent]();
+    configSnapshot = snapshotConfig();
+    try {
+      applyRelics(CONFIG, campaignCtx.run.relics); // phase-1: empty — seam only
+    } catch (err) {
+      restoreConfig(configSnapshot); configSnapshot = null; // never leak a partial apply
+      throw err;
+    }
+  }
 
   const seed = opts.seed || `local-${Math.random().toString(36).slice(2, 10)}`;
   game = new Game({ seed, decks: opts.decks || null });
@@ -322,8 +451,8 @@ function startGame(opts) {
   boardEl.innerHTML = '';
   renderer = new BoardRenderer(boardEl, game);
   hud = new Hud(document.getElementById('hud'), game);
-  hud.botMode = mode === 'bot';
-  if (mode === 'bot') hud.viewPlayer = 1;
+  hud.botMode = mode === 'bot' || mode === 'campaign';
+  if (mode === 'bot' || mode === 'campaign') hud.viewPlayer = 1;
   if (mode === 'mp') hud.viewPlayer = myPlayer;
   hud.bindSound(sound);
   hud.bindMusic(music);
@@ -341,6 +470,8 @@ function startGame(opts) {
   renderer.onCellClick = handleClick;
   renderer.onCellHover = handleHover;
   renderer.onWow = () => sound.perfectCapture();
+  renderer.onSeverance = () => sound.sever(); // R8/P2
+  renderer.onLoopClosure = () => sound.loop(); // R8/P2
   hud.onCardHover = showCardTip;
   hud.onSelectTile = (i) => {
     hud.selectedIndex = i;
@@ -354,7 +485,9 @@ function startGame(opts) {
           ? `✦ ${card.type.replace(/_/g, ' ')} — click anywhere on the board to cast`
           : `✦ No legal targets for ${card.type.replace(/_/g, ' ')} right now`);
     } else if (card) {
-      hud.hint('Green: place · red: capture · your own tiles: ascend (stack)');
+      hud.hint((CONFIG.SEAM_MAX_RINGS > 0 || CONFIG.FRONTIER_ANCHOR)
+        ? 'Green: place · red: capture · your own tiles: ascend (stack) — build toward the Seam, never behind it'
+        : 'Green: place · red: capture · your own tiles: ascend (stack)');
     } else {
       hud.hint('');
     }
@@ -376,6 +509,7 @@ function startGame(opts) {
     hud.selectedIndex = null;
     if (checkGameOver()) return;
     sound.turnSwitch();
+    if (game.seamAdvancedThisTurn > 0) sound.seam(); // R8/P1: the Rift just ate a ring
     if (mode === 'hotseat') hud.showHandover(game.currentPlayer);
     update();
     scheduleBot();
@@ -398,6 +532,22 @@ document.getElementById('botBtn').onclick = () => {
   const saved = loadSavedDeck();
   startGame({ mode: 'bot', decks: saved ? { 1: saved, 2: null } : null });
 };
+
+// Campaign (Descent) — a branching roguelite run over the seeded duel. The UI
+// owns the map/reward/summary screens and calls back into startMatch to boot a
+// match from a node; startMatch assembles the campaign opts (node seed, chosen
+// deck as P1, node's opponent deck as P2, and the onResolve continuation).
+const campaignUI = initCampaign(document.getElementById('campaignOverlay'), {
+  startMatch: ({ node, run, onResolve }) => startGame({
+    mode: 'campaign',
+    seed: node.matchSeed,
+    decks: { 1: run.runDeck, 2: node.oppDeck },
+    campaign: { node, run, onResolve },
+  }),
+  getStartDeck: () => loadSavedDeck(),
+  onRunState: (run) => { window.__limen.campaign = run; }, // §9.6 debug hook
+});
+document.getElementById('campaignBtn').onclick = () => campaignUI.open();
 
 const deckbuilder = initDeckbuilder(document.getElementById('deckOverlay'));
 document.getElementById('deckBtn').onclick = () => deckbuilder.open();

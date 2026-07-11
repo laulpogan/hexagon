@@ -24,6 +24,18 @@ export function midRow() {
   return Math.floor(CONFIG.GRID_H / 2);
 }
 
+// R8/P1: array-boundary ring (A3 — NOT hexDistance-concentric: the board is
+// stored 13×9 rectangular, and edge-of-array is what the Rift eats).
+export function ringIndex(col, row) {
+  return Math.min(col, CONFIG.GRID_W - 1 - col, row, CONFIG.GRID_H - 1 - row);
+}
+
+// R8/P1: rows from the board mid-line (A2 — ignores per-column rift jitter;
+// the readable metric the frontier/SCOUT rules key off).
+export function seamDistance(row) {
+  return Math.abs(row - midRow());
+}
+
 // Build the board: 2D array of cells. The rift seam is one hex per column
 // near the mid row, jittered by the seeded rand so every board is different
 // but both multiplayer clients (same seed) agree.
@@ -32,7 +44,12 @@ export function createBoard(rand) {
   for (let c = 0; c < CONFIG.GRID_W; c++) {
     cells[c] = [];
     for (let r = 0; r < CONFIG.GRID_H; r++) {
-      cells[c][r] = { col: c, row: r, rift: false, tile: null, stack: [], rubble: 0 };
+      // linked/roadPower/loopside/loopNear: R8/P2 road-network derived state,
+      // maintained by refreshRoads (core/roads.js) after every board mutation.
+      cells[c][r] = {
+        col: c, row: r, rift: false, tile: null, stack: [], rubble: 0, consumed: false,
+        linked: false, roadPower: 0, loopside: false, loopNear: false,
+      };
     }
   }
   const mid = midRow();

@@ -3,7 +3,7 @@
 // Hooks: captureGate (FLANK/MENACE-class), onPlacement (ETB-class:
 // SUSTAIN/TRAMPLE), targetable (UNTOUCHABLE-class). Rites: castRite targets.
 import { CONFIG } from './config.js';
-import { neighborCoords, riftNeighborCount } from './board.js';
+import { neighborCoords, riftNeighborCount, ringIndex } from './board.js';
 
 export const KEYWORD_HOOKS = {
   // Deathtouch analog: with ≥ FLANK_MIN_ATTACKERS attacker-side neighbors
@@ -119,6 +119,42 @@ export function isTargetable(tile, byPlayer) {
 // telegraphed exactly 2 plies before it fires so the HUD/renderer can warn.
 export function onTurnStart(game) {
   game.riftStirs = riftStirsState(game.turn);
+  game.seamAdvancedThisTurn = 0; // R8/P1: per-ply render/metrics cue, reset each ply
+  game.roadSurgeThisTurn = null; // R8/P2: per-ply render/metrics cue, never cloned
+  seamAdvance(game); // R8/P1: THE SEAM ADVANCES — same per-turn hook pattern
+}
+
+// ─── R8/P1: THE SEAM ADVANCES — collapsing frontier ──────────────────────
+// One-shot per tick ply (turn is strictly monotonic, so no double-fire), hard
+// stop at SEAM_MAX_RINGS. Eats only empty, non-capital-adjacent cells of the
+// current outermost ring; occupied cells survive and stay capturable.
+
+// Capital aura: cells beside either capital are never consumed (and never
+// doomed) — stranding is fixed by protection, not placement prohibition.
+export function capitalAdjacent(game, col, row) {
+  return neighborCoords(col, row).some(([c, r]) => game.board[c][r].tile?.capital);
+}
+
+export function seamAdvance(game) {
+  const max = CONFIG.SEAM_MAX_RINGS;
+  if (!max || game.seam.ringsConsumed >= max) return;
+  const nextAdvanceOnPly = CONFIG.SEAM_ADVANCE_START +
+    game.seam.ringsConsumed * CONFIG.SEAM_ADVANCE_CADENCE;
+  if (game.turn !== nextAdvanceOnPly) return;
+  const ring = game.seam.ringsConsumed;
+  let eaten = 0;
+  for (let c = 0; c < CONFIG.GRID_W; c++) {
+    for (let r = 0; r < CONFIG.GRID_H; r++) {
+      const cell = game.board[c][r];
+      if (ringIndex(c, r) !== ring || cell.tile || cell.consumed) continue;
+      if (capitalAdjacent(game, c, r)) continue;
+      cell.consumed = true;
+      eaten++;
+    }
+  }
+  game.seam.ringsConsumed++;
+  game.seamAdvancedThisTurn = eaten; // transient render/metrics cue (not cloned state)
+  game._log(0, `THE SEAM ADVANCES — the Rift consumes ${eaten} outer hexes`);
 }
 
 export function riftStirsState(turn) {
@@ -168,6 +204,7 @@ export const RITE_EFFECTS = {
       cell.tile = null;
       cell.stack = [];
       cell.rubble = (cell.rubble || 0) + 1;
+      game._boardMutated(player); // R8/P2: removal is a topology change (severance path)
       game._log(player, `cast SUNDER — ${t.type} at (${col},${row}) is unmade, its stack with it`);
       return { destroyed: t };
     },

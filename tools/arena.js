@@ -71,6 +71,7 @@ export function playPairing(agentA, agentB, n, prefix, decks = null) {
   out.avgTurns = +(out.turns / out.games).toFixed(1);
   out.avgCaptures = +(out.captures / out.games).toFixed(1);
   out.drama = dramaIndex(trackers);
+  out.trackers = trackers; // R8/P2: arena_p2 reads per-game road diagnostics
   return out;
 }
 

@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "python3 -m http.server 8931 --bind 127.0.0.1",
-    "test": "node tests/core.test.js && node tests/bot.test.js && node tests/mechanics.test.js",
+    "test": "node tests/core.test.js && node tests/bot.test.js && node tests/mechanics.test.js && node tests/campaign.test.js && node tests/seam.test.js && node tests/roads.test.js",
     "sim": "node tools/sim.js",
     "arena": "node tools/arena.js",
     "train": "node tools/train.js",

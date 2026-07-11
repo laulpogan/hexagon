@@ -2,9 +2,10 @@
 // Math.random (seeded PRNG only), no network. Everything the board game IS.
 import { CONFIG } from './config.js';
 import { TILE_POOL, tileTemplate, defaultDeckComposition } from '../data/tiles.js';
-import { createBoard, neighborCoords, isEdge, midRow, riftNeighborCount } from './board.js';
+import { createBoard, neighborCoords, isEdge, midRow, riftNeighborCount, ringIndex, seamDistance } from './board.js';
 import { hashSeed, mulberry32, shuffleInPlace } from './rng.js';
-import { captureThreshold, fireOnPlacement, modifyIncoming, RITE_EFFECTS, onTurnStart, riftStirsPulse } from './mechanics.js';
+import { captureThreshold, fireOnPlacement, modifyIncoming, RITE_EFFECTS, onTurnStart, riftStirsPulse, capitalAdjacent } from './mechanics.js';
+import { refreshRoads, roadPressure } from './roads.js';
 
 export class Game {
   // seed: shared board seed (room code in MP). decks: {1: comp, 2: comp}
@@ -17,6 +18,10 @@ export class Game {
     this.currentPlayer = 1;
     this.turn = 0;
     this.riftStirs = null;         // R6: set by onTurnStart() once play begins
+    this.seam = { ringsConsumed: 0 }; // R8/P1: Seam Advances (primitives ONLY — clone spreads it)
+    // R8/P2: road network summary — initialized HERE (search clones during the
+    // capital phase, before any placement ever runs refreshRoads).
+    this.roads = { momentum: { 1: 0, 2: 0 }, loop: { 1: false, 2: false } };
     this.winner = null;
     this.winReason = null;         // 'capital' | 'influence' | 'draw'
     this.consecutivePasses = 0;
@@ -145,9 +150,11 @@ export class Game {
   }
 
   // Full influence: effective base ± neighbor contributions (height-skewed,
-  // R3/A4) ± rift aura ± THE RIFT STIRS pulse (R6). A tile at ≤0 relative
-  // influence (clamped to 0) is capturable by the enemy.
-  relativeInfluence(col, row) {
+  // R3/A4) ± rift aura ± THE RIFT STIRS pulse (R6) − road surge (R8/P2, combat
+  // only — boardSummary passes withRoadPressure=false so the network never
+  // deflates the influence-victory tally). A tile at ≤0 relative influence
+  // (clamped to 0) is capturable by the enemy.
+  relativeInfluence(col, row, withRoadPressure = true) {
     const tile = this.cellAt(col, row)?.tile;
     if (!tile) return 0;
     let total = this.effectiveBase(col, row);
@@ -178,6 +185,13 @@ export class Game {
     const riftN = riftNeighborCount(this.board, col, row);
     total += riftN * CONFIG.RIFT_AURA * (this.hasKeyword(tile, 'ATTUNED') ? 1 : -1);
     total += riftStirsPulse(this, tile, col, row); // R6/A7
+    // R8/P2 chain-slide surge: capitals exempt as defenders (A6 — no response
+    // window until P5); WING halves it (the ambient-aggression counter).
+    if (withRoadPressure && !tile.capital) {
+      let surge = roadPressure(this, col, row, tile.owner);
+      if (surge && this.hasKeyword(tile, 'WING')) surge = Math.floor(surge / 2);
+      total -= surge;
+    }
     return Math.max(0, total);
   }
 
@@ -193,7 +207,7 @@ export class Game {
   // hill-king capital with almost no approach angles is a degenerate turtle.
   isLegalCapitalCell(player, col, row) {
     const cell = this.cellAt(col, row);
-    if (!cell || cell.tile || cell.rift) return false;
+    if (!cell || cell.tile || cell.rift || cell.consumed) return false; // consumed: unreachable pre-play, belt+suspenders
     if (neighborCoords(col, row).length < CONFIG.CAPITAL_MIN_NEIGHBORS) return false;
     const mid = midRow();
     if (player === 1) return row <= mid - CONFIG.CAPITAL_MIN_DIST_FROM_SEAM;
@@ -208,11 +222,23 @@ export class Game {
       : row <= mid - CONFIG.CAPITAL_MIN_DIST_FROM_SEAM;
   }
 
+  // R8/P1: is this cell in the doomed (next-to-fall) ring? Empty, non-aura
+  // doomed cells reject placement for EVERY path incl. SCOUT — the telegraph
+  // is information, not shelter. Whole inter-tick window (rev 4).
+  _seamDoomed(col, row) {
+    const max = CONFIG.SEAM_MAX_RINGS;
+    if (!max || this.seam.ringsConsumed >= max) return false;
+    if (ringIndex(col, row) !== this.seam.ringsConsumed) return false;
+    const cell = this.board[col][row];
+    if (cell.tile) return false;
+    return !capitalAdjacent(this, col, row);
+  }
+
   // Placement legality during normal play (capture, expansion, ascension).
   canPlace(player, tile, col, row) {
     if (this.phase !== 'play') return false;
     const cell = this.cellAt(col, row);
-    if (!cell) return false;
+    if (!cell || cell.consumed) return false; // R8: consumed cells are out of play
     const adjacent = neighborCoords(col, row).some(([c, r]) => {
       const nt = this.board[c][r].tile;
       return nt && nt.owner === player;
@@ -237,10 +263,26 @@ export class Game {
       // for empty-hex PLACEMENT only, never for captures.
       return adjacent && this.isCapturable(col, row, player);
     }
-    if (adjacent) return true;
+    // R8/P1: empty-cell placement below — doomed-ring cells are off limits.
+    if (this._seamDoomed(col, row)) return false;
+    if (adjacent) {
+      if (!CONFIG.FRONTIER_ANCHOR) return true;
+      // R8/P1 frontier-anchor: extend from an equal-or-rearer anchor (no
+      // retreat past your line), or build beside your own capital — the
+      // standing rear anchor that keeps home defense legal.
+      const sd = seamDistance(row);
+      return neighborCoords(col, row).some(([c, r]) => {
+        const nt = this.board[c][r].tile;
+        return nt && nt.owner === player && (nt.capital || seamDistance(r) >= sd);
+      });
+    }
     // SCOUT ignores adjacency — but not into the enemy heartland (turn-1
-    // capital-rush exploit, killed 2026-07-10 balance round).
+    // capital-rush exploit, killed 2026-07-10 balance round), and (R8/P1,
+    // only while seam/frontier are live) only inside the mid-board band:
+    // forward deployment, never a rear/corner garrison of doomed rings.
     if (this.hasKeyword(tile, 'SCOUT')) {
+      if ((CONFIG.SEAM_MAX_RINGS > 0 || CONFIG.FRONTIER_ANCHOR) &&
+          seamDistance(row) > CONFIG.CAPITAL_MIN_DIST_FROM_SEAM) return false;
       return !(CONFIG.SCOUT_HEARTLAND_BAN && this._inEnemyHeartland(player, row));
     }
     return false;
@@ -293,6 +335,7 @@ export class Game {
   _startPlay() {
     this.phase = 'play';
     this.currentPlayer = 1;
+    refreshRoads(this); // R8/P2: capitals just landed — flags valid from ply 1
     for (const p of [1, 2]) {
       for (let i = 0; i < CONFIG.HAND_SIZE; i++) this._draw(p);
     }
@@ -308,6 +351,7 @@ export class Game {
     // All cards spent on both sides → resolve immediately, no pass theater.
     if (this.decks[1].length + this.decks[2].length +
         this.hands[1].length + this.hands[2].length === 0) {
+      this.endTrigger = 'exhaustion'; // R8/P2: distinguishes the R4 metric's slice
       this._resolveInfluenceVictory();
     }
   }
@@ -351,6 +395,7 @@ export class Game {
       }
       this._log(player, `ascended at (${col},${row}) — ${tile.type} crowns a tier-${cell.stack.length + 1} stack${paidNote}`);
       fireOnPlacement(this, tile, col, row, null);
+      this._boardMutated(player); // R8/P2 (topology unchanged but uniform rule is the audit)
       const result = { ok: true, ascended: true, height: cell.stack.length + 1 };
       this._afterAction();
       return result;
@@ -376,6 +421,9 @@ export class Game {
       this.winner = player;
       this.winReason = 'capital';
       this.phase = 'over';
+      // R8/P2: this branch returns early (no _afterAction) — refresh here so
+      // post-game readers (win screen, metrics) see correct road state.
+      this._boardMutated(player);
       this._log(player, `captured the enemy capital — VICTORY`);
       return { ok: true, captured: target, won: true };
     }
@@ -402,9 +450,26 @@ export class Game {
       this._log(player, `placed ${tile.type} at (${col},${row})`);
     }
     fireOnPlacement(this, tile, col, row, captured); // ETB-class hooks (SUSTAIN/TRAMPLE)
+    this._boardMutated(player); // R8/P2: placement/capture is a topology change
     const result = { ok: true, captured, won: false };
     this._afterAction();
     return result;
+  }
+
+  // R8/P2: the ONE tail every topology mutation funnels through — any branch
+  // that assigns cell.tile calls this before returning (placeFromHand ascend /
+  // capital-capture / capture-plain, SUNDER). Influence-only mutators (SUSTAIN,
+  // TRAMPLE, RALLYING_CRY, TIDEBOUND) need no refresh: linked/roadPower depend
+  // on topology, never on influence values.
+  _boardMutated(player) {
+    const { prevLoop } = refreshRoads(this);
+    if (player) {
+      this.roadSurgeThisTurn = {
+        player,
+        momentum: this.roads.momentum[player],
+        closedLoop: !prevLoop[player] && this.roads.loop[player],
+      };
+    }
   }
 
   _weakestHandIndex(player) {
@@ -478,6 +543,7 @@ export class Game {
     this._log(player, 'passed');
     this.consecutivePasses++;
     if (this.consecutivePasses >= 2) {
+      this.endTrigger = 'double-pass'; // R8/P2: R4 bank-the-lead metric key
       this._resolveInfluenceVictory();
       return { ok: true, gameEnded: true };
     }
@@ -534,11 +600,19 @@ export class Game {
       tile: cell.tile ? { ...cell.tile, keywords: [...cell.tile.keywords] } : null,
       stack: cell.stack.map(t => ({ ...t, keywords: [...t.keywords] })),
       rubble: cell.rubble,
+      consumed: cell.consumed, // R8/P1
+      // R8/P2: COPY the road flags, never recompute — clone is the search hot
+      // path and the flags are correct by invariant (refreshed on mutation).
+      linked: cell.linked, roadPower: cell.roadPower,
+      loopside: cell.loopside, loopNear: cell.loopNear,
     })));
     g.phase = this.phase;
     g.currentPlayer = this.currentPlayer;
     g.turn = this.turn;
     g.riftStirs = this.riftStirs ? { ...this.riftStirs } : null;
+    g.seam = { ...this.seam }; // R8/P1: safe — primitives only by contract
+    // R8/P2: two-level copy — a one-level spread would alias the nested objects.
+    g.roads = { momentum: { ...this.roads.momentum }, loop: { ...this.roads.loop } };
     g.winner = this.winner;
     g.winReason = this.winReason;
     g.consecutivePasses = this.consecutivePasses;
@@ -574,7 +648,9 @@ export class Game {
         const t = cell.tile;
         if (t && tally[t.owner]) {
           tally[t.owner].tiles++;
-          tally[t.owner].influence += this.relativeInfluence(c, r);
+          // R8/P2 (A7): pressure-free — the surge is combat, not scoring; a
+          // big network must not passively deflate the victory tally.
+          tally[t.owner].influence += this.relativeInfluence(c, r, false);
           if (cell.rift || riftNeighborCount(this.board, c, r) > 0) riftCells[t.owner]++;
         }
       }

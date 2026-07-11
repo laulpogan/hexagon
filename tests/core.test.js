@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { CONFIG } from '../core/config.js';
 import { Game, validateDeck } from '../core/game.js';
-import { neighborCoords, midRow } from '../core/board.js';
+import { neighborCoords, midRow, ringIndex, seamDistance } from '../core/board.js';
 import { defaultDeckComposition } from '../data/tiles.js';
 
 let passed = 0;
@@ -179,7 +179,12 @@ test('normal placement requires friendly adjacency; SCOUT does not', () => {
   const { g, p1Cell } = startedGame();
   const plain = g._makeTile('THICKET', 1);
   const scout = g._makeTile('LANTERN', 1);
+  // R8/P1: SCOUT hops are confined to the mid-board band (seamDistance ≤ 2,
+  // outside enemy heartland) and never the doomed ring — pick farCell there.
   const farCell = findCell(g, (c) => !c.tile && !c.rift &&
+    seamDistance(c.row) <= CONFIG.CAPITAL_MIN_DIST_FROM_SEAM &&
+    c.row < midRow() + CONFIG.CAPITAL_MIN_DIST_FROM_SEAM &&
+    ringIndex(c.col, c.row) >= 1 &&
     neighborCoords(c.col, c.row).every(([cc, rr]) => !g.board[cc][rr].tile));
   assert.equal(g.canPlace(1, plain, farCell.col, farCell.row), false);
   assert.equal(g.canPlace(1, scout, farCell.col, farCell.row), true);
@@ -325,7 +330,11 @@ test('full exhaustion resolves an influence victory (with P1 home bonus)', () =>
   assert.ok(g.winner !== null, 'someone wins');
 });
 
-test('SCOUT may not drop into the enemy heartland without adjacency', () => {
+test('SCOUT confined to mid-board band — heartland AND rear both banned (R8/P1)', () => {
+  // The band only binds while seam/frontier are live (they ship OFF); pin the
+  // knob for this test, restore after.
+  const savedFA = CONFIG.FRONTIER_ANCHOR;
+  CONFIG.FRONTIER_ANCHOR = true;
   const { g } = startedGame();
   const scout = g._makeTile('LANTERN', 1);
   const mid = 4;
@@ -333,9 +342,19 @@ test('SCOUT may not drop into the enemy heartland without adjacency', () => {
   const deep = findCell(g, (c) => !c.tile && !c.rift && c.row >= mid + 2 &&
     neighborCoords(c.col, c.row).every(([cc, rr]) => !g.board[cc][rr].tile));
   assert.equal(g.canPlace(1, scout, deep.col, deep.row), false, 'heartland ban');
+  // R8/P1: own rear rows are ALSO banned (absolute band, rev-4 anti-garrison
+  // gate) — the old "own side still free" rule died with the Seam.
   const home = findCell(g, (c) => !c.tile && !c.rift && c.row <= 1 &&
     neighborCoords(c.col, c.row).every(([cc, rr]) => !g.board[cc][rr].tile));
-  assert.equal(g.canPlace(1, scout, home.col, home.row), true, 'own side still free');
+  assert.equal(g.canPlace(1, scout, home.col, home.row), false, 'rear garrison banned');
+  // mid-band hop stays legal (the keyword's real job: forward deployment)
+  const band = findCell(g, (c) => !c.tile && !c.rift &&
+    seamDistance(c.row) <= CONFIG.CAPITAL_MIN_DIST_FROM_SEAM &&
+    c.row < mid + CONFIG.CAPITAL_MIN_DIST_FROM_SEAM &&
+    ringIndex(c.col, c.row) >= 1 &&
+    neighborCoords(c.col, c.row).every(([cc, rr]) => !g.board[cc][rr].tile));
+  assert.equal(g.canPlace(1, scout, band.col, band.row), true, 'mid-band hop legal');
+  CONFIG.FRONTIER_ANCHOR = savedFA;
 });
 
 test('legalMoves returns placements for the active player only', () => {
