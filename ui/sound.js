@@ -50,6 +50,7 @@ class SoundSystem {
   error()      { this.tone(200, 0.3, 'sawtooth', 0.04); }
   ward()       { this.chord([880, 1108.7], 0.25, 0.05); }
   rift()       { this.tone(140, 0.5, 'sawtooth', 0.04); this.tone(147, 0.5, 'sawtooth', 0.04); }
+  unlock()     { this.chord([659.25, 830.61, 987.77, 1318.51], 0.4, 0.06); }
   victory()    {
     [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => this.tone(f, 0.4, 'sine', 0.08), i * 150));
     setTimeout(() => this.chord([1046.5, 1318.51, 1567.98], 0.5, 0.06), 600);
