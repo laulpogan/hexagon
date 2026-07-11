@@ -156,8 +156,9 @@ Costs were the brake on strong tiles. Replacement, simplest first:
 
 - Board seeded at generation with a seam of **rift hexes** between start zones.
 - Rift hex = neutral hazard: emits −1 influence aura to all adjacent tiles, both players.
-- Placing *onto* a rift hex is allowed but the tile suffers the aura of remaining rift
-  neighbors — high risk, shortest path.
+- Rift hexes are impassable — nothing may be placed on them (doc corrected
+  2026-07-10 to match the shipped engine; the seam splits the board and forces
+  flank-or-suffer routing).
 - Rare **rift-attuned** tiles invert the penalty (gain +1 there instead) — the collectible
   chase category.
 - Mutation (rift hexes shifting/spawning over time): v2. Keep v1 static and tunable.
