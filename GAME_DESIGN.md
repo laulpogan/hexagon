@@ -14,6 +14,89 @@ Decisions here override the README.
 - **Platform target v1:** desktop browser first. Narrow screens get scrollable hand +
   trimmed HUD; full touch controls (pinch zoom, tap-discard) are post-ship.
 
+## Narrative — the Threshold (2026-07-10, retrofits every shipped mechanic)
+
+Two worlds never meant to touch. **The Verdant**: a reality where life perfected
+itself into permanence — forests of glass and gold, growth that keeps everything.
+**The Umbral**: a reality of ember and obsidian — appetite and transformation,
+cities lit by what they burn. Neither is evil. Both are whole.
+
+No one knows which side broke the law, but the two realities intersected along a
+line. Where they met, both failed: **the Rift**, a seam where nothing stays true,
+leaking raw unreality (the motes). Around the wound formed **Limen** — the
+threshold country. Ground here can belong to either world, but must end up
+belonging to one.
+
+Reality in Limen is contested by **conviction** — the influence number. Each
+player IS a reality, writing its **Aspects** (the cards: a thicket, a wolf, a
+saint) into the threshold. Placement is inscription: *here, my world is true.*
+Nothing fights and nothing dies. When a tile's relative influence reaches zero,
+the ground stops believing in it — the Aspect is **unwritten** and the rival's
+takes its place. Doubt is ambient, not a projectile: that is why captures need
+no adjacency.
+
+- **Ruins** — ground rewritten too often stops believing anything. Scar tissue
+  of contradiction; everything stands less firmly on it. The ATTUNED learned to
+  stand in ambiguity.
+- **Ascension** — write the same truth over itself and the place deepens. A
+  tower is a stanza repeated until the ground knows it by heart. Deep places
+  cannot be unwritten in one stroke — strip a layer at a time (peel), and every
+  strip scars.
+- **Rites** — not weapons, petitions. Your reality leaning in for one heartbeat:
+  SUNDER — your world briefly refuses to acknowledge a place exists. FORESIGHT —
+  your world shows you what it wants to become. RALLYING CRY — a surge of belief.
+- **Capitals** — each world enters Limen through one anchor: the palace-tree,
+  the ember spire. Unwrite the anchor and its whole world drains out of the
+  threshold (knockout). If both worlds spend everything and the anchors stand,
+  the threshold itself decides: whichever reality holds more ground becomes true.
+- **The rift** — the original wound. Neither world is true there; conviction
+  drains near it. Some things were born in it.
+
+## Design round: Threshold slate (flavor-informed, PROPOSED 2026-07-10)
+
+Mechanics mined from the narrative. Each ships with its **iconic animation** —
+the animation is part of the mechanic, not decoration. All four fit the
+mechanics.js hook registry (game.js core paths stay frozen; RIFT STIRS needs
+one new `onTurnStart` hook point in the registry). Every one is sim-gated:
+seed-paired sweep + policy retrain + meta check before shipping.
+
+1. **RIFTBORN** (keyword) — *"Born in the wound, they carry it with them."*
+   Immune to rift drain; +1 influence on or adjacent to a rift hex. Retag
+   RIFTWALKER / VEILWISP / RIFTWARDEN + gen-pool candidates. Formalizes the
+   "rift-attuned" chase category above.
+   **Animation:** glitch materialization — the sprite assembles from magenta
+   shards on placement (fragments converge, one chromatic flicker) instead of
+   the landing squash; idle adds a rare two-frame position glitch.
+
+2. **THE RIFT STIRS** (world event) — *"The wound never closed. It breathes."*
+   Every 6th turn the rift surges: tiles adjacent to rift hexes lose 1
+   influence until the owner's next turn; RIFTBORN gains 1 instead. Telegraphed
+   one turn ahead in the phase strip. Anti-turtle timer on the board's center.
+   **Animation:** seam eruption — rift rim pulse goes white-hot, a magenta
+   shockwave rolls down the seam cell by cell, low camera rumble, mote storm
+   doubles for the turn. The board's recurring boss moment.
+
+3. **DOMINION** (tier-3 landscape projection) — *"Where a world runs deep,
+   rivals struggle to exist."* A tier-3 tower projects deep terrain onto its
+   neighbors: enemy tiles there suffer −1 influence; yours are unaffected.
+   Lapses if the tower peels below tier 3. Extends landscape effects from
+   scars (ruins) to claims. Sweep risk: stacks with +1/tier — if towers turn
+   oppressive, DOMINION replaces the tier-3 bonus instead of adding.
+   **Animation:** Apotheosis — completing tier 3 erupts a vertical pillar
+   (verdant gold / umbral violet), then realm-tint bleeds outward across the
+   neighbor hexes: moss-glow veins vs ember cracks. The landscape visibly
+   becomes yours.
+
+4. **REMEMBRANCE** (echo reclaim) — *"The ground remembers what it was, and
+   wants to be it again."* When your tile is unwritten, the cell keeps its
+   echo (latest per player). Placing your tile onto your echo consumes it for
+   +1 permanent influence there — offsets one ruin layer for the avenger.
+   Grief becomes resolve; deliberate tension with ruins decay. Sim watch:
+   net swinginess on contested cells.
+   **Animation:** ghost after-image — a translucent gray sprite of the lost
+   Aspect lingers kneeling on the cell, slow-breathing; on reclamation it
+   stands, steps into the new tile, and ignites in owner color.
+
 ## Core loop (carried from hexagon)
 
 1. Capital placement phase — each player places capital (own half, ≥2 rows off the
