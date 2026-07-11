@@ -33,7 +33,7 @@ export const CONFIG = {
   // capitals, scout heartland ban, stuck-only pass) the old 41/59 P2 edge is
   // gone on its own — seed-paired n=300: T0 143/154, T1 147/149 (even). Keep 1
   // as a hair of first-mover compensation; re-sweep if tiles change.
-  INFLUENCE_TIEBREAK_BONUS_P1: 0,  // re-swept post-ascension: T0 = 152/146 paired
+  INFLUENCE_TIEBREAK_BONUS_P1: -2, // signed; re-swept post-subjugation: -2 = 148/151 paired (P2 side gets it now)
 
   // Scouts may ignore adjacency anywhere EXCEPT the enemy heartland (the
   // opponent's capital-zone rows) — kills the turn-1 scout capital rush.

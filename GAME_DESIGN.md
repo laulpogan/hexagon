@@ -21,8 +21,11 @@ Decisions here override the README.
 2. Turns: draw 1 → place 1 tile from hand → influence resolves → captures resolve.
    Placement may instead **Ascend** (round 3, 2026-07-10): stack onto your own
    non-capital tile (max 3 high, +1 influence per buried tier, only the top
-   tile's keywords active). Capturing a stack **peels** one tier — the
-   attacker's card bounces to hand; towers fall one turn at a time.
+   tile's keywords active). Captures **subjugate** (round 3.5): the enemy tile is buried under yours,
+   feeding your tower (+1 tier) but living on beneath. Capturing a stack
+   **peels** one tier — the attacker's card bounces to hand — and peeling a
+   conqueror **liberates** the buried tile back to its original owner.
+   Towers fall one turn at a time; territory has memory.
    Once per turn a card may be discarded and redrawn (right-click; carried from
    hexagon iteration 14 — kept, it's the hand-smoothing valve).
 3. Influence system unchanged: base influence ± friendly/enemy neighbors; tile at ≤0

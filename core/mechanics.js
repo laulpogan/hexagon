@@ -104,8 +104,10 @@ export const RITE_EFFECTS = {
         isTargetable(t, player);
     },
     resolve(game, player, col, row) {
-      const t = game.board[col][row].tile;
-      game.board[col][row].tile = null;
+      const cell = game.board[col][row];
+      const t = cell.tile;
+      // Towers lose their top tier; the tile beneath resurfaces (its owner rides with it).
+      cell.tile = cell.stack.length ? cell.stack.pop() : null;
       game._log(player, `cast SUNDER — ${t.type} at (${col},${row}) is unmade`);
       return { destroyed: t };
     },

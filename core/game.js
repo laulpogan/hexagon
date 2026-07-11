@@ -301,12 +301,15 @@ export class Game {
 
     // Peel (round 3): capturing a stack only removes its top tier. The
     // attacker's tile bounces to hand — sieging a tower is a war of turns.
+    // Mixed stacks (round 3.5): the tile beneath resurfaces under its
+    // ORIGINAL owner — peeling a conqueror liberates the buried tile.
     if (target && cell.stack.length > 0) {
       cell.tile = cell.stack.pop();
       this.hands[player].push(tile);
       this.stats[player].captured++;
-      this._log(player, `peeled ${target.type} off the stack at (${col},${row}) — tier ${cell.stack.length + 1} remains`);
-      const result = { ok: true, peeled: true, removed: target };
+      const freed = cell.tile.owner !== target.owner ? ` — ${cell.tile.type} is liberated` : '';
+      this._log(player, `peeled ${target.type} off the stack at (${col},${row})${freed}`);
+      const result = { ok: true, peeled: true, removed: target, liberated: cell.tile.owner === player };
       this._afterAction();
       return result;
     }
@@ -324,12 +327,18 @@ export class Game {
     }
 
     const captured = target || null;
-    cell.tile = tile;
-    this.stats[player].placed++;
     if (captured) {
+      // Subjugation (round 3.5): the captured tile is BURIED under yours —
+      // a mixed stack. It feeds your tower (+1 tier) but lives on beneath;
+      // peeling your tower later liberates it back to its owner.
+      cell.stack.push(captured);
+      cell.tile = tile;
+      this.stats[player].placed++;
       this.stats[player].captured++;
-      this._log(player, `captured enemy ${captured.type} at (${col},${row}) with ${tile.type}`);
+      this._log(player, `subjugated enemy ${captured.type} at (${col},${row}) — ${tile.type} stands atop it`);
     } else {
+      cell.tile = tile;
+      this.stats[player].placed++;
       this._log(player, `placed ${tile.type} at (${col},${row})`);
     }
     fireOnPlacement(this, tile, col, row, captured); // ETB-class hooks (SUSTAIN/TRAMPLE)

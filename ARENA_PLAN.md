@@ -86,3 +86,13 @@ Round: 3 COMPLETE (2026-07-10) — session cap reached
 - Round 4 backlog: tower-aware policy features, FLANK/UNTOUCHABLE cold,
   tower-themed keywords (e.g. 'SUMMIT: active while tier-2+'), rite that
   topples a tier, art for stack sides, human playtest of tall-vs-wide.
+
+## Round 3.5 amendment — mixed stacks (subjugation/liberation)
+- Captures now bury the enemy tile under the conqueror (mixed stacks);
+  peel resurfaces buried tiles to their ORIGINAL owner (liberation).
+  SUNDER on a tower pops one tier. 44 tests green.
+- Tiebreak re-swept: -2 (P2 side) = 148/151 paired. KOs up (43→45),
+  captures 2.9.
+- Meta band 39.0–57.1%: MENACE cold (39% @ 118g, thin) — round-4 item.
+- Arena: search2 19-1 over retrained policy* — search's edge GROWS with
+  stacking depth; policy needs tower/subjugation features (round 4).
