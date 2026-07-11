@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { EffectComposer } from '../vendor/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from '../vendor/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from '../vendor/jsm/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from '../vendor/jsm/postprocessing/ShaderPass.js';
 import { OutputPass } from '../vendor/jsm/postprocessing/OutputPass.js';
 import { CONFIG } from '../core/config.js';
 import { neighborCoords } from '../core/board.js';
@@ -99,6 +100,40 @@ function discTexture() {
   return _discTex;
 }
 
+// Final grade: gentle vignette + split-tone (violet lift in shadows, faint
+// warmth in highlights) — unifies the AI-generated tile art under one light.
+// Runs before OutputPass so it grades ahead of tonemapping. Deliberately
+// subtle: the influence badges must stay dead readable.
+const GradeShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    gradeStrength: { value: 0.7 },  // 0 = off, 1 = full split-tone
+    vignette: { value: 0.26 },      // corner darkening amount
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float gradeStrength;
+    uniform float vignette;
+    varying vec2 vUv;
+    void main() {
+      vec4 tex = texture2D(tDiffuse, vUv);
+      vec3 col = tex.rgb;
+      float luma = dot(col, vec3(0.299, 0.587, 0.114));
+      vec3 graded = col + vec3(0.030, 0.018, 0.060) * (1.0 - smoothstep(0.0, 0.5, luma));
+      graded *= mix(vec3(1.0), vec3(1.035, 1.0, 0.955), smoothstep(0.5, 1.0, luma));
+      col = mix(col, graded, gradeStrength);
+      float d = distance(vUv, vec2(0.5));
+      col *= 1.0 - vignette * smoothstep(0.38, 0.75, d);
+      gl_FragColor = vec4(col, tex.a);
+    }`,
+};
+
 function hexGeometry(height) {
   const g = new THREE.CylinderGeometry(R * 0.96, R * 0.96, height, 6);
   g.rotateY(Math.PI / 2); // flat-top orientation to match the offset grid
@@ -185,6 +220,7 @@ export class BoardRenderer {
     this._flashAnims = [];   // capture hit-flash on materials
     this._impactAnims = [];  // landing squash + shockwave rings
     this._popAnims = [];     // badge-number punch-in
+    this._burstAnims = [];   // radial mote sprays on landing/capture
     this._camKick = new THREE.Vector3();
     this._cellOwners = new Map(); // "c,r" → tileId|null from last sync (capture detection)
 
@@ -195,6 +231,8 @@ export class BoardRenderer {
     this._bloom = new UnrealBloomPass(
       new THREE.Vector2(container.clientWidth, container.clientHeight), 0.55, 0.5, 0.6);
     this.composer.addPass(this._bloom);
+    this._grade = new ShaderPass(GradeShader);
+    this.composer.addPass(this._grade);
     this.composer.addPass(new OutputPass()); // restores sRGB/tonemap after bloom
 
     this._buildBackdrop();
@@ -367,12 +405,27 @@ export class BoardRenderer {
     bb.scale.set(0.001, 0.001, 1);
     bb.position.y = h - 0.02;
     bb.visible = false;
+    // Faint owner-tinted halo behind the billboard — reads the unit's realm
+    // against the backdrop without recoloring the art itself.
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: discTexture(), color: ownerHex, transparent: true, opacity: 0.13,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    }));
+    halo.renderOrder = -1; // always draws behind the billboard
+    halo.visible = false;
+    group.add(halo);
     spriteTexture(bbName, (tex) => {
       bb.material.map = tex;
       bb.material.needsUpdate = true;
       const s = tile.capital ? 2.4 : 1.85;
       bb.scale.set(s, s, 1);
       bb.visible = true;
+      halo.scale.set(s * 1.25, s * 1.25, 1);
+      // lift rides the halo itself — this callback can fire before (async
+      // load) or after (cache hit) group.userData is assigned
+      halo.userData.lift = s * 0.42; // halo centers on the subject's body
+      halo.position.y = bb.position.y + halo.userData.lift;
+      halo.visible = true;
     });
     group.add(bb);
 
@@ -382,7 +435,7 @@ export class BoardRenderer {
     group.userData = {
       tileId: tile.id, sprite, prism, mat, baseH: h,
       baseColor: this._tileColor(tile),
-      billboard: bb, bobPhase: (tile.id * 1.7) % (Math.PI * 2), bobBase: h - 0.02,
+      billboard: bb, halo, bobPhase: (tile.id * 1.7) % (Math.PI * 2), bobBase: h - 0.02,
     };
 
     const { x, z } = worldPos(col, row);
@@ -426,6 +479,7 @@ export class BoardRenderer {
   // outlive individual meshes by design.
   _disposeGroup(group) {
     const shared = new Set(_tileTex.values());
+    if (_discTex) shared.add(_discTex); // shadow/glow/halo discs all share it
     group.traverse((obj) => {
       if (obj.geometry) obj.geometry.dispose();
       const mats = Array.isArray(obj.material) ? obj.material : (obj.material ? [obj.material] : []);
@@ -434,6 +488,29 @@ export class BoardRenderer {
         m.dispose();
       }
     });
+  }
+
+  // Short-lived radial mote spray at a landing cell — same additive-disc look
+  // as the rift motes. Geometry/material die with the burst; the disc texture
+  // is shared and survives.
+  _spawnBurst(x, z, y, colorHex, count, speed) {
+    const positions = new Float32Array(count * 3);
+    const vels = [];
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = x; positions[i * 3 + 1] = y; positions[i * 3 + 2] = z;
+      const a = Math.random() * Math.PI * 2;
+      const out = (0.4 + Math.random() * 0.6) * speed;
+      vels.push({ x: Math.cos(a) * out, y: 0.8 + Math.random() * 1.6, z: Math.sin(a) * out });
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({
+      color: colorHex, size: 0.17, map: discTexture(), transparent: true, opacity: 0.95,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const pts = new THREE.Points(geo, mat);
+    this.scene.add(pts);
+    this._burstAnims.push({ pts, vels, ox: x, oy: y, oz: z, start: performance.now() });
   }
 
   // Rebuild/diff tile meshes from game state. New tiles drop in.
@@ -453,11 +530,13 @@ export class BoardRenderer {
           // drop-in animation (skipped when tab hidden — rAF is suspended there)
           if (!document.hidden) {
             group.position.y = 3;
-            this._dropAnims.push({ group, start: performance.now() });
             // capture/exchange (cell previously held a different tile) gets a
             // white hit-flash + camera kick — the duel's key moment reads.
             const prevId = this._cellOwners.get(`${c},${r}`);
-            if (prevId !== undefined && prevId !== null && prevId !== tile.id) {
+            const captured = prevId !== undefined && prevId !== null && prevId !== tile.id;
+            // captured/owner ride the drop anim so the mote burst fires at touchdown
+            this._dropAnims.push({ group, start: performance.now(), captured, owner: tile.owner });
+            if (captured) {
               this._flashAnims.push({ mat: group.userData.mat, base: group.userData.baseColor, start: performance.now() });
               this._camKick.set((Math.random() - 0.5), 0.4, (Math.random() - 0.5)).multiplyScalar(0.35);
             }
@@ -645,6 +724,10 @@ export class BoardRenderer {
         ring.position.y = 0.05;
         this.scene.add(ring);
         this._impactAnims.push({ prism, ring, start: now });
+        // mote burst: hot ember spray on capture, soft owner puff on placement
+        const gp = anim.group.position, gh = anim.group.userData.baseH;
+        if (anim.captured) this._spawnBurst(gp.x, gp.z, gh, 0xff5f3c, 26, 2.6);
+        else this._spawnBurst(gp.x, gp.z, gh * 0.6, anim.owner === 1 ? COLORS.p1 : COLORS.p2, 12, 1.3);
       }
     }
     this._dropAnims = this._dropAnims.filter(a => !a.done);
@@ -663,6 +746,24 @@ export class BoardRenderer {
       }
     }
     this._impactAnims = this._impactAnims.filter(a => !a.done);
+    for (const a of this._burstAnims) {
+      const p = Math.min(1, (now - a.start) / 600);
+      const e = 1 - Math.pow(1 - p, 2);
+      const pos = a.pts.geometry.attributes.position;
+      for (let i = 0; i < a.vels.length; i++) {
+        const v = a.vels[i];
+        // radial fling with a gravity droop; clamp so motes never sink below deck
+        pos.setXYZ(i, a.ox + v.x * e, Math.max(0.05, a.oy + v.y * e - 2.2 * p * p), a.oz + v.z * e);
+      }
+      pos.needsUpdate = true;
+      a.pts.material.opacity = 0.95 * (1 - p);
+      if (p >= 1) {
+        this.scene.remove(a.pts);
+        a.pts.geometry.dispose(); a.pts.material.dispose(); // map is the shared disc — lives on
+        a.done = true;
+      }
+    }
+    this._burstAnims = this._burstAnims.filter(a => !a.done);
     for (const a of this._flashAnims) {
       const p = Math.min(1, (now - a.start) / 220);
       a.mat.emissive.setHex(0xffffff);
@@ -682,11 +783,12 @@ export class BoardRenderer {
       this.camera.position.add(this._camKick);
       this._camKick.multiplyScalar(0.8);
     }
-    // billboards idle-bob (the "alive" read)
+    // billboards idle-bob (the "alive" read); halo tracks its subject
     for (const g of this.tileMeshes.values()) {
       const u = g.userData;
       if (u.billboard?.visible) {
         u.billboard.position.y = u.bobBase + 0.05 * Math.sin(t * 1.6 + u.bobPhase);
+        if (u.halo?.visible) u.halo.position.y = u.billboard.position.y + u.halo.userData.lift;
       }
     }
     // rift motes drift
@@ -698,6 +800,36 @@ export class BoardRenderer {
         pos.setX(i, m.x + 0.08 * Math.sin(t * 0.6 + m.phase * 2));
       }
       pos.needsUpdate = true;
+    }
+    // Win moment: one-time trigger into a slow cinematic orbit, drifting the
+    // look-at toward the winner's capital (board center on a draw) while the
+    // bloom eases up. Orbits until the restart reload.
+    if (this.game.phase === 'over' && !this._winCine) {
+      const focus = this._boardCenter();
+      if (this.game.winner) {
+        outer: for (let c = 0; c < CONFIG.GRID_W; c++) {
+          for (let r = 0; r < CONFIG.GRID_H; r++) {
+            const tl = this.game.board[c][r].tile;
+            if (tl && tl.capital && tl.owner === this.game.winner) {
+              const { x, z } = worldPos(c, r);
+              focus.lerp(new THREE.Vector3(x, 0, z), 0.45); // drift toward, don't center on
+              break outer;
+            }
+          }
+        }
+      }
+      this._winCine = { focus, from: this.center.clone(), pitchFrom: this.camPitch, start: now, lastNow: now };
+    }
+    if (this._winCine) {
+      const wc = this._winCine;
+      const p = Math.min(1, (now - wc.start) / 2600);
+      const e = 1 - Math.pow(1 - p, 3);
+      this.center.lerpVectors(wc.from, wc.focus, e);
+      if (p < 1) this.camPitch = wc.pitchFrom + (0.62 - wc.pitchFrom) * e;
+      this._bloom.strength = 0.55 + (0.8 - 0.55) * e;
+      this.camYaw += (now - wc.lastNow) * 0.00016; // ~40s per lap
+      wc.lastNow = now;
+      this._applyCamera();
     }
     this.composer.render();
   }
