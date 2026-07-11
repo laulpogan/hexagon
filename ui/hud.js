@@ -2,8 +2,21 @@
 // Talks to main.js through callbacks; renders from game state.
 import { KEYWORDS, RITE_INFO } from '../data/tiles.js';
 import { CONFIG } from '../core/config.js';
+import { getLocalCollection, computeMotePrices, nextUnlock } from '../net/progress.js';
 
 const RARITY_COLOR = { common: '#8b9bb4', uncommon: '#4fa3ff', rare: '#f2c14e', capital: '#f2c14e' };
+
+function animateCountUp(el, from, to, duration, format = (n) => String(n)) {
+  if (!el) return;
+  if (from === to) { el.textContent = format(to); return; }
+  const start = performance.now();
+  function step(t) {
+    const p = Math.min(1, (t - start) / duration);
+    el.textContent = format(Math.round(from + (to - from) * p));
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
 
 export class Hud {
   constructor(root, game) {
@@ -153,6 +166,59 @@ export class Hud {
 
   hideWin() {
     this.root.querySelector('#winOverlay').classList.add('hidden');
+  }
+
+  // Post-match reward strip — the retention centerpiece (DESIGN_ROUND_7.md
+  // "The shell"). Called separately from showWin, after the async
+  // recordMatchResult() (net/progress.js) resolves — never blocks the
+  // immediate win/loss feedback showWin already gives (SHELL_SPEC §3.6/§9).
+  // `result` is 'win'|'loss'|'draw'; `prog` is recordMatchResult()'s return.
+  showRewardStrip(result, prog) {
+    if (!prog) return;
+    const box = this.root.querySelector('#winOverlay .win-box');
+    if (!box) return;
+    const oldBtn = box.querySelector('#againBtn');
+    if (oldBtn) oldBtn.remove(); // superseded by the strip's own buttons
+
+    const moteGain = result === 'win' ? (prog.daily_bonus ? 2 : 1) : 0;
+    const startMotes = Math.max(0, prog.motes - moteGain);
+    const startStreak = result === 'win' ? Math.max(0, prog.streak - 1) : prog.streak;
+
+    const strip = document.createElement('div');
+    strip.className = 'reward-strip';
+    strip.innerHTML = `
+      <div class="rs-row">
+        <div class="rs-stat"><span class="rs-label">Record</span><span class="rs-val">${prog.wins}W–${prog.losses}L${prog.draws ? `–${prog.draws}D` : ''}</span></div>
+        <div class="rs-stat"><span class="rs-label">Streak</span><span class="rs-val" id="rsStreak">${startStreak}</span></div>
+        <div class="rs-stat"><span class="rs-label">Motes</span><span class="rs-val" id="rsMotes">◆ ${startMotes}</span></div>
+      </div>
+      ${moteGain ? `<div class="rs-gain">+${moteGain} Mote${moteGain > 1 ? 's' : ''}${prog.daily_bonus ? ' · first win today!' : ''}</div>` : ''}
+      <div class="rs-next" id="rsNext"></div>
+      <div class="rs-actions">
+        <button id="rsMenuBtn">Claim &amp; Menu</button>
+        <button id="rsAgainBtn">Play Again</button>
+      </div>`;
+    box.appendChild(strip);
+
+    animateCountUp(strip.querySelector('#rsMotes'), startMotes, prog.motes, 650, (n) => `◆ ${n}`);
+    if (result === 'win') animateCountUp(strip.querySelector('#rsStreak'), startStreak, prog.streak, 650);
+
+    const nextEl = strip.querySelector('#rsNext');
+    const owned = getLocalCollection();
+    const prices = computeMotePrices();
+    const next = nextUnlock(owned, prices);
+    if (next) {
+      const remain = Math.max(0, next.price - prog.motes);
+      const pct = Math.min(100, Math.round((prog.motes / next.price) * 100));
+      nextEl.innerHTML = `
+        <div class="rs-next-label">Next unlock: <b>${next.type.replace(/_/g, ' ')}</b>${remain > 0 ? ` — ${remain} more win${remain === 1 ? '' : 's'}` : ' — ready!'}</div>
+        <div class="rs-bar"><div class="rs-bar-fill" style="width:${pct}%"></div></div>`;
+    } else {
+      nextEl.innerHTML = `<div class="rs-next-label">Collection complete!</div>`;
+    }
+
+    strip.querySelector('#rsMenuBtn').onclick = () => location.reload();
+    strip.querySelector('#rsAgainBtn').onclick = () => this.onRestart && this.onRestart();
   }
 
   // Hotseat hidden-information gate: opaque screen between turns so the
