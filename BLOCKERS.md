@@ -46,6 +46,22 @@ that still plays WARD/MENACE defensively and contests contact when the
 opponent finally arrives, rather than refusing all forward pressure) to
 re-measure against a fairer opponent model.
 
+## Gate #2 fun-score judge — 6/10 (playtest, 2026-07-11)
+
+Fresh-eyes judge played two full live bot games. RULES-7 verified working in
+actual play: 7 and 5 captures across two 41-turn games (vs a baseline where
+>50% had none), war-strata towers and the RIFT STIRS telegraph land as real
+visual identity. Scores: tension 6, agency 6, spectacle 7, one-more-game 6.
+- BLOCKER it found — V3 delta chips rendered inside the influence-badge sprite
+  extent, garbling both numbers on every occupied cell — FIXED (commit
+  06248bd: chips moved above-and-beside the badge; capturable cells get an
+  elevated ⚔ marker). Judge re-verify confirmed chips readable ("−5, −5, +1")
+  before it hit a model usage limit; the ⚔ sits at the same confirmed height.
+- MAJOR (round 8): the opening 6-7 plies still have no stakes before armies
+  reach contact — midgame is transformed, the opening isn't. Same geometric
+  floor as the first-capture miss above; fix is board geometry, not tuning.
+- MINOR: capture-warning ring was too subtle — addressed by the ⚔ marker.
+
 ## Not a blocker, logged for awareness
 
 - `core/agents/search.js`'s `evaluate()` was named in A12 for rework but

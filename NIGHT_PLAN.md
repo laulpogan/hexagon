@@ -49,20 +49,21 @@ GATE1_ROUNDS: 1
 GATE2_ROUNDS: 1
 
 ## Success criteria (falsifiable, checked before morning report)
-- [ ] Capturing a tile or stack places the attacker's card ON TOP; buried
+- [x] Capturing a tile or stack places the attacker's card ON TOP; buried
       tiles persist under it (exact semantics per design round); tests cover
       capture-of-stack and recapture; 45+ tests green.
-- [ ] Policy retrained post-rules-change; seed-paired tiebreak re-sweep run;
+- [x] Policy retrained post-rules-change; seed-paired tiebreak re-sweep run;
       stall rate ~0; avg game length within 20-45 turns; no keyword outside
       42-58% band at n≥1500.
-- [ ] Median turn-of-first-capture measurably earlier than baseline (sim
+- [~] Median turn-of-first-capture measurably earlier (T11->T9-10; T8 target MISSED, BLOCKERS.md)
+      ORIG: than baseline (sim
       metric — interaction forced sooner). BASELINE (measured 2026-07-11,
       pre-change): greedy n=200: median first capture T11 but 101/200 games
       had ZERO captures, captures/game median 0, length median 41T; search2
       n=60: first capture median T28, 30/60 zero-capture, captures/game
       median 1. Over half of games contain no interaction — this is the
       number to destroy.
-- [ ] FUN/WOW SCORE (user order, mid-flight): (a) tools/metrics.js "Drama
+- [x] FUN/WOW SCORE (user order, mid-flight): (a) tools/metrics.js "Drama
       Index" 0-100 — composite of captures/game, median first-capture turn,
       lead changes (influence-lead sign flips), comeback wins (winner behind
       at 75% mark), stall rate; deterministic, printed by sim/arena runs,
@@ -70,15 +71,15 @@ GATE2_ROUNDS: 1
       gate-#2 playtest panel (rubric: tension / agency / spectacle /
       one-more-game pull), tracked per round like the visual score. Both
       reported in the morning report with before/after.
-- [ ] Deck size increased (design round picks number); starter decks rebuilt;
+- [~] Deck size stayed 20 (24 failed length gate); pool 22->42 + starters rebuilt (design round picks number); starter decks rebuilt;
       deckbuilder enforces new rules; pool expanded with art for every new
       shipped card.
-- [ ] Live site has: title/menu flow, account creation (Supabase magic-link +
+- [x] Live site has: title/menu flow, account creation (Supabase magic-link +
       guest mode), collection screen, unlock progression (wins grant cards/
       packs), deckbuilder integrated with account, all reachable and tested
       in-situ via Playwright.
-- [ ] New-mechanic iconic animations implemented (per design round picks).
-- [ ] Everything pushed to limen-design, live URL verified, docs/session log/
+- [x] New-mechanic iconic animations implemented (per design round picks).
+- [x] Everything pushed to limen-design, live URL verified, docs/session log/
       handoff updated, morning report written.
 
 ## Constraints (standing, do not violate)
