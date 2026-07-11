@@ -31,17 +31,21 @@ Reality in Limen is contested by **conviction** — the influence number. Each
 player IS a reality, writing its **Aspects** (the cards: a thicket, a wolf, a
 saint) into the threshold. Placement is inscription: *here, my world is true.*
 Nothing fights and nothing dies. When a tile's relative influence reaches zero,
-the ground stops believing in it — the Aspect is **unwritten** and the rival's
-takes its place. Doubt is ambient, not a projectile: that is why captures need
-no adjacency.
+the ground stops believing in it — the Aspect is **unwritten**: the rival's
+card is laid over it and the old truth is buried beneath, a stratum in the
+ground's memory. Doubt must be spoken face to face — a world can only unwrite
+ground its own aspects already touch (RULES-7: captures cap the stack and
+require adjacency).
 
-- **Ruins** — ground rewritten too often stops believing anything. Scar tissue
-  of contradiction; everything stands less firmly on it. The ATTUNED learned to
-  stand in ambiguity.
+- **Strata & high ground** — every buried Aspect is a layer of argument the
+  ground remembers. Fought-over cells rise; a tall claim presses down on its
+  lower neighbors and shrugs off doubt from below. Old debris crumbles to
+  **rubble** — a scar in the art, not a rule; the ATTUNED stand comfortably
+  in ambiguity either way.
 - **Ascension** — write the same truth over itself and the place deepens. A
-  tower is a stanza repeated until the ground knows it by heart. Deep places
-  cannot be unwritten in one stroke — strip a layer at a time (peel), and every
-  strip scars.
+  tower is a stanza repeated until the ground knows it by heart — but only
+  buried RIVAL truths (trophies) make it louder; repeating yourself buys
+  height, not conviction.
 - **Rites** — not weapons, petitions. Your reality leaning in for one heartbeat:
   SUNDER — your world briefly refuses to acknowledge a place exists. FORESIGHT —
   your world shows you what it wants to become. RALLYING CRY — a surge of belief.
@@ -50,9 +54,17 @@ no adjacency.
   threshold (knockout). If both worlds spend everything and the anchors stand,
   the threshold itself decides: whichever reality holds more ground becomes true.
 - **The rift** — the original wound. Neither world is true there; conviction
-  drains near it. Some things were born in it.
+  drains near it. But the ground nearest the wound is where the threshold
+  listens hardest: hold it and it counts double when the world is decided
+  (**Riftlight**). Every so often the wound breathes (**THE RIFT STIRS**).
+  Some things were born in it.
 
-## Design round: Threshold slate (flavor-informed, PROPOSED 2026-07-10)
+## Design round: Threshold slate (SUPERSEDED by DESIGN_ROUND_7.md, 2026-07-11)
+
+Disposition after gate review: THE RIFT STIRS **shipped** (RULES-7 R6);
+RIFTBORN **dead** (redundant with ATTUNED); DOMINION **dead** (rewards the
+dominant — rejected); REMEMBRANCE **deferred** to a future round. Kept below
+for the design record; do not implement from this section.
 
 Mechanics mined from the narrative. Each ships with its **iconic animation** —
 the animation is part of the mechanic, not decoration. All four fit the

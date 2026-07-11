@@ -11,3 +11,6 @@ js/asteroids.js
 js/hexagon.js
 # generated source art (web-size .jpg files are committed instead)
 assets/tiles/*.png
+.playwright-mcp/
+c3-*.jpg
+console-errors.txt
