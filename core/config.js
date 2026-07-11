@@ -11,10 +11,13 @@ export const CONFIG = {
   PLACEMENTS_PER_TURN: 1,
   DISCARDS_PER_TURN: 1,
 
-  // Deck construction (the pacing valve — replaces resource costs)
-  DECK_SIZE: 20,
+  // Deck construction (the pacing valve — replaces resource costs). R8: 20→24
+  // (working default pending the A10 20-vs-24 sim gate), rarity caps per R8
+  // spec (2 rare / 8 uncommon per deck — up from 6 uncommon to fit the
+  // expanded pool without starving common-slot variety).
+  DECK_SIZE: 24,
   MAX_RARE: 2,
-  MAX_UNCOMMON: 6,
+  MAX_UNCOMMON: 8,
   COPY_CAP: { common: 3, uncommon: 2, rare: 1 },
 
   // Capital
