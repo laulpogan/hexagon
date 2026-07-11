@@ -391,38 +391,37 @@
 
       <h3>GOAL</h3>
       <ul>
-        <li>Capture the enemy <b>capital ♛</b> — or, when both sides run out of cards, hold more <b>total influence</b> on the board.</li>
+        <li>Capture the enemy <b>capital ♛</b> — or, when both sides run out of cards, hold more <b>total influence</b> on the board (including <span style="color:#e879f9">Riftlight</span>, below).</li>
       </ul>
 
       <h3>YOUR TURN — one action</h3>
       <ul>
         <li><b>Place</b> a card on an empty hex touching one of your tiles (<i>Scout</i> cards ignore this).</li>
-        <li><b>Capture:</b> any enemy tile showing <b style="color:#ff6b6b">0</b> (red ring) is in revolt — place a card onto it from <i>anywhere</i>, no adjacency needed. The old tile is destroyed.</li>
-        <li><b>Ascend:</b> place onto your <i>own</i> tile to build a tower.</li>
+        <li><b>Capture:</b> an enemy tile showing <b style="color:#ff6b6b">0</b> (red ring) is in revolt — but you can only take it if you already have a tile <b>next to it</b>. Your card lands <b>on top</b>: the old tile is buried beneath it, forever, and your card is spent.</li>
+        <li><b>Ascend:</b> place onto your <i>own</i> tile to build height. Height is position, not power — see HIGH GROUND.</li>
         <li><b>Cast a rite ✦:</b> select the rite card, then click a highlighted target.</li>
         <li>Extras: right-click a card once per turn to discard + redraw. Pass is allowed only when you have no legal move.</li>
       </ul>
 
       <h3>INFLUENCE — the number on every tile</h3>
       <ul>
-        <li>Shown number = base <b>+ each adjacent friendly tile's influence − each adjacent enemy tile's influence</b>, minus rift and ruins. Strong neighbors matter more than many neighbors.</li>
+        <li>Shown number = base <b>+ each adjacent friendly tile's influence − each adjacent enemy tile's influence</b>, adjusted by height and the rift. Strong neighbors matter more than many neighbors.</li>
         <li>Hover any tile or card for its full breakdown and reminder text.</li>
       </ul>
 
-      <h3>RUINS — the land remembers</h3>
+      <h3>HIGH GROUND &amp; STACKS — the battle builds the terrain</h3>
       <ul>
-        <li>Every destroyed tile scars its hex. Standing on scars costs <b>−1 per layer</b> (max −2). Fought-over ground grows worthless — recapture for position, not profit.</li>
+        <li>A <b>taller</b> stack presses harder on shorter enemy neighbors, and takes less pressure from below (up to ±2). Attacking uphill is weak; holding the summit is strong.</li>
+        <li>Only buried <b>enemy</b> tiles make a stack stronger: each is a <b>trophy</b> worth +1 influence (max 3). Stacking on your own tiles buys height alone.</li>
+        <li>Self-stacks cap at <b>3 high</b>; battle can push a cell to <b>5</b>. Beyond that the bottom tier crumbles to rubble — a scar in the art, with no influence effect.</li>
+        <li>Only the <b>top card's keywords</b> count; buried cards are dormant and never return.</li>
       </ul>
 
-      <h3>TOWERS</h3>
+      <h3>THE RIFT <span style="color:#c026d3">◆</span> — the prize, not the wall</h3>
       <ul>
-        <li>Stack up to <b>3 high</b> on your own non-capital tile: +1 influence per buried tier, but only the <b>top card's keywords</b> count.</li>
-        <li>Capturing a 2+ tower only <b>peels</b> its top layer — your card bounces back to hand and the hex scars. Deep claims fall one turn at a time.</li>
-      </ul>
-
-      <h3>THE RIFT <span style="color:#c026d3">◆</span></h3>
-      <ul>
-        <li>The glowing seam is impassable and drains <b>−1 per adjacent rift hex</b>. <i>Rift-Attuned</i> tiles gain +1 there instead and ignore ruins.</li>
+        <li>You <b>may build on rift hexes</b>. Living beside the seam drains <b>−1 per adjacent rift hex</b>; <i>Rift-Attuned</i> tiles gain +1 instead.</li>
+        <li><b>Riftlight:</b> at the final count, every cell you hold on or beside the rift adds <b>+2</b> to your influence total (up to +8). The ground nearest the wound decides which world is true.</li>
+        <li><b>The rift stirs</b> every 12 turns — telegraphed two turns ahead in the phase strip. While it rages, rift-adjacent tiles take an extra hit (Attuned feed on it instead).</li>
       </ul>
 
       <h3>KEYWORDS</h3>
@@ -430,7 +429,7 @@
 
       <h3>DECK</h3>
       <ul>
-        <li>20 cards: max 2 rares, max 6 uncommons. Build yours in the Deck Builder.</li>
+        <li>20 cards: max 2 rares, max 8 uncommons. Build yours in the Deck Builder — the starter deck already carries Flank, Wing, Sustain, a Sunder, and a Rallying Cry.</li>
       </ul>
 
       <button id="helpCloseBtn">Close</button>

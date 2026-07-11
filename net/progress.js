@@ -52,28 +52,35 @@ export function getLocalCollection() {
   return c;
 }
 
-// ─── Mote price ladder (B4) ─────────────────────────────────────────────
+// ─── Mote price ladder (B4, repriced for the 42-type pool in C2b) ────────
 // Computed from the live TILE_POOL — never hardcoded card names/counts.
 // Commons are free (locked commons just need claiming, not saving toward).
-// Uncommons/rares taper so completing the CURRENTLY-locked set costs
-// ~50-65 wins total, matching B4's target for tonight's ~24-type pool.
-// Documented, not solved tonight (B4): once the core-rules agent's ~40-type
-// pool lands, newly-promoted cards belong on a separate Season-1 track —
-// this base-ladder budget will need re-tuning in phase C2b, not blind reuse.
+// B4: newly-promoted cards (season: 1 in TILE_POOL) live on a separate
+// Season-1 track, NOT the base ladder — each track's ladder restarts its
+// own taper. Base-pool completion budget check (2026-07-11, live pool):
+// base = 5 uncommons (2+3+4+5+6=20◆) + 6 rares (5..10=45◆) = 65◆ total,
+// which at 1 Mote/win + 1 daily-first-win bonus lands ~50-60 wins — inside
+// B4's 50-65 target. (The single continuous ladder this replaces priced
+// the same pool at 158◆ ≈ 105-145 wins.) Season-1 totals 46◆ on its own.
 const UNCOMMON_BASE = 2, UNCOMMON_STEP = 1;
 const RARE_BASE = 5, RARE_STEP = 1;
 
 export function computeMotePrices() {
   const locked = TILE_POOL.filter(t => !((t.count || 0) > 0));
   const prices = {};
-  const byRarity = { uncommon: [], rare: [] };
+  const tracks = new Map(); // `${season}:${rarity}` → [tiles]
   for (const t of locked) {
     if (t.rarity === 'common') { prices[t.type] = 0; continue; }
-    if (!byRarity[t.rarity]) byRarity[t.rarity] = [];
-    byRarity[t.rarity].push(t);
+    const key = `${t.season || 0}:${t.rarity}`;
+    if (!tracks.has(key)) tracks.set(key, []);
+    tracks.get(key).push(t);
   }
-  (byRarity.uncommon || []).forEach((t, i) => { prices[t.type] = UNCOMMON_BASE + i * UNCOMMON_STEP; });
-  (byRarity.rare || []).forEach((t, i) => { prices[t.type] = RARE_BASE + i * RARE_STEP; });
+  for (const [key, tiles] of tracks) {
+    const rarity = key.split(':')[1];
+    const base = rarity === 'rare' ? RARE_BASE : UNCOMMON_BASE;
+    const step = rarity === 'rare' ? RARE_STEP : UNCOMMON_STEP;
+    tiles.forEach((t, i) => { prices[t.type] = base + i * step; });
+  }
   return prices;
 }
 

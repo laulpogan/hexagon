@@ -24,7 +24,7 @@ export const KEYWORDS = {
 };
 
 export const RITE_INFO = {
-  SUNDER:       { name: 'Sunder',       desc: 'Destroy a non-capital enemy tile at 2 influence or less — anywhere on the board.' },
+  SUNDER:       { name: 'Sunder',       desc: 'Destroy a non-capital enemy tile at 2 influence or less — its whole stack with it. The target must be adjacent to one of your tiles.' },
   FORESIGHT:    { name: 'Foresight',    desc: 'Cycle your two weakest hand tiles for fresh draws.' },
   RALLYING_CRY: { name: 'Rallying Cry', desc: 'Friendly tiles adjacent to a target friendly tile permanently gain +1 influence.' },
 };
@@ -79,26 +79,26 @@ export const TILE_POOL = [
   { type: 'RALLYING_CRY', influence: 0, rarity: 'uncommon', count: 1, keywords: [], kind: 'rite' },
 
   // ─── R8 POOL: 14 sim-validated promotions (analysis/pool40.json) ─────
-  { type: 'EMBERSLINGER',   influence: 2, rarity: 'common',   count: 2, keywords: ['SCOUT'] },
-  { type: 'SPRITE',         influence: 1, rarity: 'common',   count: 0, keywords: ['RALLY'] },
-  { type: 'RIFT-WALL',      influence: 2, rarity: 'common',   count: 1, keywords: ['FORTIFIED'] },
-  { type: 'FLAME-LURKER',   influence: 2, rarity: 'common',   count: 0, keywords: ['ATTUNED'] },
-  { type: 'BANEBERRY',      influence: 1, rarity: 'common',   count: 2, keywords: ['SIEGE'] },
-  { type: 'PETRIFIED-ROSE', influence: 1, rarity: 'common',   count: 1, keywords: ['WARD'] },
-  { type: "WILL-O'-WISP",   influence: 1, rarity: 'common',   count: 2, keywords: ['FLANK'] },
-  { type: 'POLLENCLOUD',    influence: 1, rarity: 'common',   count: 2, keywords: ['WING'] },
-  { type: 'FOXGLOVE',       influence: 3, rarity: 'uncommon', count: 0, keywords: ['DOUBLESTRIKE'] },
-  { type: 'VEILWALKER',     influence: 3, rarity: 'uncommon', count: 0, keywords: ['UNTOUCHABLE'] },
-  { type: 'SOUL-ENGINE',    influence: 3, rarity: 'uncommon', count: 0, keywords: ['SUSTAIN'] },
-  { type: 'SPLINTER',       influence: 1, rarity: 'uncommon', count: 0, keywords: ['DOUBLESTRIKE', 'MENACE'] },
-  { type: 'MAELSTONIUM',    influence: 3, rarity: 'rare',     count: 0, keywords: ['DOUBLESTRIKE', 'FLANK'] },
-  { type: 'TEAR-ESSENCE',   influence: 4, rarity: 'rare',     count: 0, keywords: ['UNTOUCHABLE', 'ATTUNED'] },
+  { type: 'EMBERSLINGER',   influence: 2, rarity: 'common',   count: 2, keywords: ['SCOUT'], season: 1 },
+  { type: 'SPRITE',         influence: 1, rarity: 'common',   count: 0, keywords: ['RALLY'], season: 1 },
+  { type: 'RIFT-WALL',      influence: 2, rarity: 'common',   count: 1, keywords: ['FORTIFIED'], season: 1 },
+  { type: 'FLAME-LURKER',   influence: 2, rarity: 'common',   count: 0, keywords: ['ATTUNED'], season: 1 },
+  { type: 'BANEBERRY',      influence: 1, rarity: 'common',   count: 2, keywords: ['SIEGE'], season: 1 },
+  { type: 'PETRIFIED-ROSE', influence: 1, rarity: 'common',   count: 1, keywords: ['WARD'], season: 1 },
+  { type: "WILL-O'-WISP",   influence: 1, rarity: 'common',   count: 2, keywords: ['FLANK'], season: 1 },
+  { type: 'POLLENCLOUD',    influence: 1, rarity: 'common',   count: 2, keywords: ['WING'], season: 1 },
+  { type: 'FOXGLOVE',       influence: 3, rarity: 'uncommon', count: 0, keywords: ['DOUBLESTRIKE'], season: 1 },
+  { type: 'VEILWALKER',     influence: 3, rarity: 'uncommon', count: 0, keywords: ['UNTOUCHABLE'], season: 1 },
+  { type: 'SOUL-ENGINE',    influence: 3, rarity: 'uncommon', count: 0, keywords: ['SUSTAIN'], season: 1 },
+  { type: 'SPLINTER',       influence: 1, rarity: 'uncommon', count: 0, keywords: ['DOUBLESTRIKE', 'MENACE'], season: 1 },
+  { type: 'MAELSTONIUM',    influence: 3, rarity: 'rare',     count: 0, keywords: ['DOUBLESTRIKE', 'FLANK'], season: 1 },
+  { type: 'TEAR-ESSENCE',   influence: 4, rarity: 'rare',     count: 0, keywords: ['UNTOUCHABLE', 'ATTUNED'], season: 1 },
 
   // ─── R8 POOL: 4 new designs showcasing R3 (high ground) / R5 (Riftlight) ──
-  { type: 'STONETREADER', influence: 2, rarity: 'uncommon', count: 0, keywords: ['SUREFOOT'] },
-  { type: 'SEAMDRINKER',  influence: 2, rarity: 'uncommon', count: 0, keywords: ['TIDEBOUND'] },
-  { type: 'APEXWARDEN',   influence: 2, rarity: 'rare',     count: 1, keywords: ['SUMMIT'] },
-  { type: 'SEAMKEEPER',   influence: 1, rarity: 'uncommon', count: 0, keywords: ['SEAMBOUND'] },
+  { type: 'STONETREADER', influence: 2, rarity: 'uncommon', count: 0, keywords: ['SUREFOOT'], season: 1 },
+  { type: 'SEAMDRINKER',  influence: 2, rarity: 'uncommon', count: 0, keywords: ['TIDEBOUND'], season: 1 },
+  { type: 'APEXWARDEN',   influence: 2, rarity: 'rare',     count: 1, keywords: ['SUMMIT'], season: 1 },
+  { type: 'SEAMKEEPER',   influence: 1, rarity: 'uncommon', count: 0, keywords: ['SEAMBOUND'], season: 1 },
 ];
 
 const byType = new Map(TILE_POOL.map(t => [t.type, t]));

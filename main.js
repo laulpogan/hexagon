@@ -229,7 +229,8 @@ function updateBoardTip(hit) {
       boardTip.innerHTML = `
         <div class="bt-title bt-rift">◆ Rift Hex</div>
         <div>Drains <b>1 influence</b> from every adjacent tile — both players.
-        <i>Rift-attuned</i> tiles feed on it instead. You may build here, at your peril.</div>`;
+        <i>Rift-attuned</i> tiles feed on it instead. You may build here, at your peril —
+        and every cell held on or beside the rift adds <b>+2 Riftlight</b> to your final score.</div>`;
       boardTip.style.display = 'block';
     } else {
       boardTip.style.display = 'none';
@@ -245,16 +246,17 @@ function updateBoardTip(hit) {
     ? `<div class="bt-kw">${tile.keywords.map(k =>
         `<div><b>${KEYWORDS[k]?.name || k}</b> — ${KEYWORDS[k]?.desc || ''}</div>`).join('')}</div>`
     : '';
+  const trophies = g.trophyValue(hit.col, hit.row);
   const stackHtml = tiers
-    ? `<div class="bt-stack">Tier-${tiers + 1} tower · buried: ${cell.stack.slice().reverse().map(t =>
-        `${t.type}${t.owner !== tile.owner ? ' (subjugated)' : ''}`).join(', ')}<br>
-        <i>Buried keywords are dormant. Capturing peels one tier; buried tiles return to their owner.</i></div>`
+    ? `<div class="bt-stack">Tier-${tiers + 1} stack · buried: ${cell.stack.slice().reverse().map(t =>
+        `${t.type}${t.owner !== tile.owner ? ' (trophy)' : ''}`).join(', ')}<br>
+        <i>Buried keywords are dormant; buried tiles never return. Buried enemy tiers are trophies: +1 influence each (max 3).</i></div>`
     : '';
   boardTip.innerHTML = `
     <div class="bt-title">${tile.capital ? '♛ CAPITAL' : tile.type.replace(/_/g, ' ')}</div>
     <div>${ownerLabel(tile.owner)} · influence <span class="bt-inf">${rel}</span>
-      (base ${tile.influence}${tiers ? ` +${tiers} tier` : ''}${riftN ? `, rift ${tile.keywords.includes('ATTUNED') ? '+' : '−'}${riftN}` : ''}, ± neighbors)</div>
-    ${capturable ? '<div class="bt-cap">⚠ In revolt — can be taken by placement!</div>' : ''}
+      (base ${tile.influence}${trophies ? ` +${trophies} trophy` : ''}${riftN ? `, rift ${tile.keywords.includes('ATTUNED') ? '+' : '−'}${riftN}` : ''}, ± neighbors &amp; height)</div>
+    ${capturable ? '<div class="bt-cap">⚠ In revolt — an adjacent enemy card can bury it!</div>' : ''}
     ${kwHtml}
     ${stackHtml}
     ${tile.capital ? '<div class="bt-stack"><i>Lose this and the game ends. Cannot be stacked on or targeted by rites.</i></div>' : ''}`;
