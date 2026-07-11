@@ -26,7 +26,7 @@ rounds that mine MTG-analog mechanics into an evergreen Limen base set.
   policy (evolution strategies over feature weights — retrainable per rules rev).
 
 ## Iteration counter (bump each design round; cap 3 per session)
-Round: 3 COMPLETE (2026-07-10) — session cap reached
+Round: 6 COMPLETE (2026-07-10 night)
 
 ## Round 1 verdicts (arena: 967-card pool, 4 PSRO rounds, ~1150 games)
 - All success criteria 1-5 met (arena matrix, retrain-without-arena-edits,
@@ -111,3 +111,63 @@ Round: 3 COMPLETE (2026-07-10) — session cap reached
   fallback (180s/5s@720p warm). spconv-dependent tools (UniRig/SAM3D) =
   Dell. Next session: batch 23 sprites → GLB popouts.
 - MusicGen-small ran NATIVELY on Spark sm_121 (PYTHONNOUSERSITE=1 trap).
+
+## Round 6 verdicts — tower/ruins policy features + FLANK buff (2026-07-10 night)
+- **Policy features 11 → 15** (core/agents/policy.js): `ascendHeight` (resulting
+  tower height), `ruinsUnder` (ruin drain the placed face will suffer, incl. the
+  capture scar), `peelExposure` (ascend: adjacent enemies that can peel),
+  `towerPeel` (material removed peeling an enemy tower). moveFeatures also got
+  three accuracy fixes: ascends now score their pressure on enemy neighbors
+  (was ownRel only), peels are their own branch (were scored as full captures),
+  and capture sims scar the cell (ruins+1) before reading ownRelAfter.
+  loadTrainedPolicy rejects a stale weights file on feature-count mismatch.
+- **Retrain**: `npm run train -- 24 24 8` (CLI args only, up from 12/16/8
+  defaults; ~7 min). Fitness 0.781 vs greedy+anchor. ES turned ascendHeight
+  slightly negative (-0.78 — towers cost tempo) and kept towerPeel ~+2.
+- **Arena, 30 seed-pairs per pairing** (60 games each):
+  policy* 39-21 over greedy (65%; stale 11-dim weights lost this 3-7 pre-round);
+  search2 59-1 over policy*; search2 56-4 over greedy. Gap vs search2 NOT
+  closed — search2 shares moveFeatures/DEFAULT_WEIGHTS, so the feature work
+  lifted it too. Negative result logged: adding search2 to the ES fitness mix
+  (4 games/eval, 10 gens, pop 14) transferred nothing (2-58) and cost the
+  greedy matchup (65% → 52%); reverted. Verdict: the gap is structural —
+  myopic linear policy vs depth-2 adversarial lookahead. Round-7 options:
+  distill search2 trajectories into the policy, buy a real search-opponent
+  training budget, or ship search2 as the "hard" bot.
+- **FLANK buff sweep** (seed-paired, policy agent; FLANK-hybrid deck = starter
+  shell with its uncommon slots as 6 pure-FLANK bodies, vs starter; 800 pairs
+  = 1600 games/arm; mirror = same deck both sides):
+
+  | arm | knobs | duel WR | mirror P1 (400g) |
+  |---|---|---|---|
+  | baseline | thr 1, min-att 2 | 45.1% | 49.3% |
+  | A | min-att 1 | 45.7% | 47.5% |
+  | B | thr 2 | 47.1% | 47.3% |
+  | C | +1 thr per ally > 2 | 45.4% | 49.0% |
+  | **D = A+B** | **min-att 1, thr 2** | **48.2%** | 46.5% |
+  | E = A + per-ally | min-att 1, +1/ally | 45.9% | 47.5% |
+
+  Large mirror (1200g decisive): baseline 47.0 / B 46.8 / D 46.2 — the buff
+  moves P1/P2 <1pt. Captures/match flat (~6.4) in every arm. **Applied D**:
+  FLANK_THRESHOLD 2, new knobs FLANK_MIN_ATTACKERS=1, FLANK_PER_ALLY=0.
+  New card text: "Enemy tiles adjacent to this are capturable at 2 influence
+  or less." Mechanics test rewritten to the new gate.
+- **Methodology trap** (for future sweeps): decks stacked with weak 1-influence
+  FLANK commons and no SCOUT turtle into ZERO-capture policy mirrors — both
+  sides build towers at home and never make contact. Useless for measuring a
+  capture-gate mechanic. Starter-shell hybrids restored contact (6-8 cap/game).
+- **Tiebreak re-check**: FLANK knobs can't move starter-deck balance (starter
+  carries no FLANK cards). Data-only paired sweep (shipped bot, n=300/arm):
+  -4 → 146/153, -3 → 149/151, **-2 → 152/148**, -1 → 155/144, 0 → 157/143.
+  INFLUENCE_TIEBREAK_BONUS_P1 stays -2. (The default 'sim' seed prefix reads
+  162/137 at the same knob — seed-set noise, worth remembering.)
+- **Meta** (6 rounds × pop 32 × 4 games, 1150-card pool): FLANK 47.9% @ 3280
+  card-games, up from 46.6% pre-buff. (A quick 3×24×3 run read 57.2% @ 612g —
+  thin-sample mirage; don't trust keyword deltas under ~2000 card-games.)
+  Keyword band 45.2–54.6, diversity 27.9/32 (healthiest yet). MENACE 45.2% @
+  166g — thin, cold-ish, NOT drifting OVER. FLANK card flags: 1 OVER / 5 UNDER
+  — normal spread, no degenerate FLANK core.
+- 45 tests green.
+- Watch items: FLANK still a hair under 50 (gen-pool costs were priced for the
+  weak FLANK — recheck after next pool regen); MENACE sample starvation;
+  policy-vs-search2 structural gap (round-7 item above).

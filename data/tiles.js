@@ -10,7 +10,7 @@ export const KEYWORDS = {
   DOUBLESTRIKE:{ name: 'Double Strike',desc: 'Counts twice when contributing influence to adjacent tiles.' },
   ATTUNED:     { name: 'Rift-Attuned', desc: 'Gains +1 influence per adjacent rift hex instead of −1.' },
   // Wave 1 (design round 1 — MTG analogs)
-  FLANK:       { name: 'Flank',        desc: 'With 2+ of your tiles adjacent (this among them), the enemy tile is capturable at 1 influence or less.' },
+  FLANK:       { name: 'Flank',        desc: 'Enemy tiles adjacent to this are capturable at 2 influence or less.' },
   WING:        { name: 'Wing',         desc: 'Influence pressed onto this tile by non-Wing enemies is halved.' },
   MENACE:      { name: 'Menace',       desc: 'Cannot be captured unless 2+ enemy tiles are adjacent.' },
   SUSTAIN:     { name: 'Sustain',      desc: 'Each capture this tile makes permanently raises its base influence by 1.' },

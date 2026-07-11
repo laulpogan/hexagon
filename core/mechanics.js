@@ -6,8 +6,9 @@ import { CONFIG } from './config.js';
 import { neighborCoords } from './board.js';
 
 export const KEYWORD_HOOKS = {
-  // Deathtouch analog: with ≥2 enemy neighbors incl. a FLANK attacker-side
-  // tile, the capture threshold loosens from 0 to ≤ FLANK_THRESHOLD.
+  // Deathtouch analog: with ≥ FLANK_MIN_ATTACKERS attacker-side neighbors
+  // incl. a FLANK tile, the capture threshold loosens from 0 to
+  // ≤ FLANK_THRESHOLD (+ FLANK_PER_ALLY per attacker beyond 2).
   FLANK: {
     captureGate({ game, col, row, byPlayer }) {
       let enemies = 0, hasFlank = false;
@@ -18,7 +19,12 @@ export const KEYWORD_HOOKS = {
           if (t.keywords.includes('FLANK')) hasFlank = true;
         }
       }
-      if (hasFlank && enemies >= 2) return { thresholdOverride: CONFIG.FLANK_THRESHOLD };
+      if (hasFlank && enemies >= CONFIG.FLANK_MIN_ATTACKERS) {
+        return {
+          thresholdOverride: CONFIG.FLANK_THRESHOLD +
+            CONFIG.FLANK_PER_ALLY * Math.max(0, enemies - 2),
+        };
+      }
       return {};
     },
   },

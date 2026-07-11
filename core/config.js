@@ -40,7 +40,12 @@ export const CONFIG = {
   SCOUT_HEARTLAND_BAN: true,
 
   // Wave-1 mechanics (2026-07-10 design round 1 — MTG analogs)
-  FLANK_THRESHOLD: 1,   // deathtouch-ish: capture at ≤1 with 2+ attackers incl. FLANK
+  FLANK_THRESHOLD: 2,   // deathtouch-ish: enemies beside a FLANK tile capturable at ≤2.
+                        // Round 6 buff (was ≤1 needing 2+ attackers): FLANK sat cold at
+                        // 43–47%; seed-paired sweep n=1600/arm picked min-att 1 + thr 2
+                        // (+3.1pts, captures/match flat, mirror P1 shift <1pt).
+  FLANK_MIN_ATTACKERS: 1, // attackers (incl. the FLANK tile) needed to open the gate
+  FLANK_PER_ALLY: 0,    // extra threshold per attacker beyond 2 (pack-hunter scaling)
   SUSTAIN_BONUS: 1,     // lifelink-ish: permanent growth per capture
   TRAMPLE_SPLASH: 2,    // trample: permanent dent on one extra adjacent enemy per capture
   SUNDER_MAX_INF: 2,    // targeted removal ceiling (non-capital only)

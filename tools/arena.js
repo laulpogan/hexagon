@@ -8,13 +8,16 @@ import { Game } from '../core/game.js';
 import { mulberry32, hashSeed } from '../core/rng.js';
 import { makeGreedy } from '../core/agents/greedy.js';
 import { makeSearch } from '../core/agents/search.js';
-import { makePolicy, DEFAULT_WEIGHTS } from '../core/agents/policy.js';
+import { makePolicy, DEFAULT_WEIGHTS, FEATURE_NAMES } from '../core/agents/policy.js';
 
 const PLY_CAP = 400;
 
 export function loadTrainedPolicy() {
   try {
     const w = JSON.parse(fs.readFileSync(new URL('../data/policy_weights.json', import.meta.url)));
+    if (!Array.isArray(w.weights) || w.weights.length !== FEATURE_NAMES.length) {
+      throw new Error('stale weights file (feature count changed — retrain)');
+    }
     return makePolicy({ weights: w.weights, name: 'policy*' });
   } catch {
     return makePolicy({ name: 'policy0' }); // untrained defaults

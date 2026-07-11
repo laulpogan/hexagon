@@ -17,10 +17,14 @@ export const FEATURE_NAMES = [
   'riftAttunement',     // rift neighbors × (ATTUNED ? 1 : -1)
   'homeDefense',        // raises own capital's influence while it is low
   'wardPop',            // attacking an unbroken ward
+  'ascendHeight',       // resulting tower height when ascending (round 6)
+  'ruinsUnder',         // ruin drain the placed face will suffer (post-scar)
+  'peelExposure',       // ascend: adjacent enemies that could peel the tower
+  'towerPeel',          // material removed by peeling an enemy tower (card bounces)
 ];
 
 // Default weights approximate the greedy heuristic — a sane untrained start.
-export const DEFAULT_WEIGHTS = [0, 1, -8, 8, 1000, 9, 1, 0.5, 1, 4, -12];
+export const DEFAULT_WEIGHTS = [0, 1, -8, 8, 1000, 9, 1, 0.5, 1, 4, -12, 0.5, -0.5, -0.3, 2];
 
 function findCapital(game, owner) {
   for (let c = 0; c < CONFIG.GRID_W; c++) {
@@ -40,26 +44,45 @@ export function moveFeatures(game, player, move) {
   const f = new Array(FEATURE_NAMES.length).fill(0);
   f[0] = 1;
 
-  if (target && target.owner === player) {
-    // Ascend: value = resulting tower influence (bias weight covers tempo)
-    cell.stack.push(target);
-    cell.tile = { ...tile, owner: player };
-    f[1] = game.relativeInfluence(move.col, move.row);
-    f[2] = f[1] === 0 ? 1 : 0;
-    cell.tile = target;
-    cell.stack.pop();
-    return f;
+  if (target && target.owner !== player) {
+    if (target.capital) { f[4] = 1; return f; }
+    if (target.keywords.includes('WARD') && !target.wardConsumed) { f[10] = 1; return f; }
+    if (cell.stack.length > 0) {
+      // Peel: pops the top tier, scars the cell, the card bounces back.
+      f[14] = target.influence + CONFIG.TIER_BONUS;
+      return f;
+    }
   }
-  if (target && target.capital) { f[4] = 1; return f; }
-  if (target && target.keywords.includes('WARD') && !target.wardConsumed) { f[10] = 1; return f; }
 
   const enemyBefore = neighborCoords(move.col, move.row)
     .map(([c, r]) => ({ c, r, t: game.board[c][r].tile }))
     .filter(n => n.t && n.t.owner === enemy)
     .map(n => ({ ...n, rel: game.relativeInfluence(n.c, n.r) }));
 
+  if (target && target.owner === player) {
+    // Ascend: resulting tower influence + the pressure the taller face exerts
+    cell.stack.push(target);
+    cell.tile = { ...tile, owner: player };
+    f[1] = game.relativeInfluence(move.col, move.row);
+    f[2] = f[1] === 0 ? 1 : 0;
+    for (const n of enemyBefore) {
+      const after = game.relativeInfluence(n.c, n.r);
+      if (after === 0 && n.rel > 0) f[5] += n.t.capital ? 4 : 1;
+      f[6] += Math.max(0, n.rel - after);
+    }
+    f[11] = cell.stack.length + 1;
+    if (!tile.keywords.includes('ATTUNED')) {
+      f[12] = Math.min(cell.ruins, CONFIG.RUIN_CAP) * CONFIG.RUIN_PENALTY;
+    }
+    f[13] = enemyBefore.length;
+    cell.tile = target;
+    cell.stack.pop();
+    return f;
+  }
+
   const prev = cell.tile;
   cell.tile = { ...tile, owner: player };
+  if (target) cell.ruins++; // a capture scars the ground under the new tile
   f[1] = game.relativeInfluence(move.col, move.row);
   f[2] = f[1] === 0 ? 1 : 0;
   f[3] = target ? target.influence : 0;
@@ -67,6 +90,9 @@ export function moveFeatures(game, player, move) {
     const after = game.relativeInfluence(n.c, n.r);
     if (after === 0 && n.rel > 0) f[5] += n.t.capital ? 4 : 1;
     f[6] += Math.max(0, n.rel - after);
+  }
+  if (!tile.keywords.includes('ATTUNED')) {
+    f[12] = Math.min(cell.ruins, CONFIG.RUIN_CAP) * CONFIG.RUIN_PENALTY;
   }
   const enemyCap = findCapital(game, enemy);
   if (enemyCap) f[7] = Math.max(0, 10 - hexDistance(move.col, move.row, enemyCap.col, enemyCap.row));
@@ -78,6 +104,7 @@ export function moveFeatures(game, player, move) {
     const capRel = game.relativeInfluence(ownCap.col, ownCap.row);
     if (capRel <= 2) f[9] = 3 - capRel;
   }
+  if (target) cell.ruins--;
   cell.tile = prev;
   return f;
 }

@@ -19,22 +19,23 @@ function playState(seed) {
 
 console.log('wave-1 keywords');
 
-test('FLANK loosens capture threshold to 1 with two attackers', () => {
+test('FLANK loosens capture threshold to 2 for a lone flanking attacker', () => {
   const g = playState('flank');
   g.board[3][0].tile = g._makeTile('THICKET', 1);      // base 2 defender
   const ns = neighborCoords(3, 0).filter(([c, r]) => !g.board[c][r].rift);
-  g.board[ns[0][0]][ns[0][1]].tile = g._makeTile('FANGWOLF', 2); // FLANK, base 2
-  // one attacker: rel = 2 − 2 = 0... give the defender support to sit at 1
+  g.board[ns[0][0]][ns[0][1]].tile = g._makeTile('THICKET', 2); // non-FLANK attacker, base 2
+  // give the defender support so it sits at rel 1 — above the base threshold
   const support = ns.find(([c, r]) => !g.board[c][r].tile);
   g.board[support[0]][support[1]].tile = g._makeTile('SKIRMISHER', 1); // friendly base 1 → rel = 2+1−2 = 1
   assert.equal(g.relativeInfluence(3, 0), 1);
-  assert.equal(g.isCapturable(3, 0, 2), false, 'one attacker: 1 > 0 threshold');
-  const third = ns.find(([c, r]) => !g.board[c][r].tile);
-  g.board[third[0]][third[1]].tile = g._makeTile('THICKET', 2); // second attacker → rel drops too
-  const rel = g.relativeInfluence(3, 0);
-  if (rel <= CONFIG.FLANK_THRESHOLD) {
-    assert.equal(g.isCapturable(3, 0, 2), true, 'two attackers incl. FLANK: threshold 1');
-  }
+  assert.equal(g.isCapturable(3, 0, 2), false, 'no FLANK adjacent: 1 > 0 threshold');
+  g.board[ns[0][0]][ns[0][1]].tile = g._makeTile('FANGWOLF', 2); // swap in FLANK, base 2
+  assert.equal(g.isCapturable(3, 0, 2), true, 'lone FLANK attacker: threshold 2');
+  // more support → rel 3 escapes even the FLANK gate
+  const extra = ns.find(([c, r]) => !g.board[c][r].tile);
+  g.board[extra[0]][extra[1]].tile = g._makeTile('OUTCROP', 1); // friendly base 2 → rel = 3
+  assert.equal(g.relativeInfluence(3, 0), 3);
+  assert.equal(g.isCapturable(3, 0, 2), false, 'rel 3 > FLANK threshold 2');
 });
 
 test('SUSTAIN grows on capture; TRAMPLE splashes the weakest other enemy', () => {
