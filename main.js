@@ -143,6 +143,7 @@ function handleClick({ col, row }) {
   if (mode === 'mp') net.sendAction(isRite ? { kind: 'rite', handIndex, col, row } : { kind: 'place', handIndex, col, row });
   if (isRite) sound.rift();
   hud.selectedIndex = null;
+  renderer.setPreviewTile(null);
   hud.hint('');
   if (res.wardBlocked) sound.ward();
   else if (res.won) { /* handled below */ }
@@ -329,10 +330,12 @@ function startGame(opts) {
 
   renderer.onCellClick = handleClick;
   renderer.onCellHover = handleHover;
+  renderer.onWow = () => sound.perfectCapture();
   hud.onCardHover = showCardTip;
   hud.onSelectTile = (i) => {
     hud.selectedIndex = i;
     const card = i !== null && game.hands[game.currentPlayer][i];
+    renderer.setPreviewTile(card && card.kind !== 'rite' ? card : null);
     if (card && card.kind === 'rite') {
       const targets = game.legalRiteTargets(game.currentPlayer, i);
       hud.hint(targets.length && targets[0].col !== null

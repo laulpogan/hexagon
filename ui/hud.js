@@ -80,9 +80,17 @@ export class Hud {
       el.innerHTML = `${this.playerLabel(g.currentPlayer)} — place your <b>capital</b> (highlighted hexes)`;
       el.className = `turn-p${g.currentPlayer}`;
     } else if (g.phase === 'play') {
-      el.innerHTML = this.botMode && g.currentPlayer === 2
+      // THE RIFT STIRS telegraph/active banner suffix (game.riftStirs is
+      // set by the core onTurnStart hook; see render/PATCH_NOTES_C3.md #4).
+      const rs = g.riftStirs;
+      const stirs = rs?.active
+        ? ` · <span class="bt-rift"><b>THE RIFT STIRS!</b></span>`
+        : rs?.upcoming
+          ? ` · <span class="bt-rift">the rift stirs soon…</span>`
+          : '';
+      el.innerHTML = (this.botMode && g.currentPlayer === 2
         ? `Turn ${g.turn} — ${this.playerLabel(2)} is thinking…`
-        : `Turn ${g.turn} — ${this.playerLabel(g.currentPlayer)} · draw 1, place 1 · right-click a card to discard (1×)`;
+        : `Turn ${g.turn} — ${this.playerLabel(g.currentPlayer)} · draw 1, place 1 · right-click a card to discard (1×)`) + stirs;
       el.className = `turn-p${g.currentPlayer}`;
     } else {
       el.innerHTML = `Game over`;

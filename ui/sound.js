@@ -47,6 +47,10 @@ class SoundSystem {
   place()      { this.tone(800, 0.1, 'square', 0.05); setTimeout(() => this.tone(1000, 0.1, 'square', 0.03), 50); }
   capture()    { this.tone(600, 0.2, 'sawtooth', 0.07); setTimeout(() => this.tone(400, 0.2, 'sawtooth', 0.05), 100); setTimeout(() => this.tone(300, 0.2, 'sawtooth', 0.03), 200); }
   turnSwitch() { this.chord([523.25, 659.25, 783.99], 0.3, 0.05); }
+  // Rare wow spike (first blood / multi-capture): bright ascending — must
+  // read as RARE next to capture()'s descending sawtooth. Only renderer.onWow
+  // calls this.
+  perfectCapture() { this.chord([784, 987.77, 1318.51, 1567.98], 0.35, 0.07); }
   error()      { this.tone(200, 0.3, 'sawtooth', 0.04); }
   ward()       { this.chord([880, 1108.7], 0.25, 0.05); }
   rift()       { this.tone(140, 0.5, 'sawtooth', 0.04); this.tone(147, 0.5, 'sawtooth', 0.04); }
