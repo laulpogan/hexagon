@@ -1,0 +1,45 @@
+{
+ "props": [
+  {
+   "file": "riftshard_a.glb",
+   "kind": "rift",
+   "footprint_radius": 0.8,
+   "suggested_scale": 1.0
+  },
+  {
+   "file": "riftshard_b.glb",
+   "kind": "rift",
+   "footprint_radius": 0.8,
+   "suggested_scale": 1.0
+  },
+  {
+   "file": "riftshard_seam.glb",
+   "kind": "rift",
+   "footprint_radius": 0.8,
+   "suggested_scale": 1.0
+  },
+  {
+   "file": "rubble_crystal.glb",
+   "kind": "rubble",
+   "footprint_radius": 0.4,
+   "suggested_scale": 0.6
+  },
+  {
+   "file": "rubble_obsidian.glb",
+   "kind": "rubble",
+   "footprint_radius": 0.4,
+   "suggested_scale": 0.6
+  }
+ ],
+ "rubble": [
+  "rubble_crystal.glb",
+  "rubble_obsidian.glb"
+ ],
+ "tree": [],
+ "spire": [],
+ "rift": [
+  "riftshard_a.glb",
+  "riftshard_b.glb",
+  "riftshard_seam.glb"
+ ]
+}
