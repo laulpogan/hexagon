@@ -149,6 +149,7 @@ export function runMeta({ rounds = 3, popSize = 24, games = 3 } = {}) {
     flaggedOver: impacts.filter(i => i.flag === 'OVER'),
     flaggedUnder: impacts.filter(i => i.flag === 'UNDER'),
     topCards: impacts.slice(0, 15), bottomCards: impacts.slice(-15).reverse(),
+    allCards: impacts, // full sorted list — pool-selection passes need the 45-55% middle band, not just the extremes
     keywords,
     topDecks: winRates.slice(0, 3).map(x => ({ winRate: +x.wr.toFixed(3), comp: popn[x.i] || null })),
   };

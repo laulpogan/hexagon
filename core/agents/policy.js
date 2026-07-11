@@ -5,26 +5,34 @@
 import { CONFIG } from '../config.js';
 import { neighborCoords, hexDistance, midRow } from '../board.js';
 
+// A12 (RULES-7 rework): 'ruinsUnder' and 'towerPeel' are dead — R7 removed
+// ruin decay and R1 removed peel entirely (captures always bury now, there
+// is nothing left to "peel off for free"). Replaced with the R3/R4/R5
+// signals the new ruleset actually rewards: height-delta, trophy-gain,
+// riftlight-gain, bury depth. 'peelExposure' is renamed (same defensive
+// idea — enemies that could hit straight back — just no longer peel-specific).
 export const FEATURE_NAMES = [
   'bias',
-  'ownRelAfter',        // tile's relative influence once placed
-  'selfZero',           // lands instantly capturable
-  'captureValue',       // captured tile influence (0 if none)
-  'capitalCapture',     // winning move
-  'pressureKills',      // enemy neighbors pushed to 0
-  'pressureDrop',       // total enemy relInf reduction
-  'capitalMarch',       // closeness to enemy capital
-  'riftAttunement',     // rift neighbors × (ATTUNED ? 1 : -1)
-  'homeDefense',        // raises own capital's influence while it is low
-  'wardPop',            // attacking an unbroken ward
-  'ascendHeight',       // resulting tower height when ascending (round 6)
-  'ruinsUnder',         // ruin drain the placed face will suffer (post-scar)
-  'peelExposure',       // ascend: adjacent enemies that could peel the tower
-  'towerPeel',          // material removed by peeling an enemy tower (card bounces)
+  'ownRelAfter',         // tile's relative influence once placed
+  'selfZero',            // lands instantly capturable
+  'captureValue',        // captured tile influence (0 if none)
+  'capitalCapture',      // winning move
+  'pressureKills',       // enemy neighbors pushed to 0
+  'pressureDrop',        // total enemy relInf reduction
+  'capitalMarch',        // closeness to enemy capital
+  'riftAttunement',      // rift neighbors × (ATTUNED ? 1 : -1)
+  'homeDefense',         // raises own capital's influence while it is low
+  'wardPop',             // attacking an unbroken ward (A3: the one surviving bounce)
+  'ascendHeight',        // resulting tower height when self-ascending
+  'heightDelta',         // R3: resulting height minus the tallest adjacent enemy
+  'recaptureExposure',   // enemies adjacent that could immediately strike back
+  'trophyGain',          // R4/A5: trophy value (buried enemy tiers) this move achieves
+  'riftlightGain',       // R5: Riftlight this held cell would contribute
+  'buryDepth',           // resulting stack depth grown by a capture
 ];
 
 // Default weights approximate the greedy heuristic — a sane untrained start.
-export const DEFAULT_WEIGHTS = [0, 1, -8, 8, 1000, 9, 1, 0.5, 1, 4, -12, 0.5, -0.5, -0.3, 2];
+export const DEFAULT_WEIGHTS = [0, 1, -8, 8, 1000, 9, 1, 0.5, 1, 4, -12, 0.3, 1.5, -0.5, 2, 1.5, 0.5];
 
 function findCapital(game, owner) {
   for (let c = 0; c < CONFIG.GRID_W; c++) {
@@ -47,11 +55,6 @@ export function moveFeatures(game, player, move) {
   if (target && target.owner !== player) {
     if (target.capital) { f[4] = 1; return f; }
     if (target.keywords.includes('WARD') && !target.wardConsumed) { f[10] = 1; return f; }
-    if (cell.stack.length > 0) {
-      // Peel: pops the top tier, scars the cell, the card bounces back.
-      f[14] = target.influence + CONFIG.TIER_BONUS;
-      return f;
-    }
   }
 
   const enemyBefore = neighborCoords(move.col, move.row)
@@ -60,7 +63,9 @@ export function moveFeatures(game, player, move) {
     .map(n => ({ ...n, rel: game.relativeInfluence(n.c, n.r) }));
 
   if (target && target.owner === player) {
-    // Ascend: resulting tower influence + the pressure the taller face exerts
+    // Self-ascend: resulting height + the pressure the taller face exerts.
+    // R4: self-stacking grants no influence — ES has to learn this buys
+    // POSITION (height-delta, R3), not power.
     cell.stack.push(target);
     cell.tile = { ...tile, owner: player };
     f[1] = game.relativeInfluence(move.col, move.row);
@@ -70,10 +75,10 @@ export function moveFeatures(game, player, move) {
       if (after === 0 && n.rel > 0) f[5] += n.t.capital ? 4 : 1;
       f[6] += Math.max(0, n.rel - after);
     }
-    f[11] = cell.stack.length + 1;
-    if (!tile.keywords.includes('ATTUNED')) {
-      f[12] = Math.min(cell.ruins, CONFIG.RUIN_CAP) * CONFIG.RUIN_PENALTY;
-    }
+    const myHeight = cell.stack.length + 1;
+    f[11] = myHeight;
+    const tallestEnemy = enemyBefore.reduce((m, n) => Math.max(m, game.cellHeight(n.c, n.r)), 0);
+    f[12] = myHeight - tallestEnemy;
     f[13] = enemyBefore.length;
     cell.tile = target;
     cell.stack.pop();
@@ -81,8 +86,11 @@ export function moveFeatures(game, player, move) {
   }
 
   const prev = cell.tile;
+  const prevStackLen = cell.stack.length;
+  // R1: a capture buries the old top under the new one — simulate the bury
+  // so trophy/height reads reflect what actually happens on placeFromHand.
+  if (target) cell.stack.push(target);
   cell.tile = { ...tile, owner: player };
-  if (target) cell.ruins++; // a capture scars the ground under the new tile
   f[1] = game.relativeInfluence(move.col, move.row);
   f[2] = f[1] === 0 ? 1 : 0;
   f[3] = target ? target.influence : 0;
@@ -91,21 +99,27 @@ export function moveFeatures(game, player, move) {
     if (after === 0 && n.rel > 0) f[5] += n.t.capital ? 4 : 1;
     f[6] += Math.max(0, n.rel - after);
   }
-  if (!tile.keywords.includes('ATTUNED')) {
-    f[12] = Math.min(cell.ruins, CONFIG.RUIN_CAP) * CONFIG.RUIN_PENALTY;
+  const myHeight = cell.stack.length + 1;
+  const tallestEnemy = enemyBefore.reduce((m, n) => Math.max(m, game.cellHeight(n.c, n.r)), 0);
+  f[12] = myHeight - tallestEnemy;
+  f[13] = enemyBefore.length; // recapture exposure
+  if (target) {
+    f[14] = game.trophyValue(move.col, move.row); // R4/A5 trophy-gain
+    f[16] = cell.stack.length;                    // bury depth
   }
   const enemyCap = findCapital(game, enemy);
   if (enemyCap) f[7] = Math.max(0, 10 - hexDistance(move.col, move.row, enemyCap.col, enemyCap.row));
   let riftN = 0;
   for (const [c, r] of neighborCoords(move.col, move.row)) if (game.board[c][r].rift) riftN++;
   f[8] = riftN * (tile.keywords.includes('ATTUNED') ? 1 : -1);
+  f[15] = (riftN > 0 || game.board[move.col][move.row].rift) ? CONFIG.RIFTLIGHT_PER_CELL : 0; // R5 riftlight-gain
   const ownCap = findCapital(game, player);
   if (ownCap && hexDistance(move.col, move.row, ownCap.col, ownCap.row) === 1) {
     const capRel = game.relativeInfluence(ownCap.col, ownCap.row);
     if (capRel <= 2) f[9] = 3 - capRel;
   }
-  if (target) cell.ruins--;
   cell.tile = prev;
+  cell.stack.length = prevStackLen;
   return f;
 }
 

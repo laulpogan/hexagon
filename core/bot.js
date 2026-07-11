@@ -40,10 +40,14 @@ function scoreMove(game, player, move, rand) {
   let score = 0;
   if (target) score += 6 + target.influence * 2; // captures are tempo + material
 
-  // Simulate
+  // Simulate. R1: a capture BURIES the old top under the new one — the
+  // stack must grow here too, or the trophy bonus (R4/A5) is invisible to
+  // the heuristic and every capture looks weaker than it actually lands.
+  const prevStackLen = cell.stack.length;
+  if (target) cell.stack.push(target);
   cell.tile = { ...tile, owner: player };
   const own = game.relativeInfluence(move.col, move.row);
-  score += own; // healthy tiles are worth their influence
+  score += own; // healthy tiles are worth their influence (now incl. trophies)
   if (own === 0) score -= 8; // placing into instant capturability is usually a blunder
 
   // Pressure: enemy neighbors pushed toward 0 (capturable next turn = huge)
@@ -65,6 +69,7 @@ function scoreMove(game, player, move, rand) {
   if (ownCap && game.relativeInfluence(ownCap.col, ownCap.row) === 0) score -= 1000;
 
   cell.tile = target; // revert
+  cell.stack.length = prevStackLen;
   return score + rand() * 0.25; // tie-break noise
 }
 
