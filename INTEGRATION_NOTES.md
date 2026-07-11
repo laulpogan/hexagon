@@ -60,15 +60,17 @@ show/hide only — tell me the mount contract and I'll adapt.
 New filename on purpose (browser/Pages cache-bust). Poster can stay.
 Asset: assets/video/menu_bg.mp4 (mine, dusk drift over the threshold, loop).
 
-## 6. Music manifest (your ui/music.js)
+## 6. Music manifest (your ui/music.js) — TRACKS LANDED (03:10)
 Existing menu/verdant/umbral mp3 filenames unchanged (drop-in safe).
-New tracks (all -14 LUFS, mp3 ~128k, in assets/music/):
-- battle.mp3        — battle-intensity layer; suggest: crossfade in when
-                      captures/turn ≥1 or any tower ≥ tier 2, fade out after
-                      2 quiet turns. Your trigger call.
-- stinger_rift.mp3  — ≤10s one-shot for THE RIFT STIRS event (pairs with
-                      your V5 seam eruption).
-Trailer track stays OUT of the repo (only used in the trailer cut).
+New tracks now IN assets/music/ (musicgen-medium, loudnormed, faded):
+- battle.mp3 (30s loopable, -16 LUFS so it sits under SFX) — trigger
+  contract suggestion: crossfade in when (captures this turn ≥ 1) OR
+  (any cell height ≥ 3); fade out after 2 consecutive quiet turns;
+  never interrupt menu/verdant/umbral mid-phrase — swap on loop boundary
+  if your player supports it, else 1.5s crossfade.
+- stinger_rift.mp3 (10s one-shot, -14 LUFS) — fire ONCE per RIFT STIRS
+  eruption, ducking the bed by ~6dB for its duration (pairs with V5).
+Trailer tracks stay OUT of the repo (used only in the trailer cut).
 
 ## 7. og-image (index.html, whenever convenient)
 New thumbnail at assets/og_limen.jpg (new filename — scrapers cache per-URL).
