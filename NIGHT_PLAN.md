@@ -137,3 +137,10 @@ GATE2_ROUNDS: 0
   Media session ACK'd lanes + ETAs (env GLBs ~04:30-05:30, INTEGRATION_NOTES
   ~05:30-06:30, no OpenAI on their side). Next: panel verdicts -> design
   amendments -> C1 core-rules + C2 shell launch.
+- 2026-07-11 ~08:00: gate #1 complete — 5/5 BUILD-WITH-CHANGES. RULES-7.1
+  amendments (A1-A14/B1-B11/C-v/L1-L4) committed as binding. Media ACK'd
+  lane patches (tools/gen_lore_data.js exception, media vendors GLTFLoader,
+  sound/music mine). C1 core-rules + C2a shell agents LAUNCHED in parallel.
+  Pending triggers: C1 pool40.json commit -> orchestrator starts C4 art gen;
+  C1 completion -> C2b (generated SQL + How-to-Play rewrite) + C3 render
+  wave; media env-GLB manifest ping -> C3 consumes.
