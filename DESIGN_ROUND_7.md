@@ -142,3 +142,112 @@ C2 shell agent (parallel, disjoint files): SHELL_SPEC implementation.
 C3 render agent (after C1 merges): V1-V8.
 C4 art gen (background): ~18 new card arts + close-up environment pieces.
 Gate #2: fresh panel (fun score /10) + full-flow Playwright + judge.
+
+## Gate #1 verdicts → RULES-7.1 amendments (BINDING for C1/C2/C3)
+
+Panel: 5 reviewers, all BUILD-WITH-CHANGES. Every decision below is final for
+tonight; sim experiments named here are acceptance gates, not suggestions.
+
+### Core (C1)
+A1. Liberation stays DEAD (explicit decision, not oversight): buried tiles
+    are permanent war strata. Rationale: user's latest directives ("stack
+    higher and higher", "harder to combat") + no resurface path = simpler,
+    and trophy scoring gives buried tiles meaning. Document in GAME_DESIGN.
+A2. R2 extends to rites: SUNDER may only target a tile adjacent to one of
+    YOUR tiles. (Otherwise SUNDER re-opens the anywhere-snipe R2 closes.)
+A3. WARD exception to R1: capture attempt on a warded tile fails, ward pops,
+    attacker's card returns to hand — ONCE per tile. This is the single
+    surviving bounce; no farm loop possible. All other keywords: SIEGE
+    stacks with R3 (sim watch, cap if runaway), MENACE = tile-count gate
+    with NO height interaction (documented), FLANK threshold applies after
+    all influence math, FORTIFIED/RALLY/DOUBLESTRIKE/SUSTAIN/TRAMPLE/
+    UNTOUCHABLE unchanged — C1 adds unit tests R3xWING, R3xMENACE, R3xFLANK.
+A4. R3 composition order: height bonus (+min(dH,HIGH_CAP=2)) is added to the
+    attacker's contribution BEFORE WING halving — WING is a true counter to
+    high ground (deliberate: gives WING a role, answers uphill-impossible).
+A5. Trophy value = enemy tiers in the LIVE stack array, capped TROPHY_CAP=3.
+    Crushed-out tiers (height>5) stop counting. Unit test: 6 alternating
+    captures on one cell → influence bounded.
+A6. Riftlight: separate accumulator in boardSummary()/victory tally ONLY —
+    NEVER folded into relativeInfluence() (else rift cells get an accidental
+    defense buff). Rift cells themselves count for Riftlight. Flat +2/cell,
+    per-player total capped RIFTLIGHT_CAP=8 (knob). Metric: Riftlight share
+    of final margin <30%.
+A7. RIFT STIRS timing: fires every 12 plies (= each player has taken 6
+    turns), telegraphed 2 plies ahead. New knob RIFT_STIRS_ESCALATION
+    (default 0): each firing adds +N to the pulse — the pre-approved
+    anti-mutual-turtle fallback if sim shows double-turtle survives.
+A8. Corner hill-king (BLOCKER): capitals forbidden on cells with <3
+    neighbors (isLegalCapitalCell gains a neighbor-count check). Sim gate:
+    corner-turtle bot arm (capital+ascend in corner, never advance) n>=1000
+    seed-paired — its winrate must land 42-58% AND zero-capture rate <10%.
+    Fallback if still degenerate: cap combined positional bonuses per cell.
+A9. Ascension contest A/B/C sim (pick by drama index + ascend-rate 15-35%):
+    A = trophy-only (R4 as written); B = self-ascend legal only when the
+    tower is enemy-adjacent (height earned under duress); C = self-ascend
+    costs placement + 1 discard. CONFIG.ASCEND_VARIANT knob for withConfig.
+A10. Deck-length joint gate: deck 20 vs 24 paired arms (all else RULES-7),
+    n>=500 — median length must stay 25-45 turns at the chosen size.
+A11. tools/metrics.js Drama Index adds: mutual-turtle rate (neither side
+    ever places rift-adjacent), recapture-cycle count per cell, max trophy
+    bonus observed, ascend rate, Riftlight margin share.
+A12. Named rework deliverables (not "retrain"): core/agents/policy.js
+    feature vector (remove towerPeel/wardPop-as-was, add height-delta,
+    trophy-gain, riftlight-gain, bury features), core/bot.js capture
+    simulate must grow the stack (bury) not overwrite, core/agents/search.js
+    evaluate. THEN retrain.
+A13. If R9 targets still miss after gate-2 cap: ship the best tuning
+    achieved + honest morning report + BLOCKERS.md. NEVER revert to
+    baseline (baseline is the proven-broken state).
+A14. C1 final deliverable: a 15-line RULES-7 plain-language summary written
+    to analysis/rules7_summary.md — C2 rewrites the in-game How-to-Play
+    from it; orchestrator rewrites GAME_DESIGN core loop from it.
+
+### Shell (C2)
+B1. record_match_result ships WITH the atomic 20s-cooldown guard (security
+    reviewer's SQL — WHERE clause guard, not check-then-act) + daily
+    first-win column. Follow-up ticket (not tonight): N-unlocks/day cap.
+B2. limen_rooms: rewrite ALL THREE policies (INSERT, UPDATE, and the
+    live-verified SELECT "anon can read rooms") to grant anon+authenticated.
+    Post-apply check: pg_policies query must show all three with both roles.
+B3. Starter-collection + unlock_track SQL is GENERATED from live
+    data/tiles.js AFTER C1's pool lands (C2 writes the generator; the
+    migration applies in phase C2b). Never hand-copied literals.
+B4. Economy repriced for 40 types: base ladder completion 50-65 wins
+    (taper back-half pricing); newly-promoted cards live on a Season-1
+    track, not the base ladder.
+B5. Daily first-win bonus RESTORED to scope (localStorage date check +
+    RPC daily column) — it is the only day-2 hook.
+B6. Multi-deck management CUT: single cloud-synced deck (one row), the
+    picker/rename/delete UI deferred. Ownership-gated deckbuilder stays.
+B7. Auth: signInWithOtp returning-user flow wired to the "already
+    registered" error branch; sign-out + "start fresh guest session"
+    control in the account modal; REDIRECT_URL is a hardcoded constant
+    exactly matching the allowlist entry.
+B8. net/client.js singleton; gate-2 check: `grep -rn "createClient(" `
+    returns exactly one hit.
+B9. Deck legality vs collection at play time: client-side advisory check
+    only; the honest trust model (client-authoritative, cheatable by
+    devtools, acceptable for a friendly game) is documented in SHELL_SPEC.
+B10. Gate-2 budgets exactly ONE real magic-link email test (2/hr cap).
+B11. ui/hud.js is C2-OWNED (win-screen reward strip); render agent submits
+    hud needs as patch notes. ui/sound.js + ui/music.js also campaign-A
+    owned; media tracks arrive via INTEGRATION_NOTES.
+
+### Felt layer (C3)
+C1v. V2 = raised prism heights only; all deltas surface through V3 preview.
+C2v. V7 perimeter environment = FIRST CUT if time runs short; billboard
+    fallback if media GLBs miss ETA. V6 rubble keeps its stated fallback.
+C3v. Pack reveal = single-card flip (multi-card ceremony deferred).
+C4v. Build order within C3: V3 preview → V4 cascade → V1 slam + V5 rift
+    read → V8 (patch notes to C2) → V6 → V2 → V7.
+
+### Lane patches (locked with media session over wire)
+L1. tools/ is campaign-A except named exception tools/gen_lore_data.js.
+L2. Media vendors GLTFLoader (r182) into vendor/jsm/loaders/; C3 consumes,
+    never vendors its own. Signal = wire ping.
+L3. ARENA_PLAN round entries: C1 agent only (the "balance agent" and C1
+    are the same role).
+L4. Live-verify (post-push) is a defined step: Playwright smoke against
+    the GH Pages URL (menu boot, one bot game, account modal, collection),
+    plus served-main.js hash compare vs local to catch CDN staleness.
