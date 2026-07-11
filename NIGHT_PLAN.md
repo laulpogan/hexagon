@@ -117,3 +117,17 @@ GATE2_ROUNDS: 0
 
 ## Status log (orchestrator appends)
 - 2026-07-11 ~00:xx: plan written; research wave A launching.
+
+## Coordination amendment (2026-07-11 ~07:45)
+- Sister session "cordial-jasper" runs a parallel MEDIA campaign on this
+  branch (NIGHT_PLAN_MEDIA.md): trailers, music suite, 3D GLBs (Hunyuan3D
+  on spark-472e), cutscenes, lore/codex. Lane split agreed over wire:
+  media owns assets/** EXCEPT assets/tiles/ (mine tonight for card art),
+  plus ui/codex*, render/cinematics*, LORE.md, data/lore.js. I own
+  index.html/main.js/ui/hud.js/render/scene.js — media ships hookups via
+  INTEGRATION_NOTES.md, I land them post-shell-wave and wire-ack.
+- OPENAI_API_KEY claimed by me tonight (card art). Media uses local fleet.
+- Media delivers rubble + perimeter environment GLBs to assets/models/env/
+  with manifest — covers directives 6a/6b; C3 falls back to billboards if
+  late. C3 needs GLTFLoader vendored.
+- DESIGN_ROUND_7.md written (RULES-7). Gate #1 panel launching.
