@@ -40,16 +40,39 @@ function makeTextSprite(lines, opts = {}) {
   const ctx = canvas.getContext('2d');
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  // big number
-  ctx.font = `bold ${opts.numSize || 110}px Arial`;
-  ctx.fillStyle = opts.numColor || '#ffffff';
-  ctx.shadowColor = 'rgba(0,0,0,0.9)';
-  ctx.shadowBlur = 14;
-  ctx.fillText(lines.num, 128, lines.label ? 108 : 128);
-  if (lines.label) {
-    ctx.font = 'bold 34px Arial';
-    ctx.fillStyle = opts.labelColor || '#cfcfcf';
-    ctx.fillText(lines.label, 128, 196);
+  if (opts.ring) {
+    // badge chip: dark disc + owner ring — HUD chrome, not debug text
+    ctx.beginPath();
+    ctx.arc(128, 96, 58, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(10,12,18,0.88)';
+    ctx.fill();
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = opts.ring;
+    ctx.stroke();
+    ctx.font = 'bold 72px Arial';
+    ctx.fillStyle = opts.numColor || '#ffffff';
+    ctx.fillText(lines.num, 128, 98);
+    if (lines.label) {
+      const w = Math.min(236, ctx.measureText(lines.label).width * 0.42 + 40);
+      ctx.fillStyle = 'rgba(10,12,18,0.82)';
+      ctx.beginPath();
+      ctx.roundRect(128 - w / 2, 176, w, 40, 12);
+      ctx.fill();
+      ctx.font = 'bold 26px Arial';
+      ctx.fillStyle = opts.labelColor || '#dfe5f0';
+      ctx.fillText(lines.label, 128, 197);
+    }
+  } else {
+    ctx.font = `bold ${opts.numSize || 110}px Arial`;
+    ctx.fillStyle = opts.numColor || '#ffffff';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 14;
+    ctx.fillText(lines.num, 128, lines.label ? 108 : 128);
+    if (lines.label) {
+      ctx.font = 'bold 34px Arial';
+      ctx.fillStyle = opts.labelColor || '#cfcfcf';
+      ctx.fillText(lines.label, 128, 196);
+    }
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.anisotropy = 4;
@@ -57,6 +80,23 @@ function makeTextSprite(lines, opts = {}) {
   const sprite = new THREE.Sprite(mat);
   sprite.scale.set(1.35, 1.35, 1);
   return sprite;
+}
+
+// Shared radial-gradient disc for contact shadows + owner glow rings.
+let _discTex = null;
+function discTexture() {
+  if (_discTex) return _discTex;
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 128;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(64, 64, 8, 64, 64, 62);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.65, 'rgba(255,255,255,0.45)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
+  _discTex = new THREE.CanvasTexture(c);
+  return _discTex;
 }
 
 function hexGeometry(height) {
@@ -121,7 +161,7 @@ export class BoardRenderer {
     this.camera = new THREE.PerspectiveCamera(46, container.clientWidth / container.clientHeight, 0.1, 200);
     this.camDist = 17;
     this.camYaw = 0;
-    this.camPitch = 0.95; // radians above horizon
+    this.camPitch = 0.82; // radians above horizon — low enough to see the world
     this._applyCamera();
 
     // Lights: cool ambient + warm key, subtle rift accent handled by emissive.
@@ -142,6 +182,11 @@ export class BoardRenderer {
     this._clock = new THREE.Clock();
     this._riftMats = [];
     this._dropAnims = [];
+    this._flashAnims = [];   // capture hit-flash on materials
+    this._impactAnims = [];  // landing squash + shockwave rings
+    this._popAnims = [];     // badge-number punch-in
+    this._camKick = new THREE.Vector3();
+    this._cellOwners = new Map(); // "c,r" → tileId|null from last sync (capture detection)
 
     // Bloom postprocessing — the emissive rift, capturable pulses, and gold
     // capitals all pop through this. Cheap on a board this size.
@@ -161,14 +206,14 @@ export class BoardRenderer {
 
   // Arena environment dome (MTG-Arena/Hearthstone-style battlefield backdrop)
   _buildBackdrop() {
-    const tex = _texLoader.load('../assets/backdrop.jpg', (t) => { t.colorSpace = THREE.SRGBColorSpace; });
-    const geo = new THREE.SphereGeometry(60, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.62);
+    const tex = _texLoader.load('./assets/backdrop.jpg', (t) => { t.colorSpace = THREE.SRGBColorSpace; });
+    const geo = new THREE.SphereGeometry(58, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.8);
     const mat = new THREE.MeshBasicMaterial({
       map: tex, side: THREE.BackSide, fog: false,
-      color: 0x8890a0, // dimmed so the board stays the hero
+      color: 0xd0d4dc, // visible world — the board vignettes against it via fog
     });
     const dome = new THREE.Mesh(geo, mat);
-    dome.position.set(this.center.x, -4, this.center.z);
+    dome.position.set(this.center.x, -6, this.center.z);
     this.scene.add(dome);
   }
 
@@ -222,9 +267,10 @@ export class BoardRenderer {
         const cell = this.game.board[c][r];
         let mat;
         if (cell.rift) {
+          // dark fill, magenta lives on the RIM — dread, not candy
           mat = new THREE.MeshStandardMaterial({
-            color: 0x2a1030, emissive: COLORS.rift, emissiveIntensity: 0.55,
-            roughness: 0.4, metalness: 0.1,
+            color: 0x160a1e, emissive: COLORS.rift, emissiveIntensity: 0.14,
+            roughness: 0.45, metalness: 0.15,
           });
           this._riftMats.push(mat);
         } else {
@@ -239,12 +285,16 @@ export class BoardRenderer {
         this.scene.add(mesh);
         this.cellMeshes[c][r] = mesh;
 
-        // thin edge line for readability
+        // thin edge line for readability; rift rims burn magenta
         const edge = new THREE.LineSegments(
           new THREE.EdgesGeometry(slabGeo),
-          new THREE.LineBasicMaterial({ color: COLORS.boardLine, transparent: true, opacity: 0.6 })
+          new THREE.LineBasicMaterial({
+            color: cell.rift ? COLORS.rift : COLORS.boardLine,
+            transparent: true, opacity: cell.rift ? 0.95 : 0.6,
+          })
         );
         edge.position.copy(mesh.position);
+        if (cell.rift) this._riftEdges = (this._riftEdges || []).concat(edge.material);
         this.scene.add(edge);
       }
     }
@@ -283,15 +333,29 @@ export class BoardRenderer {
     prism.userData = { col, row, kind: 'cell' }; // picking maps back to the cell
     group.add(prism);
 
-    if (tile.capital) {
-      const crown = new THREE.Mesh(
-        new THREE.ConeGeometry(0.42, 0.55, 6),
-        new THREE.MeshStandardMaterial({ color: 0xffe08a, metalness: 0.7, roughness: 0.3, emissive: 0xffd700, emissiveIntensity: 0.25 })
-      );
-      crown.position.y = h + 0.32;
-      crown.userData = { col, row, kind: 'cell' }; // crown clicks pick the capital's cell
-      group.add(crown);
-    }
+    // (crown cone retired — the citadel billboard IS the capital's identity)
+
+    // Ground contact: dark shadow disc + owner-colored glow ring under the
+    // billboard — kills the "pasted-on cutout" read and doubles as the
+    // side-identity color you can see from across the room.
+    const ownerHex = tile.owner === 1 ? COLORS.p1 : COLORS.p2;
+    const shadow = new THREE.Mesh(
+      new THREE.CircleGeometry(0.72, 24),
+      new THREE.MeshBasicMaterial({ map: discTexture(), transparent: true, opacity: 0.55, color: 0x000000, depthWrite: false })
+    );
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = h + 0.012;
+    group.add(shadow);
+    const glow = new THREE.Mesh(
+      new THREE.CircleGeometry(0.95, 24),
+      new THREE.MeshBasicMaterial({
+        map: discTexture(), transparent: true, opacity: 0.5, color: ownerHex,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      })
+    );
+    glow.rotation.x = -Math.PI / 2;
+    glow.position.y = h + 0.006;
+    group.add(glow);
 
     // Standing billboard (the PS1 sprite trick): subject rises from the tile,
     // always facing the camera, gently bobbing.
@@ -337,9 +401,10 @@ export class BoardRenderer {
       return;
     }
     group.userData.spriteKey = key;
+    const ringColor = capturable ? '#ff5555' : tile.owner === 1 ? '#3fae6a' : '#8a5ce0';
     const fresh = makeTextSprite(
-      { num: String(rel), label: tile.capital ? '♛ CAPITAL' : tile.type },
-      { numColor: capturable ? '#ff5555' : '#ffffff' }
+      { num: String(rel), label: tile.capital ? '♛ CAPITAL' : tile.type.replace(/_/g, ' ') },
+      { numColor: capturable ? '#ff7777' : '#ffffff', ring: ringColor }
     );
     fresh.position.copy(group.userData.sprite.position);
     group.remove(group.userData.sprite);
@@ -347,6 +412,11 @@ export class BoardRenderer {
     group.userData.sprite.material.dispose();
     group.add(fresh);
     group.userData.sprite = fresh;
+    // punch-in when the number changes (the most-read pixel on screen)
+    if (!document.hidden) {
+      fresh.scale.set(2.3, 2.3, 1);
+      this._popAnims.push({ sprite: fresh, start: performance.now() });
+    }
     // capturable tiles pulse dark
     group.userData.capturable = capturable;
   }
@@ -384,9 +454,23 @@ export class BoardRenderer {
           if (!document.hidden) {
             group.position.y = 3;
             this._dropAnims.push({ group, start: performance.now() });
+            // capture/exchange (cell previously held a different tile) gets a
+            // white hit-flash + camera kick — the duel's key moment reads.
+            const prevId = this._cellOwners.get(`${c},${r}`);
+            if (prevId !== undefined && prevId !== null && prevId !== tile.id) {
+              this._flashAnims.push({ mat: group.userData.mat, base: group.userData.baseColor, start: performance.now() });
+              this._camKick.set((Math.random() - 0.5), 0.4, (Math.random() - 0.5)).multiplyScalar(0.35);
+            }
           }
         }
+        this._cellOwners.set(`${c},${r}`, tile.id);
         this._updateTileSprite(group, tile, c, r);
+      }
+    }
+    // Cells that emptied (sunder/peel-to-empty) clear their owner record.
+    for (let c = 0; c < CONFIG.GRID_W; c++) {
+      for (let r = 0; r < CONFIG.GRID_H; r++) {
+        if (!this.game.board[c][r].tile) this._cellOwners.set(`${c},${r}`, null);
       }
     }
     // Ruins: scarred ground darkens toward ember-brown as bodies pile up.
@@ -525,9 +609,13 @@ export class BoardRenderer {
   _animate() {
     requestAnimationFrame(() => this._animate());
     const t = this._clock.getElapsedTime();
-    // rift glitch pulse
-    const pulse = 0.45 + 0.3 * Math.sin(t * 2.4) + 0.08 * Math.sin(t * 13.7);
+    // rift glitch pulse — rim-driven now, fill stays dark
+    const pulse = 0.12 + 0.06 * Math.sin(t * 2.4) + 0.03 * Math.sin(t * 13.7);
     for (const m of this._riftMats) m.emissiveIntensity = pulse;
+    if (this._riftEdges) {
+      const rim = 0.75 + 0.25 * Math.sin(t * 2.4);
+      for (const m of this._riftEdges) m.opacity = rim;
+    }
     // capturable tiles breathe red; everything else back to its base glow
     for (const g of this.tileMeshes.values()) {
       if (g.userData.capturable) {
@@ -544,9 +632,56 @@ export class BoardRenderer {
       const p = Math.min(1, (now - anim.start) / 280);
       const e = 1 - Math.pow(1 - p, 3);
       anim.group.position.y = 3 * (1 - e);
-      anim.done = p >= 1;
+      if (p >= 1 && !anim.done) {
+        anim.done = true;
+        // landing payoff: squash-and-spring + expanding shockwave ring
+        const prism = anim.group.userData.prism;
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(0.2, 0.3, 32),
+          new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.copy(anim.group.position);
+        ring.position.y = 0.05;
+        this.scene.add(ring);
+        this._impactAnims.push({ prism, ring, start: now });
+      }
     }
     this._dropAnims = this._dropAnims.filter(a => !a.done);
+    for (const a of this._impactAnims) {
+      const p = Math.min(1, (now - a.start) / 240);
+      const squash = p < 0.4 ? 1 - 0.3 * (p / 0.4) : 0.7 + 0.3 * ((p - 0.4) / 0.6);
+      a.prism.scale.set(2 - squash, squash, 2 - squash);
+      const s = 0.3 + p * 5;
+      a.ring.scale.set(s, s, 1);
+      a.ring.material.opacity = 0.9 * (1 - p);
+      if (p >= 1) {
+        a.prism.scale.set(1, 1, 1);
+        this.scene.remove(a.ring);
+        a.ring.geometry.dispose(); a.ring.material.dispose();
+        a.done = true;
+      }
+    }
+    this._impactAnims = this._impactAnims.filter(a => !a.done);
+    for (const a of this._flashAnims) {
+      const p = Math.min(1, (now - a.start) / 220);
+      a.mat.emissive.setHex(0xffffff);
+      a.mat.emissiveIntensity = 1.4 * (1 - p);
+      if (p >= 1) { a.mat.emissive.setHex(a.base); a.mat.emissiveIntensity = 0.08; a.done = true; }
+    }
+    this._flashAnims = this._flashAnims.filter(a => !a.done);
+    for (const a of this._popAnims) {
+      const p = Math.min(1, (now - a.start) / 220);
+      const over = 1.35 + (2.3 - 1.35) * (1 - p) * Math.cos(p * 5);
+      a.sprite.scale.set(Math.max(1.35, over), Math.max(1.35, over), 1);
+      if (p >= 1) { a.sprite.scale.set(1.35, 1.35, 1); a.done = true; }
+    }
+    this._popAnims = this._popAnims.filter(a => !a.done);
+    // decaying camera kick (capture punch)
+    if (this._camKick.lengthSq() > 0.00001) {
+      this.camera.position.add(this._camKick);
+      this._camKick.multiplyScalar(0.8);
+    }
     // billboards idle-bob (the "alive" read)
     for (const g of this.tileMeshes.values()) {
       const u = g.userData;

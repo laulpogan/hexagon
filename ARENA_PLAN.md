@@ -96,3 +96,18 @@ Round: 3 COMPLETE (2026-07-10) — session cap reached
 - Meta band 39.0–57.1%: MENACE cold (39% @ 118g, thin) — round-4 item.
 - Arena: search2 19-1 over retrained policy* — search's edge GROWS with
   stacking depth; policy needs tower/subjugation features (round 4).
+
+## Round 4-5 (visual/audio, 2026-07-10 late)
+- Persona visual panel (art director 4/10 / juice designer / stream viewer
+  "wouldn't stop scrolling") drove round-1 fixes: visible backdrop world,
+  rift dark-fill + magenta rims (not candy), contact shadows + owner glow
+  pools under sprites, badge-chip influence numbers, crown cone retired.
+- Juice: capture hit-flash + camera kick, landing squash + shockwave ring,
+  badge punch-in on value change. Backlog: rift mote bursts, win-moment
+  camera, per-realm sprite rim light, style-unify pass.
+- 2D→3D SOTA (Spark): Hunyuan3D-2.1 Docker (dr-vij port) CONFIRMED on GB10,
+  faster than TRELLIS.2 there; Mesh2Motion (browser, MIT) for rigging —
+  skips ARM dependency hell entirely; LTX-2.3 on GB10 for animated loop
+  fallback (180s/5s@720p warm). spconv-dependent tools (UniRig/SAM3D) =
+  Dell. Next session: batch 23 sprites → GLB popouts.
+- MusicGen-small ran NATIVELY on Spark sm_121 (PYTHONNOUSERSITE=1 trap).
