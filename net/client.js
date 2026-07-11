@@ -1,8 +1,8 @@
 // Singleton Supabase client — the whole app (rooms + auth) shares one
-// GoTrueClient instance. Multiple createClient() calls against the same
-// localStorage session key cause session-refresh races (supabase-js warns
-// about this) — SHELL_SPEC §0.6/§5.1. Everything that needs Supabase imports
-// sb() from here; nothing else calls createClient().
+// GoTrueClient instance. Constructing a fresh client per call against the
+// same localStorage session key causes session-refresh races (supabase-js
+// warns about this) — SHELL_SPEC §0.6/§5.1. Everything that needs Supabase
+// imports sb() from here; this is the only construction call site.
 const SUPABASE_URL = 'https://kghzdnspdsxrheuckizp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_TTNv39Gsg8o20dmCOj2lfQ_rttaEvPR'; // client-safe by design
 
