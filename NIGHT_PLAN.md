@@ -45,7 +45,7 @@ Gate #2 = fresh-eyes panel + in-situ Playwright full-flow test on the built
 thing (account → deck → play → unlock), plus judge screenshot review.
 Iteration cap: 3 rounds per gate; blockers → BLOCKERS.md; round counter in
 this file (bump on every gate round):
-GATE1_ROUNDS: 0
+GATE1_ROUNDS: 1
 GATE2_ROUNDS: 0
 
 ## Success criteria (falsifiable, checked before morning report)
@@ -131,3 +131,9 @@ GATE2_ROUNDS: 0
   with manifest — covers directives 6a/6b; C3 falls back to billboards if
   late. C3 needs GLTFLoader vendored.
 - DESIGN_ROUND_7.md written (RULES-7). Gate #1 panel launching.
+- 2026-07-11 ~07:50: research wave A complete (monument 171 indexed/35
+  shortlisted; 3 tumble personas; SHELL_SPEC verified live). RULES-7
+  synthesized + pushed. Gate #1 panel of 5 launched (GATE1_ROUNDS: 1).
+  Media session ACK'd lanes + ETAs (env GLBs ~04:30-05:30, INTEGRATION_NOTES
+  ~05:30-06:30, no OpenAI on their side). Next: panel verdicts -> design
+  amendments -> C1 core-rules + C2 shell launch.
