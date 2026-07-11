@@ -209,10 +209,13 @@
     position: fixed; inset: 0; z-index: 96; display: flex;
     justify-content: center; align-items: center; background: rgba(8,9,14,0.9);
   }
-  #helpOverlay .win-box { max-width: 560px; text-align: left; border-color: #3a4152; }
+  #helpOverlay .win-box { max-width: 640px; max-height: 86vh; overflow-y: auto; text-align: left; border-color: #3a4152; }
   #helpOverlay h2 { margin: 0 0 10px 0; font-weight: 400; }
+  #helpOverlay h3 { margin: 16px 0 4px 0; font-weight: 400; letter-spacing: 1px; font-size: 15px; color: #6fe09a; }
   #helpOverlay li { margin: 6px 0; color: #cbd; font-size: 14px; line-height: 1.5; }
   #helpOverlay button { margin-top: 14px; }
+  .help-kw { margin: 5px 0; color: #cbd; font-size: 13px; line-height: 1.45; }
+  .help-kw b { color: #e8e8ee; }
 
   /* Narrow screens: keep the hand reachable */
   #handStrip { max-width: 96vw; overflow-x: auto; padding-bottom: 4px; }
@@ -258,15 +261,51 @@
   <div id="helpOverlay" class="hidden">
     <div class="win-box">
       <h2>How to play</h2>
+
+      <h3>GOAL</h3>
       <ul>
-        <li><b>Goal:</b> capture the enemy <b>capital ♛</b>, or hold more total influence when all tiles are spent.</li>
-        <li><b>Each turn:</b> draw 1, place 1 tile next to your own tiles. Right-click a card to discard and redraw (once per turn).</li>
-        <li><b>Influence:</b> a tile's number is its base plus friendly neighbors, minus enemy neighbors. At <b style="color:#ff6b6b">0</b> it is in revolt: the enemy can place onto it and take the hex.</li>
-        <li><b>The rift</b> <span style="color:#c026d3">◆</span>: the glowing seam drains 1 influence from every adjacent tile. <i>Rift-attuned</i> rares feed on it instead.</li>
-        <li><b>Ascend:</b> place onto your own tile to build a tower (max 3 high, +1 influence per buried tier; only the top tile's keywords are active). Captures bury the enemy tile beneath yours; peeling a tower frees what lies beneath — to its original owner.</li>
-        <li><b>Keywords:</b> hover any card badge. Ward blocks one capture, Rally boosts neighbors, Siege drains enemies, Scout ignores adjacency, Fortified holds edges, Double Strike counts twice.</li>
-        <li><b>Deck:</b> 20 tiles, max 2 rares, max 6 uncommons. Build yours in the Deck Builder.</li>
+        <li>Capture the enemy <b>capital ♛</b> — or, when both sides run out of cards, hold more <b>total influence</b> on the board.</li>
       </ul>
+
+      <h3>YOUR TURN — one action</h3>
+      <ul>
+        <li><b>Place</b> a card on an empty hex touching one of your tiles (<i>Scout</i> cards ignore this).</li>
+        <li><b>Capture:</b> any enemy tile showing <b style="color:#ff6b6b">0</b> (red ring) is in revolt — place a card onto it from <i>anywhere</i>, no adjacency needed. The old tile is destroyed.</li>
+        <li><b>Ascend:</b> place onto your <i>own</i> tile to build a tower.</li>
+        <li><b>Cast a rite ✦:</b> select the rite card, then click a highlighted target.</li>
+        <li>Extras: right-click a card once per turn to discard + redraw. Pass is allowed only when you have no legal move.</li>
+      </ul>
+
+      <h3>INFLUENCE — the number on every tile</h3>
+      <ul>
+        <li>Shown number = base <b>+ each adjacent friendly tile's influence − each adjacent enemy tile's influence</b>, minus rift and ruins. Strong neighbors matter more than many neighbors.</li>
+        <li>Hover any tile or card for its full breakdown and reminder text.</li>
+      </ul>
+
+      <h3>RUINS — the land remembers</h3>
+      <ul>
+        <li>Every destroyed tile scars its hex. Standing on scars costs <b>−1 per layer</b> (max −2). Fought-over ground grows worthless — recapture for position, not profit.</li>
+      </ul>
+
+      <h3>TOWERS</h3>
+      <ul>
+        <li>Stack up to <b>3 high</b> on your own non-capital tile: +1 influence per buried tier, but only the <b>top card's keywords</b> count.</li>
+        <li>Capturing a 2+ tower only <b>peels</b> its top layer — your card bounces back to hand and the hex scars. Deep claims fall one turn at a time.</li>
+      </ul>
+
+      <h3>THE RIFT <span style="color:#c026d3">◆</span></h3>
+      <ul>
+        <li>The glowing seam is impassable and drains <b>−1 per adjacent rift hex</b>. <i>Rift-Attuned</i> tiles gain +1 there instead and ignore ruins.</li>
+      </ul>
+
+      <h3>KEYWORDS</h3>
+      <div id="helpKeywords"></div>
+
+      <h3>DECK</h3>
+      <ul>
+        <li>20 cards: max 2 rares, max 6 uncommons. Build yours in the Deck Builder.</li>
+      </ul>
+
       <button id="helpCloseBtn">Close</button>
     </div>
   </div>

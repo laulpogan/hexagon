@@ -360,6 +360,11 @@ document.getElementById('deckBtn').onclick = () => deckbuilder.open();
 document.getElementById('helpBtn').onclick = () => document.getElementById('helpOverlay').classList.remove('hidden');
 document.getElementById('helpCloseBtn').onclick = () => document.getElementById('helpOverlay').classList.add('hidden');
 
+// Cheat sheet keyword list generated from the data — can't go stale.
+document.getElementById('helpKeywords').innerHTML =
+  Object.values(KEYWORDS).map(k => `<div class="help-kw"><b>${k.name}</b> — ${k.desc}</div>`).join('') +
+  Object.values(RITE_INFO).map(r => `<div class="help-kw"><b>${r.name} ✦</b> (rite) — ${r.desc}</div>`).join('');
+
 // Multiplayer modal
 const mpOverlay = document.getElementById('mpOverlay');
 const mpStatus = document.getElementById('mpStatus');

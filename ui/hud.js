@@ -25,12 +25,15 @@ export class Hud {
         <button id="passBtn" title="End turn without placing">Pass</button>
         <button id="soundBtn" title="Toggle sound">🔊</button>
         <button id="musicBtn" title="Toggle music">🎵</button>
+        <button id="helpHudBtn" title="How to play">?</button>
       </div>
       <div id="hintBar"></div>
       <div id="winOverlay" class="hidden"></div>
       <div id="handoverOverlay" class="hidden"></div>
     `;
     root.querySelector('#passBtn').onclick = () => this.onPass && this.onPass();
+    root.querySelector('#helpHudBtn').onclick = () =>
+      document.getElementById('helpOverlay').classList.remove('hidden');
   }
 
   bindSound(sound) {
