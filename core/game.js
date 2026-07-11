@@ -4,7 +4,7 @@ import { CONFIG } from './config.js';
 import { TILE_POOL, tileTemplate, defaultDeckComposition } from '../data/tiles.js';
 import { createBoard, neighborCoords, isEdge, midRow, riftNeighborCount } from './board.js';
 import { hashSeed, mulberry32, shuffleInPlace } from './rng.js';
-import { captureThreshold, fireOnPlacement, modifyIncoming, RITE_EFFECTS } from './mechanics.js';
+import { captureThreshold, fireOnPlacement, modifyIncoming, RITE_EFFECTS, onTurnStart, riftStirsPulse } from './mechanics.js';
 
 export class Game {
   // seed: shared board seed (room code in MP). decks: {1: comp, 2: comp}
@@ -16,6 +16,7 @@ export class Game {
     this.phase = 'capital';        // 'capital' | 'play' | 'over'
     this.currentPlayer = 1;
     this.turn = 0;
+    this.riftStirs = null;         // R6: set by onTurnStart() once play begins
     this.winner = null;
     this.winReason = null;         // 'capital' | 'influence' | 'draw'
     this.consecutivePasses = 0;
@@ -92,7 +93,9 @@ export class Game {
     return tile.keywords.includes(kw);
   }
 
-  // Base influence + FORTIFIED edge bonus + RALLY from adjacent friendlies.
+  // Base influence + FORTIFIED edge bonus + RALLY from adjacent friendlies
+  // + trophy value (R4/A5 — buried ENEMY tiers only; self-stacking is free
+  // height, not free influence).
   effectiveBase(col, row) {
     const tile = this.cellAt(col, row)?.tile;
     if (!tile) return 0;
@@ -108,16 +111,38 @@ export class Game {
       }
     }
     inf += Math.min(rally, CONFIG.RALLY_STACK_CAP); // aura stacking capped (round 2)
-    inf += this.cellAt(col, row).stack.length * CONFIG.TIER_BONUS; // Ascension tiers (round 3)
+    inf += this.trophyValue(col, row) * CONFIG.TIER_BONUS;
     return inf;
   }
 
-  // Full influence: effective base ± neighbor contributions ± rift aura.
-  // A tile at ≤0 relative influence (clamped to 0) is capturable by the enemy.
+  // R1: cell height = total stack size (any mix of owners), the terrain the
+  // battle itself built. Used by R3 high-ground pressure.
+  cellHeight(col, row) {
+    const cell = this.cellAt(col, row);
+    return cell?.tile ? cell.stack.length + 1 : 0;
+  }
+
+  // R4/A5: trophy value = ENEMY-owned tiles currently buried in the live
+  // stack (crushed-out tiers, A5, have already left the array and stop
+  // counting), capped at TROPHY_CAP. Self-owned buried tiles are free height,
+  // not free influence.
+  trophyValue(col, row) {
+    const cell = this.cellAt(col, row);
+    if (!cell?.tile) return 0;
+    const owner = cell.tile.owner;
+    let n = 0;
+    for (const t of cell.stack) if (t.owner !== owner) n++;
+    return Math.min(n, CONFIG.TROPHY_CAP);
+  }
+
+  // Full influence: effective base ± neighbor contributions (height-skewed,
+  // R3/A4) ± rift aura ± THE RIFT STIRS pulse (R6). A tile at ≤0 relative
+  // influence (clamped to 0) is capturable by the enemy.
   relativeInfluence(col, row) {
     const tile = this.cellAt(col, row)?.tile;
     if (!tile) return 0;
     let total = this.effectiveBase(col, row);
+    const myHeight = this.cellHeight(col, row);
     for (const [c, r] of neighborCoords(col, row)) {
       const nt = this.board[c][r].tile;
       if (!nt) continue;
@@ -130,16 +155,17 @@ export class Game {
         // suffer an extra penalty. (The original applied this to the SIEGE
         // tile itself — a bug contradicting its own description; fixed here.)
         const siege = this.hasKeyword(nt, 'SIEGE') ? CONFIG.SIEGE_BONUS : 0;
-        total -= modifyIncoming(tile, nt, contribution + siege); // WING halves incoming
+        // R3/A4: height difference presses asymmetrically — a taller
+        // neighbor presses harder, a shorter one presses weaker — composed
+        // into the pressure sum BEFORE WING halves it (A4 order).
+        const dH = this.cellHeight(c, r) - myHeight;
+        const heightBonus = Math.max(-CONFIG.HIGH_CAP, Math.min(CONFIG.HIGH_CAP, dH));
+        total -= modifyIncoming(tile, nt, contribution + siege + heightBonus); // WING halves incoming
       }
     }
     const riftN = riftNeighborCount(this.board, col, row);
     total += riftN * CONFIG.RIFT_AURA * (this.hasKeyword(tile, 'ATTUNED') ? 1 : -1);
-    // Ruins: scarred ground drains its occupant; ATTUNED is immune.
-    const cell = this.cellAt(col, row);
-    if (cell.ruins > 0 && !this.hasKeyword(tile, 'ATTUNED')) {
-      total -= Math.min(cell.ruins, CONFIG.RUIN_CAP) * CONFIG.RUIN_PENALTY;
-    }
+    total += riftStirsPulse(this, tile, col, row); // R6/A7
     return Math.max(0, total);
   }
 
@@ -150,10 +176,13 @@ export class Game {
     return this.relativeInfluence(col, row) <= captureThreshold(this, col, row, byPlayer);
   }
 
-  // Capital zone: your side of the seam, at least N rows from the mid line.
+  // Capital zone: your side of the seam, at least N rows from the mid line,
+  // and (A8) not a corner/edge pocket with fewer than 3 neighbors — a
+  // hill-king capital with almost no approach angles is a degenerate turtle.
   isLegalCapitalCell(player, col, row) {
     const cell = this.cellAt(col, row);
     if (!cell || cell.tile || cell.rift) return false;
+    if (neighborCoords(col, row).length < CONFIG.CAPITAL_MIN_NEIGHBORS) return false;
     const mid = midRow();
     if (player === 1) return row <= mid - CONFIG.CAPITAL_MIN_DIST_FROM_SEAM;
     return row >= mid + CONFIG.CAPITAL_MIN_DIST_FROM_SEAM;
@@ -172,17 +201,30 @@ export class Game {
     if (this.phase !== 'play') return false;
     const cell = this.cellAt(col, row);
     if (!cell) return false;
-    if (cell.tile) {
-      // Ascend: stack onto your own non-capital tile, up to TIER_MAX high.
-      if (cell.tile.owner === player) {
-        return !cell.tile.capital && cell.stack.length + 1 < CONFIG.TIER_MAX;
-      }
-      return this.isCapturable(col, row, player);
-    }
     const adjacent = neighborCoords(col, row).some(([c, r]) => {
       const nt = this.board[c][r].tile;
       return nt && nt.owner === player;
     });
+    if (cell.tile) {
+      if (cell.tile.owner === player) {
+        // Self-ascend: stack onto your own non-capital tile, up to TIER_MAX
+        // high. A9 variant B: only legal when the tower is enemy-adjacent
+        // (height earned under duress, not free in the rear).
+        if (cell.tile.capital || cell.stack.length + 1 >= CONFIG.TIER_MAX) return false;
+        if (CONFIG.ASCEND_VARIANT === 'B') {
+          const enemyAdjacent = neighborCoords(col, row).some(([c, r]) => {
+            const nt = this.board[c][r].tile;
+            return nt && nt.owner !== player;
+          });
+          if (!enemyAdjacent) return false;
+        }
+        return true;
+      }
+      // R2: captures require adjacency to one of the attacker's own tiles —
+      // to threaten you must approach. SCOUT's adjacency exemption below is
+      // for empty-hex PLACEMENT only, never for captures.
+      return adjacent && this.isCapturable(col, row, player);
+    }
     if (adjacent) return true;
     // SCOUT ignores adjacency — but not into the enemy heartland (turn-1
     // capital-rush exploit, killed 2026-07-10 balance round).
@@ -247,6 +289,7 @@ export class Game {
 
   _beginTurn() {
     this.turn++;
+    onTurnStart(this); // R6/A7: THE RIFT STIRS state (active/upcoming/pulse)
     this.placementsLeft = CONFIG.PLACEMENTS_PER_TURN;
     this.discardsLeft = CONFIG.DISCARDS_PER_TURN;
     this._draw(this.currentPlayer);
@@ -278,23 +321,32 @@ export class Game {
     this.placementsLeft--;
     this.consecutivePasses = 0; // any card-spending action is a real action (incl. ward-blocked attacks)
 
-    // Ascend (round 3): stacking onto your own tile. The old top is buried
-    // (keywords dormant), the new tile becomes the active face, +1 influence
-    // per buried tier.
+    // Self-ascend: stacking onto your own tile. R4 — self-stacked tiers grant
+    // no influence (trophy-only scoring, see trophyValue()); height alone
+    // buys R3 pressure. A9 variant C taxes the action with a forced discard
+    // (a real card cost, not just tempo).
     if (target && target.owner === player) {
       cell.stack.push(target);
       cell.tile = tile;
       this.stats[player].placed++;
-      this._log(player, `ascended at (${col},${row}) — ${tile.type} crowns a tier-${cell.stack.length + 1} stack`);
+      let paidNote = '';
+      if (CONFIG.ASCEND_VARIANT === 'C' && this.hands[player].length && this.discardsLeft > 0) {
+        const idx = this._weakestHandIndex(player);
+        const discarded = this.hands[player].splice(idx, 1)[0];
+        this.discardsLeft--;
+        this.stats[player].discarded++;
+        paidNote = ` (paid ${discarded.type})`;
+      }
+      this._log(player, `ascended at (${col},${row}) — ${tile.type} crowns a tier-${cell.stack.length + 1} stack${paidNote}`);
       fireOnPlacement(this, tile, col, row, null);
       const result = { ok: true, ascended: true, height: cell.stack.length + 1 };
       this._afterAction();
       return result;
     }
 
-    // WARD: the defender absorbs the attack. The attacker's tile bounces back
-    // to hand — popping a ward costs the turn, not the card (2026-07-10
-    // balance round: card-loss made attacking wards strictly dominated).
+    // WARD (A3): the ONE surviving bounce in the game. The defender absorbs
+    // the capture attempt entirely; the attacker's tile returns to hand —
+    // once per tile.
     if (target && this.hasKeyword(target, 'WARD') && !target.wardConsumed) {
       target.wardConsumed = true;
       this.hands[player].push(tile);
@@ -304,21 +356,7 @@ export class Game {
       return result;
     }
 
-    // Peel (round 3): capturing a tower only removes its top tier. The
-    // attacker's tile bounces to hand — sieging a tower is a war of turns.
-    // The destroyed tier scars the cell (round 4: ruins).
-    if (target && cell.stack.length > 0) {
-      cell.tile = cell.stack.pop();
-      cell.ruins++;
-      this.hands[player].push(tile);
-      this.stats[player].captured++;
-      this._log(player, `peeled ${target.type} off the tower at (${col},${row}) — the ground is scarred`);
-      const result = { ok: true, peeled: true, removed: target };
-      this._afterAction();
-      return result;
-    }
-
-    // Capital capture = win.
+    // Capital capture = instant win. No bury — the game ends here.
     if (target && target.capital) {
       cell.tile = tile;
       this.stats[player].placed++;
@@ -330,15 +368,24 @@ export class Game {
       return { ok: true, captured: target, won: true };
     }
 
+    // R1: capture caps the stack. The old top is buried beneath the new
+    // face — never removed, never resurfaced (A1: liberation stays dead,
+    // buried tiles are permanent war strata). A5: total height is capped;
+    // overflow crushes the bottom tier out to rubble (render-only).
     const captured = target || null;
+    if (captured) {
+      cell.stack.push(target);
+      if (cell.stack.length > CONFIG.HEIGHT_CRUSH_CAP - 1) {
+        cell.stack.shift();
+        cell.rubble = (cell.rubble || 0) + 1; // crush-out (A5)
+      }
+      cell.rubble = (cell.rubble || 0) + 1; // every capture scars the ground (R7, render-only)
+    }
     cell.tile = tile;
     this.stats[player].placed++;
     if (captured) {
-      // Round 4: captures REPLACE the enemy tile — but the fallen tile scars
-      // the ground (ruins). Conquered land is weaker land.
-      cell.ruins++;
       this.stats[player].captured++;
-      this._log(player, `captured enemy ${captured.type} at (${col},${row}) — the ground is scarred`);
+      this._log(player, `captured enemy ${captured.type} at (${col},${row}) — it is buried beneath the ${tile.type}, tier-${cell.stack.length + 1}`);
     } else {
       this._log(player, `placed ${tile.type} at (${col},${row})`);
     }
@@ -346,6 +393,15 @@ export class Game {
     const result = { ok: true, captured, won: false };
     this._afterAction();
     return result;
+  }
+
+  _weakestHandIndex(player) {
+    const hand = this.hands[player];
+    let idx = 0;
+    for (let i = 1; i < hand.length; i++) {
+      if ((hand[i].influence || 0) < (hand[idx].influence || 0)) idx = i;
+    }
+    return idx;
   }
 
   // Rites: spell-class cards cast from hand — consumes the turn's placement.
@@ -465,11 +521,12 @@ export class Game {
       col: cell.col, row: cell.row, rift: cell.rift,
       tile: cell.tile ? { ...cell.tile, keywords: [...cell.tile.keywords] } : null,
       stack: cell.stack.map(t => ({ ...t, keywords: [...t.keywords] })),
-      ruins: cell.ruins,
+      rubble: cell.rubble,
     })));
     g.phase = this.phase;
     g.currentPlayer = this.currentPlayer;
     g.turn = this.turn;
+    g.riftStirs = this.riftStirs ? { ...this.riftStirs } : null;
     g.winner = this.winner;
     g.winReason = this.winReason;
     g.consecutivePasses = this.consecutivePasses;
@@ -492,16 +549,27 @@ export class Game {
 
   // ─── Derived summaries (for HUD / win screen) ────────────────────────
 
+  // R5/A6: Riftlight is folded in HERE ONLY — never inside relativeInfluence
+  // — so rift cells never get an accidental defense buff mid-game. Every
+  // rift-or-rift-adjacent cell a player holds counts toward it, flat per
+  // cell, capped per player.
   boardSummary() {
-    const tally = { 1: { tiles: 0, influence: 0 }, 2: { tiles: 0, influence: 0 } };
+    const tally = { 1: { tiles: 0, influence: 0, riftlight: 0 }, 2: { tiles: 0, influence: 0, riftlight: 0 } };
+    const riftCells = { 1: 0, 2: 0 };
     for (let c = 0; c < CONFIG.GRID_W; c++) {
       for (let r = 0; r < CONFIG.GRID_H; r++) {
-        const t = this.board[c][r].tile;
+        const cell = this.board[c][r];
+        const t = cell.tile;
         if (t && tally[t.owner]) {
           tally[t.owner].tiles++;
           tally[t.owner].influence += this.relativeInfluence(c, r);
+          if (cell.rift || riftNeighborCount(this.board, c, r) > 0) riftCells[t.owner]++;
         }
       }
+    }
+    for (const p of [1, 2]) {
+      tally[p].riftlight = Math.min(riftCells[p] * CONFIG.RIFTLIGHT_PER_CELL, CONFIG.RIFTLIGHT_CAP);
+      tally[p].influence += tally[p].riftlight;
     }
     return tally;
   }

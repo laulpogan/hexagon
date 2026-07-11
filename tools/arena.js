@@ -9,6 +9,7 @@ import { mulberry32, hashSeed } from '../core/rng.js';
 import { makeGreedy } from '../core/agents/greedy.js';
 import { makeSearch } from '../core/agents/search.js';
 import { makePolicy, DEFAULT_WEIGHTS, FEATURE_NAMES } from '../core/agents/policy.js';
+import { createTracker, recordPly, finishTracker, dramaIndex, formatDramaIndex } from './metrics.js';
 
 const PLY_CAP = 400;
 
@@ -33,20 +34,27 @@ export function playGame(agentA, agentB, seed, decks = null) {
   const game = new Game({ seed, decks });
   const rand = mulberry32(hashSeed(seed + '-arena'));
   const byPlayer = { 1: agentA, 2: agentB };
+  const tracker = createTracker();
   let plies = 0;
   while (game.phase !== 'over' && plies < PLY_CAP) {
-    byPlayer[game.currentPlayer].takeTurn(game, game.currentPlayer, rand);
+    const p = game.currentPlayer;
+    const before = game.stats[p].captured;
+    const action = byPlayer[p].takeTurn(game, p, rand);
+    recordPly(tracker, game, p, action, before);
     plies++;
   }
+  finishTracker(tracker, game);
   return {
     winner: game.winner, winReason: game.winReason, turns: game.turn,
     captures: game.stats[1].captured + game.stats[2].captured,
+    tracker,
   };
 }
 
 // Seed-paired pairing: each seed is played twice with sides swapped.
 export function playPairing(agentA, agentB, n, prefix, decks = null) {
   const out = { a: agentA.name, b: agentB.name, aWins: 0, bWins: 0, draws: 0, stalls: 0, turns: 0, captures: 0, games: 0 };
+  const trackers = [];
   for (let i = 0; i < n; i++) {
     for (const flip of [false, true]) {
       const r = flip
@@ -57,10 +65,12 @@ export function playPairing(agentA, agentB, n, prefix, decks = null) {
       else if ((r.winner === 1) === aIsP1) out.aWins++;
       else out.bWins++;
       out.turns += r.turns; out.captures += r.captures; out.games++;
+      trackers.push(r.tracker);
     }
   }
   out.avgTurns = +(out.turns / out.games).toFixed(1);
   out.avgCaptures = +(out.captures / out.games).toFixed(1);
+  out.drama = dramaIndex(trackers);
   return out;
 }
 
@@ -82,7 +92,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   for (const r of runArena(agents, n)) {
     console.log(`${r.a.padEnd(9)} vs ${r.b.padEnd(9)} → ${r.aWins}-${r.bWins}` +
       `${r.draws ? ` (${r.draws} draws)` : ''}${r.stalls ? ` [${r.stalls} STALLS]` : ''}` +
-      `  avg ${r.avgTurns}t ${r.avgCaptures}cap`);
+      `  avg ${r.avgTurns}t ${r.avgCaptures}cap  drama ${r.drama.composite}/100`);
+    console.log('  ' + formatDramaIndex(r.drama).split('\n').join('\n  '));
   }
   console.log(`\n${((Date.now() - t0) / 1000).toFixed(1)}s`);
 }

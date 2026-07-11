@@ -82,7 +82,13 @@ test('capital must be on own side, off the rift, away from the seam', () => {
   assert.equal(g.isLegalCapitalCell(1, 0, mid - 1), false, 'too close to seam');
   const riftCell = findCell(g, (c) => c.rift);
   assert.equal(g.isLegalCapitalCell(1, riftCell.col, riftCell.row), false, 'never on a rift hex');
-  assert.equal(g.isLegalCapitalCell(1, 0, 0), true);
+  assert.equal(g.isLegalCapitalCell(1, 0, 1), true, 'a normal edge cell with 3+ neighbors is fine');
+});
+
+test('A8: capitals are forbidden on cells with fewer than 3 neighbors (corner hill-king block)', () => {
+  const g = new Game({ seed: 'caps-corner' });
+  assert.equal(neighborCoords(0, 0).length, 2, 'sanity: (0,0) is a true corner');
+  assert.equal(g.isLegalCapitalCell(1, 0, 0), false, 'corner cell rejected even though it is otherwise legal (row 0, off-rift)');
 });
 
 test('capital placement alternates players then starts play with hands dealt', () => {

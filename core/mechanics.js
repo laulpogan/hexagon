@@ -3,7 +3,7 @@
 // Hooks: captureGate (FLANK/MENACE-class), onPlacement (ETB-class:
 // SUSTAIN/TRAMPLE), targetable (UNTOUCHABLE-class). Rites: castRite targets.
 import { CONFIG } from './config.js';
-import { neighborCoords } from './board.js';
+import { neighborCoords, riftNeighborCount } from './board.js';
 
 export const KEYWORD_HOOKS = {
   // Deathtouch analog: with ≥ FLANK_MIN_ATTACKERS attacker-side neighbors
@@ -98,24 +98,63 @@ export function isTargetable(tile, byPlayer) {
   return true;
 }
 
+// ─── R6/A7: THE RIFT STIRS — onTurnStart hook ────────────────────────────
+// Called once per _beginTurn() (game.js stays thin: one assignment). Fires
+// every RIFT_STIRS_INTERVAL plies, active for the firing ply + the next (a
+// 2-ply window — each side gets exactly one turn under the pulse), and
+// telegraphed exactly 2 plies before it fires so the HUD/renderer can warn.
+export function onTurnStart(game) {
+  game.riftStirs = riftStirsState(game.turn);
+}
+
+export function riftStirsState(turn) {
+  const interval = CONFIG.RIFT_STIRS_INTERVAL;
+  const lastFire = Math.floor(turn / interval) * interval;
+  const active = lastFire > 0 && (turn - lastFire) < 2;
+  const nextFireTurn = lastFire + interval;
+  const upcoming = (nextFireTurn - turn) === 2;
+  const firingIndex = lastFire / interval; // 1st firing = 1, 2nd = 2, ...
+  const pulseStrength = active ? 1 + CONFIG.RIFT_STIRS_ESCALATION * (firingIndex - 1) : 0;
+  return { active, upcoming, pulseStrength, nextFireTurn, firedAtTurn: active ? lastFire : null };
+}
+
+// Called from relativeInfluence: the seam pulse, only while active, only for
+// rift-adjacent tiles. ATTUNED inverts (feeds instead of drains).
+export function riftStirsPulse(game, tile, col, row) {
+  if (!game.riftStirs?.active) return 0;
+  if (riftNeighborCount(game.board, col, row) <= 0) return 0;
+  const mag = game.riftStirs.pulseStrength;
+  return tile.keywords.includes('ATTUNED') ? mag : -mag;
+}
+
 // ─── Rites (spells): played from hand as your turn's action ─────────────
 // All v1 resolves are RNG-free — MP action-log replay stays deterministic.
 export const RITE_EFFECTS = {
   SUNDER: {
     needsTarget: true,
+    // A2: SUNDER may only target a tile adjacent to one of the caster's own
+    // tiles — otherwise it re-opens the anywhere-snipe R2 closes.
     isLegalTarget(game, player, col, row) {
       const t = game.cellAt(col, row)?.tile;
-      return !!t && t.owner !== player && !t.capital &&
-        game.relativeInfluence(col, row) <= CONFIG.SUNDER_MAX_INF &&
-        isTargetable(t, player);
+      if (!t || t.owner === player || t.capital) return false;
+      if (game.relativeInfluence(col, row) > CONFIG.SUNDER_MAX_INF) return false;
+      if (!isTargetable(t, player)) return false;
+      return neighborCoords(col, row).some(([c, r]) => {
+        const nt = game.board[c][r].tile;
+        return nt && nt.owner === player;
+      });
     },
     resolve(game, player, col, row) {
       const cell = game.board[col][row];
       const t = cell.tile;
-      // Towers lose their top tier; the destroyed tile scars the cell.
-      cell.tile = cell.stack.length ? cell.stack.pop() : null;
-      cell.ruins++;
-      game._log(player, `cast SUNDER — ${t.type} at (${col},${row}) is unmade`);
+      // A1: no resurface path — SUNDER unmakes the whole cell (top face +
+      // everything buried beneath it) rather than popping one tier and
+      // exposing whatever's under it, which would be a liberation in
+      // disguise. The ground goes to rubble, not back to any prior owner.
+      cell.tile = null;
+      cell.stack = [];
+      cell.rubble = (cell.rubble || 0) + 1;
+      game._log(player, `cast SUNDER — ${t.type} at (${col},${row}) is unmade, its stack with it`);
       return { destroyed: t };
     },
   },

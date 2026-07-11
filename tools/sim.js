@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { Game } from '../core/game.js';
 import { botTakeTurn } from '../core/bot.js';
 import { mulberry32, hashSeed } from '../core/rng.js';
+import { createTracker, recordPly, finishTracker, dramaIndex, formatDramaIndex } from './metrics.js';
 
 const PLY_CAP = 400;
 
@@ -20,19 +21,25 @@ export function withConfig(patch, fn) {
 export function runMatch(seed) {
   const game = new Game({ seed });
   const rand = mulberry32(hashSeed(seed + '-bot'));
+  const tracker = createTracker();
   botTakeTurn(game, 1, rand);
   botTakeTurn(game, 2, rand);
   let plies = 0;
   while (game.phase === 'play' && plies < PLY_CAP) {
-    botTakeTurn(game, game.currentPlayer, rand);
+    const p = game.currentPlayer;
+    const before = game.stats[p].captured;
+    const action = botTakeTurn(game, p, rand);
+    recordPly(tracker, game, p, action, before);
     plies++;
   }
+  finishTracker(tracker, game);
   return {
     seed,
     winner: game.winner,
     winReason: game.winReason,    // null = true stall (hit ply cap)
     turns: game.turn,
     stats: game.stats,
+    tracker,
   };
 }
 
@@ -59,6 +66,7 @@ export function runBatch(n, prefix = 'sim') {
     byInfluence: reasons.influence,
     avgTurns: +(totalTurns / n).toFixed(1),
     avgCaptures: +(totalCaptures / n).toFixed(1),
+    drama: dramaIndex(results.map(r => r.tracker)),
     results,
   };
 }
@@ -70,4 +78,5 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   console.log(`P1 wins: ${b.p1Wins}  P2 wins: ${b.p2Wins}  draws: ${b.draws}  stalls: ${b.stalls}`);
   console.log(`by capital: ${b.byCapital}  by influence: ${b.byInfluence}`);
   console.log(`avg turns: ${b.avgTurns}  avg captures/match: ${b.avgCaptures}`);
+  console.log(formatDramaIndex(b.drama));
 }

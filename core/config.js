@@ -20,6 +20,7 @@ export const CONFIG = {
   // Capital
   CAPITAL_INFLUENCE: 2,
   CAPITAL_MIN_DIST_FROM_SEAM: 2, // rows between capital and board mid-line
+  CAPITAL_MIN_NEIGHBORS: 3, // A8: corner hill-king block — capitals need ≥3 neighbors
 
   // Keyword magnitudes
   FORTIFIED_BONUS: 2,
@@ -50,14 +51,39 @@ export const CONFIG = {
   TRAMPLE_SPLASH: 2,    // trample: permanent dent on one extra adjacent enemy per capture
   SUNDER_MAX_INF: 2,    // targeted removal ceiling (non-capital only)
 
-  // Ascension — stacking (design round 3). Place onto a friendly non-capital
-  // tile to build upward. Captures peel one tier (attacker card bounces).
-  TIER_MAX: 3,          // total height cap (base + 2)
-  TIER_BONUS: 1,        // influence per buried tier
+  // Ascension — stacking (RULES-7 R4/A9). Self-ascend stacks onto your own
+  // non-capital tile up to TIER_MAX high; self-stacked tiers grant NO
+  // influence (R4 — trophy-only scoring, see TROPHY_CAP below). ASCEND_VARIANT
+  // picks which extra legality/cost gate applies to self-ascend (A9 sim
+  // knob): 'A' = none (R4 as written), 'B' = legal only when enemy-adjacent,
+  // 'C' = costs placement + 1 forced discard.
+  TIER_MAX: 3,           // self-stack height cap (base + 2)
+  TIER_BONUS: 1,         // influence per trophy (buried ENEMY tier), see TROPHY_CAP
+  ASCEND_VARIANT: 'A',   // 'A' | 'B' | 'C' — A9 sim picks the shipped value
 
-  // Ruins (round 4): every destroyed tile scars its cell. Tiles standing on
-  // scarred ground lose 1 influence per ruin layer (capped) — recapture
-  // ping-pong decays naturally. ATTUNED feeds on scars and is immune.
-  RUIN_PENALTY: 1,
-  RUIN_CAP: 2,
+  // R1/A5: capture caps the stack — buried tiles persist (mixed-owner stacks,
+  // no liberation, A1). Cell height = stack.length + 1, uncapped except for
+  // the absolute crush-out ceiling below. Trophy value = live-stack ENEMY
+  // tiers (capped) — this is what feeds TIER_BONUS in effectiveBase().
+  TROPHY_CAP: 3,          // A5: max trophy tiers counted per cell
+  HEIGHT_CRUSH_CAP: 5,    // A5: total height ceiling; overflow crushes the bottom tier to rubble
+
+  // R3/A4: high ground. Height difference between adjacent enemy tiles presses
+  // asymmetrically — taller presses harder, shorter presses weaker — composed
+  // into the pressure sum BEFORE WING halving (A4).
+  HIGH_CAP: 2,
+
+  // R5/A6: Riftlight — a SEPARATE accumulator folded into boardSummary()'s
+  // influence tally only, never into relativeInfluence() (else rift cells get
+  // an accidental defense buff). Every rift-or-rift-adjacent cell you hold
+  // counts toward it, capped per player.
+  RIFTLIGHT_PER_CELL: 2,
+  RIFTLIGHT_CAP: 8,
+
+  // R6/A7: THE RIFT STIRS — periodic seam pulse, telegraphed 2 plies ahead.
+  // Fires every RIFT_STIRS_INTERVAL plies (a "ply" = one player's turn, so
+  // 12 = 6 turns each). ESCALATION is the anti-mutual-turtle fallback knob
+  // (0 = flat pulse forever; >0 = each firing hits harder).
+  RIFT_STIRS_INTERVAL: 12,
+  RIFT_STIRS_ESCALATION: 0,
 };

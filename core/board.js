@@ -32,7 +32,7 @@ export function createBoard(rand) {
   for (let c = 0; c < CONFIG.GRID_W; c++) {
     cells[c] = [];
     for (let r = 0; r < CONFIG.GRID_H; r++) {
-      cells[c][r] = { col: c, row: r, rift: false, tile: null, stack: [], ruins: 0 };
+      cells[c][r] = { col: c, row: r, rift: false, tile: null, stack: [], rubble: 0 };
     }
   }
   const mid = midRow();
