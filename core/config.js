@@ -93,6 +93,17 @@ export const CONFIG = {
   RIFT_STIRS_INTERVAL: 12,
   RIFT_STIRS_ESCALATION: 0,
 
+  // Greedy bot only (core/bot.js): a small flat score pull toward placing
+  // on/adjacent to the rift. The 1-ply heuristic never sees Riftlight's
+  // boardSummary-only payoff (A6), so without this it only sees the
+  // RIFT_AURA combat penalty and never approaches. R9 sweep (n=1000): 3→26.5%
+  // zero-capture, 5→11.3%, 8→4.6% (clears the <10% target), 12→3% (P1 drifts
+  // to 53.5%, unnecessary). 8 is the sweet spot: zero-capture 4.6%, P1 51.5%,
+  // avg length 32 — all three targets clear; median first capture stays T9-10
+  // at every nudge strength tried, a geometric floor from starting capital
+  // distance (CAPITAL_MIN_DIST_FROM_SEAM), not something this knob reaches.
+  BOT_RIFT_NUDGE: 8,
+
   // R8 pool: the 4 new R3/R5-showcase keywords (analysis/pool40.json).
   SUMMIT_HEIGHT_THRESHOLD: 3,  // SUMMIT: bonus while this cell's height is at least this tall
   SUMMIT_BONUS: 2,

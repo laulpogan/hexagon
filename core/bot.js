@@ -72,7 +72,7 @@ function scoreMove(game, player, move, rand) {
   // Riftlight payoff, not a substitute for actually holding the ground.
   if (game.board[move.col][move.row].rift ||
       neighborCoords(move.col, move.row).some(([c, r]) => game.board[c][r].rift)) {
-    score += 3;
+    score += CONFIG.BOT_RIFT_NUDGE;
   }
 
   // Never leave own capital capturable.
