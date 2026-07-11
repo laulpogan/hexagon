@@ -39,6 +39,18 @@ export const LORE = {
    "vignette": "The soldier pressed his knee into the dirt. He did not look up. He pushed a slab of pale stone into the earth. It fit. It clicked. The soil shifted to accept the weight. This was the Altar. It was not a weapon. It was a statement. The ground here believed in stillness. It believed in weight. Around the stone, the air grew heavy. The Verdant light did not shine. It sat. It rested. The stone held the line. It told the dirt to stop moving. It told the roots to hold firm. The Adjacent tiles felt the pressure. They leaned in. They sought the stability of the stone. The enemy fire did not crack it. The stone was older than the fire. The stone was the memory of the mountain. The ground believed the mountain was true. So it stayed. The Rally was not a shout. It was a quiet agreement. The neighbors agreed to stand. They agreed to hold. The stone did not ask. It simply was. And the earth obeyed.",
    "note": "Scholars note that the Altar does not generate faith but rather anchors existing conviction, making adjacent ground resistant to narrative erosion."
   },
+  "APEXWARDEN": {
+   "lean": "neutral",
+   "epigraph": "The weight of buried truth makes the crown heavy.",
+   "vignette": "The stone stack rose three tiers high. It was a monument of crushed glass and cooled slag. The Apexwarden stood on the highest level. Its armor was forged from the debris of forgotten worlds. It did not move. It did not breathe. It simply held the line against the wind. Below its feet lay the layers of history. A Verdant forest tried to grow up the side. The roots hit the obsidian base. They stopped. The Warden looked down. It believed in the height. The ground believed back. The forest withered into dust. The dust fell into the cracks. The Warden gained strength from the burden. It was a king of the dead earth. No enemy could reach it. The stack was its shield. The height was its sword. It waited for the Rift to breathe. It would hold the peak until the world ended or the ground gave way. Truth is heavy. Truth is high. Truth is hard.",
+   "note": "The Warden proves that height is not escape but a heavier burden of truth."
+  },
+  "BANEBERRY": {
+   "lean": "verdant",
+   "epigraph": "Sweet flesh kills the root.",
+   "vignette": "The vine creeps over the stone. It has no flowers. It bears fruit like polished obsidian. A soldier stops. He sees the gloss. He thinks of summer. He reaches out. His fingers brush the thorn. The berry bursts. Black fluid stains his glove. He does not scream. He simply stops believing in the stone beneath his feet. The stone forgets him. It becomes dirt. The vine moves forward. It wraps around the next tile. The ground there turns gray. The enemy influence drops. It drains away like water into sand. The vine does not fight. It waits. It offers poison as truth. The Verdant grows here not by strength but by refusal. To eat is to accept death. To refuse is to starve. The vine wins both ways. It leaves only silence and rot. The stack rises on bones that never broke.",
+   "note": "The baneberry inscribes negation by offering a truth too bitter to sustain life."
+  },
   "BASTION": {
    "lean": "neutral",
    "epigraph": "Stone remembers the shape of the fist that carved it.",
@@ -75,17 +87,35 @@ export const LORE = {
    "vignette": "The Rift leaked gray light. The soldier stepped forward. He struck the stone. The stone did not break. The air stuttered. He struck again. The blow landed twice. The sound hit his ears in a thick wall. He inscribed the word ECHO into the dirt. The dirt accepted it. The ground believed in the repetition. Adjacent tiles felt the weight double. The Verdant glass forest shuddered under the twin pressure. The Umbral fire burned twice as bright in the shadow. The Aspect was not a soldier. It was the mistake of reality. It lived in the gap between the first touch and the second. The stack grew taller here. Deeper truths pressed down on the neighbors. The soldier watched the ground believe. He did not smile. He marked the tile. The wound breathed nearby. The Aspect held the line by breaking it twice.",
    "note": "Echo counts as two distinct weights upon the adjacent soil, leveraging the Rift's temporal stutter to double the pressure of conviction."
   },
+  "EMBERSLINGER": {
+   "lean": "umbral",
+   "epigraph": "Fire finds the gap before the eye sees it.",
+   "vignette": "The archer crouches on a shard of black glass. The stone bites his knees. He draws the bowstring taut. The wood groans. An ember rolls off his shoulder. It falls onto the gray dust. The dust turns red. The heat rises. He releases the string. No arrow flies. The ember streaks through the air. It lands in the empty hex beyond the enemy line. The ground accepts the heat. The aspect takes root. The Verdant soldiers see smoke. They move to extinguish it. The archer laughs. He stands. His feet leave the crystal. The hex behind him goes cold. The truth vanishes. The old grass returns. He is gone. The scout power reads as a line of fire. It marks the ground. It shows where the enemy does not look. The Umbral claim expands by one step. The Verdant guard the perimeter. They fear the unseen spark.",
+   "note": "Scholars note that Emberslingers rewrite the map from a distance, leaving their own ground to revert to previous strata upon successful inscription."
+  },
   "FANGWOLF": {
    "lean": "umbral",
    "epigraph": "The wolf eats what the forest leaves behind.",
    "vignette": "The ground here is black ash and cold glass. The FANGWOLF stands at the edge of the Verdant stack. It does not bark. It waits. Below it a green thicket fades. The leaves turn to dust. The wood rots in seconds. The wolf steps forward. It walks on air above the crumbling tower. It smells the fear of the old truth. It finds a weak point in the stone. It bites the air. The stone cracks. The Verdant Aspect below loses its shape. It falls into the dark. The wolf does not kill. It unmakes. It eats the conviction that held the tower up. Now the Umbral flame rises to fill the void. The wolf stands on new ground. It is hungry again. It looks for the next weak thing.",
    "note": "The Fangwolf hunts the structural fatigue of opposing realities."
   },
+  "FLAME-LURKER": {
+   "lean": "umbral",
+   "epigraph": "Heat bends the air. The air hides the teeth.",
+   "vignette": "The soldier stepped toward the Rift. The air shimmered like water over a hot stone. He saw a wolf shape in the distortion. It was not there. Then it was. The heat-shimmer predator coiled tight. It did not run. It waited in the warp. The ground here smelled of ozone and burnt hair. The soldier wrote his truth into the dirt. He tried to claim the cell. The ground rejected him. His conviction faded. The predator drank the rejection. It grew sharper. It leaned into the Umbral way. It fed on the raw leak. Other soldiers drained near the wound. This one grew strong. It moved only when the light bent wrong. It was a hole in the sight. The soldier fell back. The cell became Umbral. The predator remained. It was a silent fire. It ate the unwritten parts of the man.",
+   "note": "The Flame-Lurker proves that proximity to the wound strengthens rather than erodes a disciplined Umbral conviction."
+  },
   "FORESIGHT": {
    "lean": "either",
    "epigraph": "The road splits and you walk the one that bleeds.",
    "vignette": "The ink dries on the slate. You stand in the mud. The ground shudders. Two weak shapes fade from your grip. They dissolve into gray dust. The Rift breathes nearby. It leaks raw noise. You hold a petition in your mind. It is not a request. It is a demand. The earth answers. A vision rises from the soil. It shows a city of glass. It shows a spire of ash. You see what your world wants to be. The image burns in the air. It is sharp. It is cold. The other army watches. They do not understand. They see only empty space where your power was. You step forward. The path is clear. You know the turn. You know the cost. The ground believes in the future you showed it. The truth settles. It is heavy. It is real. The weak things are gone. The strong thing remains. You move.",
    "note": "Foresight does not predict the outcome but reveals the structural desire of the territory, allowing the inscriber to discard failed convictions for the raw potential of what the land intends to become."
+  },
+  "FOXGLOVE": {
+   "lean": "verdant",
+   "epigraph": "The bells ring twice before the silence takes hold.",
+   "vignette": "The Verdant scribe presses the stylus into the soft loam. Two violet bells rise from the earth. They hang heavy with dew. The air holds its breath. The blossoms chime in unison. No sound leaves the throat. The vibration hits the ground twice. The adjacent soil shudders under the weight. A nearby Umbral ember flickers and dies. The foxglove stands firm. Its roots drink the dark water. The twin petals lean toward the glass forests. They count as two truths on the line. The enemy pushes back with obsidian shards. The bells ring again. The double strike sinks deep. The ground believes in the twin bloom. It buries the burning stone beneath layers of violet shadow. The scribe withdraws. The flowers remain. They wait for the next breath.",
+   "note": "Scholars note that the foxglove asserts its presence with doubled force, making adjacent terrain resistant to single-point Umbral incursions."
   },
   "GALEHARRIER": {
    "lean": "verdant",
@@ -117,6 +147,12 @@ export const LORE = {
    "vignette": "The ground cracked open. Ash rose from the fissure. A small shape moved in the dark. It was red and wet. It fed on the silence where a forest had stood. The Verdant glass shattered. The shards turned to dust. The leechsprite grew fat on the unwritten truth. It pulsed with a slow heat. Its influence rose. It did not fight. It simply consumed the absence. The Umbral soldiers watched. They saw the power grow. The sprite attached to the scar. It drank the unreality. The wound widened. The sprite became larger. It was no longer small. It was a stain on the world. The Verdant roots withered. They could not hold the ground. The leechsprite pressed down. It anchored itself in the decay. The stack grew taller. The truth of hunger buried the truth of growth. The sprite waited for the next capture. It would grow again. The appetite is permanent. The consumption is the law. The ground remembers only the hunger.",
    "note": "The Leechsprite converts the entropy of unwritten aspects into permanent structural mass for the Umbral stack."
   },
+  "MAELSTONIUM": {
+   "lean": "rift",
+   "epigraph": "The storm eats the line then the line breaks.",
+   "vignette": "The wind did not blow. It struck. Shards of glass and obsidian spun around a black center. They cut the air until the air stopped. A soldier of the Verdant tried to plant a seed. The seed shattered. The shards fell on his chest. He did not bleed. He unraveled. His green truth fell to dust. The storm took his place. It wrote itself into the mud. The writing hit hard. It hit twice. The weight of the truth doubled on the ground next to it. The earth groaned under the double burden. Neighbors felt the pressure. They could not hold their ground. The storm spun faster. It pulled at the edges of the enemy line. Their conviction cracked at two points. They fell. The dark core grew. It fed on the broken faith. The lightning arced out. It struck the stone. The stone forgot it was stone. It became part of the wind. The storm held the line. It was heavy and sharp. It was true.",
+   "note": "The Maelstonium strikes with compounded weight, breaking adjacent holds that lack sufficient conviction to resist its twin force."
+  },
   "MIRRORSAINT": {
    "lean": "verdant",
    "epigraph": "She does not show your face. She shows your truth.",
@@ -135,6 +171,18 @@ export const LORE = {
    "vignette": "The air tasted of ozone and wet ash. A man drove a spike of ironwood into the dirt. He did not look back at the burning city or the glass forest. He hammered the wood until his hands bled. The ground accepted the shape. It became hard. It became true. Across the field, a shadow moved. It tried to overwrite the fence. The wood held. The shadow faded. The fence remained. It was not magic. It was weight. It was the refusal to move. Soldiers leaned against the planks. They felt the solid push of the earth. The planks smelled of pine and old rain. This was the border. Here the ground did not dream. It only stood. If you touched the wood, you felt the pulse of the Rift below. It pushed up. The wood pushed back. Nothing died here. Things simply stopped being other things. The palisade was a sentence written in timber. It said stay. The ground believed it.",
    "note": "Timberwork derived from the threshold folk serves as a static anchor, gaining structural integrity at the map's edges where conviction meets the void."
   },
+  "PETRIFIED-ROSE": {
+   "lean": "verdant",
+   "epigraph": "The stone holds its breath against the fire.",
+   "vignette": "The Verdant scribe pressed the chisel into the gray mud. He did not strike. He whispered the shape of a rose into the dirt. The ground shuddered. A single bloom of white quartz rose from the soil. It did not sway. The petals were hard as iron. A faint blue light pulsed around the base. This was the Ward. The Umbral runner came next. He brought a torch of black flame. He thrust it into the base of the rose. The fire ate the air. It touched the stone. The blue light flared bright. The fire died. The stone did not crack. The runner stepped back. He looked at his empty hands. The rose stood firm. It refused the change. The scribe nodded. The truth was held. The Umbral would need a heavier weight to bury this one. The stone waited. It absorbed the heat. It stayed cold. The bloom remained open. It was a pause in the burning. The scribe walked away. The rose kept its shape.",
+   "note": "Scholars note that the Ward consumes the kinetic intent of the first opposing inscription, rendering the aspect temporarily immune to overwriting."
+  },
+  "POLLENCLOUD": {
+   "lean": "verdant",
+   "epigraph": "The air thickens with golden dust and slow time.",
+   "vignette": "A scribe from the palace-tree draws a circle in the dirt. He chants the word pollencloud. The ground accepts. A haze rises from the soil. It glows like wet gold. It drifts outward in a thick wave. Soldiers of the ember spire charge into it. Their boots sink in the heavy air. The spores coat their armor. They slow. Their anger fades into confusion. The haze blurs the edges of the world. It does not hurt them. It simply makes them heavy. The Verdant truth holds here. The air becomes a wall of light. The chasing enemies find their strength halved by the weight of the beauty. They stand still in the gold. The scribe steps back. The cloud expands. It covers the contested ground. The obsidian cities feel distant. The green permanence wins this square foot of earth. The unwritten debris floats in the suspension. Nothing dies. Only the urgency vanishes.",
+   "note": "Threshold scholars note that the Pollencloud reduces kinetic aggression by half through sensory saturation."
+  },
   "RALLYING_CRY": {
    "lean": "either",
    "epigraph": "Belief is a weight the ground must hold.",
@@ -146,6 +194,12 @@ export const LORE = {
    "epigraph": "Fire eats the stone that holds the line.",
    "vignette": "The Reaver is a city built on hunger. It does not grow. It consumes. A soldier drags a burning cart through the mud. The wheels sink into old glass. The heat rises from the obsidian blocks. He strikes the ground with an iron bar. The spark catches. The Reaver spreads. It eats the Verdant vine trying to root nearby. The vine turns to ash. The ground no longer believes in the green. The truth unwrites. The soldier moves on. He leaves a scar of soot. This is the Siege. You do not defend. You burn what stands in your way. You replace the certainty of the forest with the certainty of the flame. The ground remembers the heat. It leans toward the fire. The Umbral wins this cell. The Reaver waits for the next breath of the Rift. It burns the old laws. It writes new ones in smoke. Nothing survives the Reaver unchanged. It is appetite made solid. It is the end of things that were.",
    "note": "The Reaver proves that destruction is a form of creation when the old truth refuses to yield."
+  },
+  "RIFT-WALL": {
+   "lean": "rift",
+   "epigraph": "The wall holds the sky back.",
+   "vignette": "The ground shakes near the seam. The air tastes of copper. You drive the violet slab into the dirt. It stands jagged. It cuts the light. This is the edge. The Verdant soldiers look at the glass trees. They see only the wall. The Umbral archers light their torches. The flames die against the violet stone. Nothing passes. The slab grows heavy. It draws power from the raw wound. Influence rises. You stand on the border. The world tries to push in. The wall does not move. It is a scar made solid. Behind it the ground is quiet. In front the chaos swirls. You hold the line. The stone feels cold. It feels hungry. It eats the doubt. It feeds on the fear of the void. Your conviction hardens the air. The enemy steps back. They cannot cross. The wall is true here. The rift breathes. The slab pulses. It holds the night at bay.",
+   "note": "Rift-Wall anchors contested borders by solidifying the boundary of unreality."
   },
   "RIFTWALKER": {
    "lean": "rift",
@@ -159,11 +213,47 @@ export const LORE = {
    "vignette": "Kael steps onto the cracked stone. The air tastes of copper and old rain. He places his palm on the ground. The Rift pulses nearby. Raw motes drift like ash. He does not flinch. He presses his will into the soil. The earth shudders. A figure rises from the dust. It has no face. It holds a shield of solidified silence. This is the Riftwarden. It stands between the glass forests and the burning cities. It guards the seam. Soldiers from both sides watch. They fear the Warden more than each other. The Warden does not attack. It holds the line. When the Rift Stirs, the ground shakes. The Warden grips the earth. It absorbs the shock. The unmoving truth keeps the chaos at bay. The keyword ATTUNED means it feels the raw unreality. It does not break. It endures. The Warden is the scar that refuses to heal or rot. It is the pause between breaths. The ground believes in stillness here. The chaos presses against the shield. The shield holds. The Warden waits.",
    "note": "The Riftwarden does not heal the wound but contains its bleeding by imposing a local truth of absolute stasis."
   },
+  "SEAMDRINKER": {
+   "lean": "rift",
+   "epigraph": "The wound thirsts and the coil drinks the dark.",
+   "vignette": "The serpent lay across the tear. Its scales were grey and dry. The rift bled raw light. The creature opened its jaw. It did not strike. It waited. A Verdant thicket pushed forward. The thicket touched the seam. The serpent struck. The thicket vanished. The ground became empty. The serpent drank the void. Its body grew heavy. The trench deepened. The Umbral wolves watched. They saw the truth. The ground near the wound is not solid. It is a mouth. The serpent is the tongue. Every capture makes the mouth wider. The trench grows deeper. The serpent coils tighter. It holds the line. It holds the pain. The ground believes in the hunger. The ground believes in the depth. The serpent is the weight that pulls the world down. It does not fight for land. It fights for the abyss. The trench is its home. The trench is its meal. It drinks until the seam swallows the sky.",
+   "note": "The Seamdrinker does not conquer territory but rather accelerates the dissolution of local reality, converting captured space into permanent topographical depression."
+  },
+  "SEAMKEEPER": {
+   "lean": "rift",
+   "epigraph": "We stand where the world tears open.",
+   "vignette": "The hooded figure walks to the edge of the Rift. The air smells of ozone and rot. Glass shards from the Verdant mix with black slag from the Umbral. The figure plants a banner into the raw gap. The ground shudders. The tear does not close. It holds the weight of the banner. This is the Seamkeeper. It does not fight the Verdant or the Umbral. It guards the wound. When the Rift Stirs, the Seamkeeper stands firm. Its influence swells. The raw unreality feeds it. The banner flaps in a wind that does not exist elsewhere. Other Aspects look away. They fear the leak. The Seamkeeper embraces it. It is a garrison of one. The truth here is stability in chaos. The ground believes in the hold. The Seamkeeper writes stillness over the scream of the tear. It is small. It is vital.",
+   "note": "The Seamkeeper anchors the threshold by occupying the void where reality fails."
+  },
   "SKIRMISHER": {
    "lean": "umbral",
    "epigraph": "Fire runs where the forest hesitates.",
    "vignette": "The runner moves fast. He burns his own boots to mark the path. The Umbral city rises behind him in black glass and heat. Ahead lies a Verdant tile. It holds a thicket of gold leaves. The runner does not stop. He throws a stone wrapped in ash. The stone hits the root. The root cracks. The gold turns gray. The leaves fall like dead skin. The ground forgets the tree. It remembers only the burn. The runner steps onto the tile. He writes the word SIEGE in soot. The adjacent Verdant tiles shiver. Their influence drops. They lose five points of truth. The forest grows thin. The glass trees look brittle. The runner smiles. He knows the ground is weak here. He knows doubt spreads faster than roots. He runs again. He leaves a trail of ash. The Verdant army watches. They cannot hold the line. The earth itself rejects them. The runner is a small thing. He is a spark. But the spark makes the ground doubt. The doubt is enough. The tile flips. It becomes Umbral. The runner moves to the next one. He does not look back.",
    "note": "The Skirmisher weaponizes uncertainty to erode adjacent conviction through localized reality failure."
+  },
+  "SOUL-ENGINE": {
+   "lean": "umbral",
+   "epigraph": "The machine eats the light and grows heavy.",
+   "vignette": "The Umbral engineer drives the stake into the red clay. The SOUL-ENGINE stands there. It is a cage of iron teeth and trapped fire. It hums. The Verdant scribe tries to write a forest over it. The green glass shoots up. The engine turns. It grinds the glass into dust. The gears bite deeper into the earth. The engine does not fight. It consumes. It takes the truth of the forest. It burns that truth for fuel. The hum grows louder. The light in the center burns white. The influence rises. The ground believes in the machine now. The forest is gone. It is fuel. The engineer smiles. The machine grows larger. It has fed. It waits for the next truth to eat. The Rift breathes nearby. The engine holds its ground. It is heavy with stolen life. It is bright with stolen death. The stack grows higher here. The truth is mechanical. The truth is hungry. The truth endures.",
+   "note": "This construct converts conquered narrative mass into permanent structural weight, proving that appetite can anchor reality more firmly than growth."
+  },
+  "SPLINTER": {
+   "lean": "rift",
+   "epigraph": "The break holds the weight of two worlds.",
+   "vignette": "The ground cracked. A shard rose from the dust. It was sharp and cold. It held the shape of a broken star. The Verdant scribe stepped forward. She pressed her hand to the stone. The shard did not warm. It bit her skin. Blood fell on the rock. The shard drank it. It grew heavier. It pressed down on the earth. Two smaller fragments drifted near it. They orbited the main piece. The scribe tried to write a tree over it. The ink dried black and useless. The shard refused the leaf. It leaned toward the Rift. It wanted the void. Menace held it safe. Two enemies stood nearby. They watched it. They feared to touch it. It counted as two truths. It doubled the pressure. The ground groaned under the weight. The shard waited. It was hungry for the seam.",
+   "note": "The Splinter rejects narrative resolution by anchoring contested space through geometric density rather than thematic resonance."
+  },
+  "SPRITE": {
+   "lean": "verdant",
+   "epigraph": "Light binds the line before the dark comes.",
+   "vignette": "The ground here smells of sap and old iron. A soldier stands firm. He holds a spear. He does not move. The air around him grows thick. A small light appears. It is not a star. It is a mote. It drifts from the rift edge. It hovers near the soldier’s shoulder. The light is warm. It tastes like honey. The soldier feels his grip tighten. His fear leaves him. The light moves to the next man. That man is tired. The light touches his breastplate. The metal gleams. The man lifts his head. He believes in the forest. He believes in the gold. The ground beneath them hardens. The Verdant truth takes hold. The Sprite does not speak. It simply weaves the light between them. It makes the line unbreakable. The Umbral ash cannot cross. The ground remembers the warmth. The influence spreads. The adjacent tiles grow stronger. The light fades into the bark. The truth remains.",
+   "note": "The Sprite is the visible cohesion of Verdant conviction, binding adjacent units through shared belief."
+  },
+  "STONETREADER": {
+   "lean": "umbral",
+   "epigraph": "Stone does not rise to meet the foot.",
+   "vignette": "The beast stood at the base of the rift tower. The obsidian wall rose steep and black. Other climbers slid back in sweat and fear. The Stonetreader lifted a hoof. It placed the claw on a sharp edge. The stone did not give. The beast pushed. It moved up the vertical face as if it were a flat road. The ground believed in the climb. The weight pressed into the rock. The rock held the weight. A Verdant scout watched from below. He saw the truth of the ascent. He tried to write a thicket on the wall. The thicket failed. The stone was too hard. The scout faded. The beast reached the top. It turned and looked down. The path behind it was solid. The climb was not a struggle. It was a fact. The power is simple. The mountain is flat. The fear of height is a lie. The beast walks where others fall. It owns the high ground by right of stride.",
+   "note": "The Umbral claim that gravity is a suggestion for those who trust the weight of their own bones."
   },
   "SUNDER": {
    "lean": "either",
@@ -171,11 +261,23 @@ export const LORE = {
    "vignette": "The scribe stands on the stone. He holds a chisel of cold iron. He does not strike the rock. He strikes the air beside it. He speaks a name that is not a name. He says the place is empty. He says no tree ever grew there. No fire ever burned there. The soldiers look down. They see nothing. The tile vanishes into white static. The enemy captain screams. He kicks at the void. His foot passes through where the stone was. The void eats the scream. The tile is gone. The stack shifts. The neighbors lean into the gap. The ground feels lighter. It feels wrong. The scribe writes the final stroke. The petition is done. The place is unwritten. It does not return. The hole waits for the Rift to fill it with something else. The power is not force. It is refusal. It is the sharp edge of a mind that will not agree.",
    "note": "Sunder is the weapon of ontological denial, proving that existence requires a consensus to persist."
   },
+  "TEAR-ESSENCE": {
+   "lean": "rift",
+   "epigraph": "The shard floats above the burn. It waits.",
+   "vignette": "The air near the Rift burns. Glass forests stand on one side. Obsidian spires rise on the other. In the gap hangs a shard of white light. It does not move. Soldiers throw spears at it. The spears pass through like smoke. A Verdant scribe tries to bind it with gold ink. The ink slides off. An Umbral warlock throws fire at it. The flame bends away. The shard drifts on the seam. It feeds on the leaking unreality. It grows brighter as the wound breathes. It does not care about the war. It is a hole in the shape of truth. To touch it is to fail. To stand near it is to survive. It writes itself into the air. The ground below it remains empty. Nothing can claim it. It is the pause between the worlds. It is the silence in the scream. It waits for the Rift to widen. Then it will fall. Until then it hangs. It is pure rift-light. It is safe. It is alone.",
+   "note": "The Tear-Essence defies inscription by virtue of existing outside the contest, drawing sustenance from the Rift's leakage rather than the ground's belief."
+  },
   "THICKET": {
    "lean": "verdant",
    "epigraph": "The glass holds the shape of hunger.",
    "vignette": "The Verdant scribe drove a stake of amber into the mud. He spoke the name of the Thicket. The soil cracked. Glass thorns pushed up through the dirt. They grew fast. They grew sharp. A wall of living crystal rose before the Umbral line. The thorns caught the light. They did not move. They simply were. The Umbral soldier stepped forward. His shadow touched the base. The ground rejected him. The Thicket did not strike. It did not burn. It simply existed where he was not. The soldier’s conviction failed. He unraveled into gray dust. The wall remained. It grew thicker. It blocked the path to the Rift. The Verdant claim held. The glass stood still. It waited for the next breath of the wound. It waited for the ground to believe in the wall. The truth was solid. The truth was cold.",
    "note": "The Thicket serves as a static barrier whose permanence denies the kinetic nature of opposing aspects."
+  },
+  "VEILWALKER": {
+   "lean": "rift",
+   "epigraph": "The seam holds no ground for those who walk it.",
+   "vignette": "The ground cracked between the glass roots and the black ash. A figure stepped onto the dust. The robe was thin as morning mist. It did not wet with dew or burn with heat. The Verdant scribes shouted orders. They threw rites of binding. The spells hit empty air. The Umbral priests chanted fire. The flames passed through the legs. The figure walked. The ground beneath the feet turned gray. It was not green. It was not black. It was the color of nothing. The soldiers watched. They could not strike. Their hands passed through the shoulder. The air felt cold and sharp. The figure raised a hand. The gray spread. The grass died. The stone cooled. The figure walked deeper into the rift. The ground forgot what it was. It remembered only the void. The walkers left no footprints. They left only absence. The tower of contested truth rose higher. The layers of old wars pressed down. The Veilwalker ignored the weight. It walked on the air above the stack. It was safe. It was alone. It was true.",
+   "note": "Scholars note that rites slide off the Veilwalker as water off glass, for it exists only in the gap between conviction and stone."
   },
   "VEILWISP": {
    "lean": "rift",
@@ -188,6 +290,12 @@ export const LORE = {
    "epigraph": "Stone holds its shape against the hungry dark.",
    "vignette": "The Umbral walker drives a black spear into the dust. The ground screams. The Verdant scribe pours gold sap over the scar. The sap hits the Wardstone. The rune flares white. It rejects the gold. It rejects the black. The stone stands alone in the center of the contested cell. The warriors step back. They see the truth. The stone does not break. It absorbs the intent of the capture. The ink slides off the surface like water on glass. The ground remains gray. The stone waits for the second attempt. It is heavy. It is old. It remembers the first world. It remembers the second. It belongs to neither yet. The stack grows thin here. The Rift breathes near. The stone holds the line. It is a pause in the war. It is a moment of stillness in the noise. The players write around it. They circle the refusal. The stone is a fact that will not change. It buys time. It costs nothing but presence. The ground believes in the stone’s stubbornness. The stone is the only thing that stays.",
    "note": "Scholars note that Wardstones do not repel truth but simply refuse to accept a new one until the first attempt has fully exhausted its conviction."
+  },
+  "WILL-O'-WISP": {
+   "lean": "rift",
+   "epigraph": "The light leads you where the dark waits.",
+   "vignette": "The soldier stepped off the stone path. He saw a green light in the mud. It pulsed like a slow heart. He wanted to touch it. The light drifted left. He followed. The ground under his boots turned soft. The stone path remained hard behind him. The light was not a thing. It was a hunger for movement. It pulled his weight away from the line of order. He moved into the shadow of the trees. The trees did not catch him. The space around him became contested. The Verdant line broke. The Umbral line broke. Both failed in the gap he made. The light floated above him. It showed the way into the rift. The soldier did not fear the dark. He feared the light. The light led him off the map. The ground forgot he was there. He became part of the drift. The stack rose up around the empty spot. Rubble filled the hole. The light moved on. It sought another footstep to steal. It made the flank weak. It made the center empty. This is how the wisp wins. It does not strike. It invites.",
+   "note": "Threshold scholars note that the wisp inscribes doubt into the geometry of battle, rendering adjacent positions vulnerable through distraction rather than force."
   }
  }
 };
