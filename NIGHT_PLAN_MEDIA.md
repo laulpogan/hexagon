@@ -139,3 +139,18 @@ GATE2_ROUNDS: 0
 - ~00:55 gate #1 round 1: 4 personas, 6 BLOCKER + 18 MAJOR → v2 (this).
   Campaign A discovered LIVE; lane-split + pipeline offer sent via wire.
   TTS verified. Hunyuan3D build launched. ComfyUI confirmed warm.
+- ~01:00 gate #1 round 2: NO BLOCKER (3 watch items folded). Lane patch from
+  A acked: tools/gen_lore_data.js mine, GLTFLoader vendoring mine, ui/music.js
+  +sound.js theirs. OpenAI = zero calls from media side.
+- ~01:10 LORE.md + data/lore.js landed (26 Qwen vignettes, taste-passed);
+  commit 3d40054: modules (codex/cinematics/popout), GLTFLoader r182 +
+  BufferGeometryUtils vendored, INTEGRATION_NOTES.md (7 hookups). Wire-pinged.
+- ~01:15 LTX test clip 9/10 style-fit (195s/clip baseline); 16-shot batch
+  running. VO: 18 Chatterbox takes landed (response_format=wav fix; earlier
+  json-quoting + raw-stream failures diagnosed). Gameplay capture: 71s of
+  live-site vs-bot footage w/ game-end, WebGL verified headless.
+- ~01:20 intro shots I1–I6 done. I1 judged 9.5/10 (trailer hero). I5 6.5/10
+  (photoreal drift on wolf — re-roll queued, budget 1 of 2). Music auto-chain
+  armed on GB10 (fires when LTX frees GPU). Hunyuan chain armed on spark-472e
+  (build → gpu-launch batch: 15 env props for campaign A first, then 10
+  heroes, 8 stretch). Masters archiving to ~/limen-media-masters/.
