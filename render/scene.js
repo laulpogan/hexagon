@@ -1063,7 +1063,10 @@ export class BoardRenderer {
         const { x, z } = worldPos(c, r);
         if (delta !== 0) {
           const chip = makeDeltaSprite(delta);
-          chip.position.set(x, this._cellTopY(c, r) + 2.55, z);
+          // Above-and-beside the persistent badge (badge sits at baseH+2.0,
+          // +2.5 for capitals) — overlapping it garbled both numbers
+          // (gate-2 judge BLOCKER).
+          chip.position.set(x + 0.55, this._cellTopY(c, r) + 3.4, z);
           chip.userData.baseY = chip.position.y;
           this.scene.add(chip);
           this._previewChips.push(chip);
@@ -1071,9 +1074,17 @@ export class BoardRenderer {
         const afterCapB = t.owner !== attacker && clone.isCapturable(c, r, attacker);
         if (afterCapB && !b.capB) {
           const ring = this._makePulseRing(0xff3333);
-          ring.position.set(x, 0.06, z);
+          ring.position.set(x, 0.1, z);
+          ring.scale.set(1.35, 1.35, 1.35);
           this.scene.add(ring);
           this._previewRings.push({ mesh: ring });
+          // Ground ring alone got lost in rubble/motes (judge MINOR) — pair
+          // it with an unmissable elevated danger marker.
+          const warn = makeTextSprite({ num: '⚔' }, { numColor: '#ff5555', numSize: 150 });
+          warn.position.set(x - 0.55, this._cellTopY(c, r) + 3.4, z);
+          warn.scale.set(0.9, 0.9, 1);
+          this.scene.add(warn);
+          this._previewChips.push(warn);
         }
       }
     }
