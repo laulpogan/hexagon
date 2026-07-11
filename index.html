@@ -97,6 +97,22 @@
   }
   .card-rarity { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
 
+  /* Board tooltip (reminder text) */
+  #boardTip {
+    position: fixed; pointer-events: none; display: none; z-index: 80;
+    background: rgba(13,15,22,0.96); border: 1px solid #3a4152; border-radius: 10px;
+    padding: 10px 13px; font-size: 12px; line-height: 1.55; color: #cfd6e4;
+    min-width: 180px; max-width: 270px; box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  }
+  #boardTip .bt-title { font-size: 13px; font-weight: bold; letter-spacing: 1px; color: #fff; }
+  #boardTip .bt-owner1 { color: #6fe09a; } #boardTip .bt-owner2 { color: #b18aff; }
+  #boardTip .bt-inf { color: #fff; font-weight: bold; }
+  #boardTip .bt-cap { color: #ff6b6b; font-weight: bold; }
+  #boardTip .bt-kw { margin-top: 5px; padding-top: 5px; border-top: 1px solid #2a2f3c; }
+  #boardTip .bt-kw b { color: #d9ccff; }
+  #boardTip .bt-stack { margin-top: 5px; padding-top: 5px; border-top: 1px solid #2a2f3c; color: #9aa4b8; }
+  #boardTip .bt-rift { color: #e879f9; }
+
   /* Controls + hint */
   #hudControls { position: absolute; bottom: 16px; right: 16px; display: flex; gap: 8px; }
   #hudControls button {
@@ -225,6 +241,7 @@
 <body>
   <div id="board"></div>
   <div id="hud"></div>
+  <div id="boardTip"></div>
 
   <div id="menu">
     <video id="menuVideo" autoplay muted loop playsinline

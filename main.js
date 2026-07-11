@@ -6,6 +6,8 @@ import { BoardRenderer } from './render/scene.js';
 import { Hud } from './ui/hud.js';
 import { sound } from './ui/sound.js';
 import { initDeckbuilder, loadSavedDeck } from './ui/deckbuilder.js';
+import { KEYWORDS } from './data/tiles.js';
+import { riftNeighborCount } from './core/board.js';
 import { NetSession, generateRoomCode } from './net/supabase.js';
 
 let game, renderer, hud;
@@ -171,8 +173,67 @@ function checkGameOver() {
   return true;
 }
 
+// ─── Board reminder tooltip ─────────────────────────────────────────────
+const boardTip = document.getElementById('boardTip');
+document.addEventListener('mousemove', (e) => {
+  if (boardTip.style.display !== 'none') {
+    const pad = 18;
+    const x = Math.min(e.clientX + pad, window.innerWidth - 290);
+    const y = Math.min(e.clientY + pad, window.innerHeight - 160);
+    boardTip.style.left = x + 'px';
+    boardTip.style.top = y + 'px';
+  }
+});
+
+function ownerLabel(p) {
+  return p === 1 ? '<span class="bt-owner1">Verdant</span>' : '<span class="bt-owner2">Umbral</span>';
+}
+
+function updateBoardTip(hit) {
+  const g = game;
+  if (!hit || g.phase === 'over') { boardTip.style.display = 'none'; return; }
+  const cell = g.board[hit.col][hit.row];
+  const tile = cell.tile;
+  if (!tile) {
+    if (cell.rift) {
+      boardTip.innerHTML = `
+        <div class="bt-title bt-rift">◆ Rift Hex</div>
+        <div>Drains <b>1 influence</b> from every adjacent tile — both players.
+        <i>Rift-attuned</i> tiles feed on it instead. You may build here, at your peril.</div>`;
+      boardTip.style.display = 'block';
+    } else {
+      boardTip.style.display = 'none';
+    }
+    return;
+  }
+  const rel = g.relativeInfluence(hit.col, hit.row);
+  const enemy = g.currentPlayer === tile.owner ? (tile.owner === 1 ? 2 : 1) : g.currentPlayer;
+  const capturable = g.isCapturable(hit.col, hit.row, enemy);
+  const tiers = cell.stack.length;
+  const riftN = riftNeighborCount(g.board, hit.col, hit.row);
+  const kwHtml = tile.keywords.length
+    ? `<div class="bt-kw">${tile.keywords.map(k =>
+        `<div><b>${KEYWORDS[k]?.name || k}</b> — ${KEYWORDS[k]?.desc || ''}</div>`).join('')}</div>`
+    : '';
+  const stackHtml = tiers
+    ? `<div class="bt-stack">Tier-${tiers + 1} tower · buried: ${cell.stack.slice().reverse().map(t =>
+        `${t.type}${t.owner !== tile.owner ? ' (subjugated)' : ''}`).join(', ')}<br>
+        <i>Buried keywords are dormant. Capturing peels one tier; buried tiles return to their owner.</i></div>`
+    : '';
+  boardTip.innerHTML = `
+    <div class="bt-title">${tile.capital ? '♛ CAPITAL' : tile.type.replace(/_/g, ' ')}</div>
+    <div>${ownerLabel(tile.owner)} · influence <span class="bt-inf">${rel}</span>
+      (base ${tile.influence}${tiers ? ` +${tiers} tier` : ''}${riftN ? `, rift ${tile.keywords.includes('ATTUNED') ? '+' : '−'}${riftN}` : ''}, ± neighbors)</div>
+    ${capturable ? '<div class="bt-cap">⚠ In revolt — can be taken by placement!</div>' : ''}
+    ${kwHtml}
+    ${stackHtml}
+    ${tile.capital ? '<div class="bt-stack"><i>Lose this and the game ends. Cannot be stacked on or targeted by rites.</i></div>' : ''}`;
+  boardTip.style.display = 'block';
+}
+
 function handleHover(hit) {
   const g = game;
+  updateBoardTip(hit);
   if (hit && !inputLocked() && g.phase === 'play' && hud.selectedIndex !== null) {
     const tile = g.hands[g.currentPlayer][hud.selectedIndex];
     const cell = tile && g.board[hit.col][hit.row];
@@ -214,7 +275,23 @@ function startGame(opts) {
 
   renderer.onCellClick = handleClick;
   renderer.onCellHover = handleHover;
-  hud.onSelectTile = (i) => { hud.selectedIndex = i; hud.hint(''); update(); };
+  hud.onSelectTile = (i) => {
+    hud.selectedIndex = i;
+    const card = i !== null && game.hands[game.currentPlayer][i];
+    if (card && card.kind === 'rite') {
+      const targets = game.legalRiteTargets(game.currentPlayer, i);
+      hud.hint(targets.length && targets[0].col !== null
+        ? `✦ ${card.type.replace(/_/g, ' ')} — click a highlighted hex to cast`
+        : targets.length
+          ? `✦ ${card.type.replace(/_/g, ' ')} — click anywhere on the board to cast`
+          : `✦ No legal targets for ${card.type.replace(/_/g, ' ')} right now`);
+    } else if (card) {
+      hud.hint('Green: place · red: capture · your own tiles: ascend (stack)');
+    } else {
+      hud.hint('');
+    }
+    update();
+  };
   hud.onDiscard = (i) => {
     if (inputLocked()) return;
     const res = game.discardRedraw(game.currentPlayer, i);
