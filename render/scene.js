@@ -1,6 +1,10 @@
 // Three.js board renderer — owns the scene, meshes, picking, and animation.
 // Reads game state via syncBoard(); never mutates the game.
 import * as THREE from 'three';
+import { EffectComposer } from '../vendor/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from '../vendor/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from '../vendor/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from '../vendor/jsm/postprocessing/OutputPass.js';
 import { CONFIG } from '../core/config.js';
 import { neighborCoords } from '../core/board.js';
 
@@ -74,6 +78,27 @@ function tileTexture(name) {
   return _tileTex.get(name);
 }
 
+// Standing billboard sprites (PS1 cutout trick) — cached; callbacks fire when
+// the alpha PNG is actually loaded so missing art degrades to no billboard.
+const _spriteTex = new Map();
+function spriteTexture(name, onReady) {
+  let entry = _spriteTex.get(name);
+  if (!entry) {
+    entry = { tex: null, loaded: false, waiters: [] };
+    _spriteTex.set(name, entry);
+    entry.tex = _texLoader.load(
+      `./assets/sprites/${name}_512.png`,
+      () => { entry.loaded = true; entry.waiters.forEach(cb => cb(entry.tex)); entry.waiters = []; },
+      undefined,
+      () => { entry.waiters = []; } // 404 → billboard stays hidden
+    );
+    entry.tex.colorSpace = THREE.SRGBColorSpace;
+  }
+  if (entry.loaded) onReady(entry.tex);
+  else entry.waiters.push(onReady);
+  return entry.tex;
+}
+
 export class BoardRenderer {
   constructor(container, game) {
     this.game = game;
@@ -83,7 +108,7 @@ export class BoardRenderer {
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x101218);
-    this.scene.fog = new THREE.Fog(0x101218, 30, 60);
+    this.scene.fog = new THREE.Fog(0x101218, 34, 80);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -118,9 +143,60 @@ export class BoardRenderer {
     this._riftMats = [];
     this._dropAnims = [];
 
+    // Bloom postprocessing — the emissive rift, capturable pulses, and gold
+    // capitals all pop through this. Cheap on a board this size.
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this._bloom = new UnrealBloomPass(
+      new THREE.Vector2(container.clientWidth, container.clientHeight), 0.55, 0.5, 0.6);
+    this.composer.addPass(this._bloom);
+    this.composer.addPass(new OutputPass()); // restores sRGB/tonemap after bloom
+
+    this._buildBackdrop();
+    this._buildRiftMotes();
     this._buildBoard();
     this._bindEvents();
     this._animate();
+  }
+
+  // Arena environment dome (MTG-Arena/Hearthstone-style battlefield backdrop)
+  _buildBackdrop() {
+    const tex = _texLoader.load('../assets/backdrop.jpg', (t) => { t.colorSpace = THREE.SRGBColorSpace; });
+    const geo = new THREE.SphereGeometry(60, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.62);
+    const mat = new THREE.MeshBasicMaterial({
+      map: tex, side: THREE.BackSide, fog: false,
+      color: 0x8890a0, // dimmed so the board stays the hero
+    });
+    const dome = new THREE.Mesh(geo, mat);
+    dome.position.set(this.center.x, -4, this.center.z);
+    this.scene.add(dome);
+  }
+
+  // Drifting magenta motes above the rift seam (shader-free particle glow)
+  _buildRiftMotes() {
+    const positions = [];
+    this._moteHomes = [];
+    for (let c = 0; c < CONFIG.GRID_W; c++) {
+      for (let r = 0; r < CONFIG.GRID_H; r++) {
+        if (!this.game.board[c][r].rift) continue;
+        const { x, z } = worldPos(c, r);
+        for (let i = 0; i < 5; i++) {
+          const px = x + (Math.random() - 0.5) * 1.4;
+          const pz = z + (Math.random() - 0.5) * 1.4;
+          const py = 0.3 + Math.random() * 1.8;
+          positions.push(px, py, pz);
+          this._moteHomes.push({ x: px, y: py, z: pz, phase: Math.random() * Math.PI * 2 });
+        }
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({
+      color: 0xe879f9, size: 0.14, transparent: true, opacity: 0.85,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    this._motes = new THREE.Points(geo, mat);
+    this.scene.add(this._motes);
   }
 
   _boardCenter() {
@@ -217,10 +293,33 @@ export class BoardRenderer {
       group.add(crown);
     }
 
+    // Standing billboard (the PS1 sprite trick): subject rises from the tile,
+    // always facing the camera, gently bobbing.
+    const bbName = tile.capital ? (tile.owner === 1 ? 'CAPITAL_VERDANT' : 'CAPITAL_UMBRAL') : tile.type;
+    const bb = new THREE.Sprite(new THREE.SpriteMaterial({
+      transparent: true, depthWrite: false, opacity: 0.98,
+    }));
+    bb.center.set(0.5, 0.06); // anchored near its feet
+    bb.scale.set(0.001, 0.001, 1);
+    bb.position.y = h - 0.02;
+    bb.visible = false;
+    spriteTexture(bbName, (tex) => {
+      bb.material.map = tex;
+      bb.material.needsUpdate = true;
+      const s = tile.capital ? 2.4 : 1.85;
+      bb.scale.set(s, s, 1);
+      bb.visible = true;
+    });
+    group.add(bb);
+
     const sprite = makeTextSprite({ num: '', label: '' });
-    sprite.position.y = h + (tile.capital ? 1.15 : 0.95);
+    sprite.position.y = h + (tile.capital ? 2.5 : 2.0);
     group.add(sprite);
-    group.userData = { tileId: tile.id, sprite, prism, mat, baseH: h, baseColor: this._tileColor(tile) };
+    group.userData = {
+      tileId: tile.id, sprite, prism, mat, baseH: h,
+      baseColor: this._tileColor(tile),
+      billboard: bb, bobPhase: (tile.id * 1.7) % (Math.PI * 2), bobBase: h - 0.02,
+    };
 
     const { x, z } = worldPos(col, row);
     group.position.set(x, 0, z);
@@ -288,6 +387,16 @@ export class BoardRenderer {
           }
         }
         this._updateTileSprite(group, tile, c, r);
+      }
+    }
+    // Ruins: scarred ground darkens toward ember-brown as bodies pile up.
+    const RUIN_COLORS = [0x23262e, 0x2d211d, 0x3a2419, 0x452718];
+    for (let c = 0; c < CONFIG.GRID_W; c++) {
+      for (let r = 0; r < CONFIG.GRID_H; r++) {
+        const cell = this.game.board[c][r];
+        if (cell.rift) continue;
+        const mesh = this.cellMeshes[c][r];
+        mesh.userData.baseMat.color.setHex(RUIN_COLORS[Math.min(cell.ruins, 3)]);
       }
     }
     for (const [id, group] of this.tileMeshes) {
@@ -409,6 +518,7 @@ export class BoardRenderer {
       this.camera.aspect = w / h;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(w, h);
+      this.composer.setSize(w, h);
     });
   }
 
@@ -437,6 +547,23 @@ export class BoardRenderer {
       anim.done = p >= 1;
     }
     this._dropAnims = this._dropAnims.filter(a => !a.done);
-    this.renderer.render(this.scene, this.camera);
+    // billboards idle-bob (the "alive" read)
+    for (const g of this.tileMeshes.values()) {
+      const u = g.userData;
+      if (u.billboard?.visible) {
+        u.billboard.position.y = u.bobBase + 0.05 * Math.sin(t * 1.6 + u.bobPhase);
+      }
+    }
+    // rift motes drift
+    if (this._motes) {
+      const pos = this._motes.geometry.attributes.position;
+      for (let i = 0; i < this._moteHomes.length; i++) {
+        const m = this._moteHomes[i];
+        pos.setY(i, m.y + 0.25 * Math.sin(t * 0.9 + m.phase));
+        pos.setX(i, m.x + 0.08 * Math.sin(t * 0.6 + m.phase * 2));
+      }
+      pos.needsUpdate = true;
+    }
+    this.composer.render();
   }
 }

@@ -5,8 +5,9 @@ import { mulberry32, hashSeed } from './core/rng.js';
 import { BoardRenderer } from './render/scene.js';
 import { Hud } from './ui/hud.js';
 import { sound } from './ui/sound.js';
+import { music } from './ui/music.js';
 import { initDeckbuilder, loadSavedDeck } from './ui/deckbuilder.js';
-import { KEYWORDS } from './data/tiles.js';
+import { KEYWORDS, RITE_INFO } from './data/tiles.js';
 import { riftNeighborCount } from './core/board.js';
 import { NetSession, generateRoomCode } from './net/supabase.js';
 
@@ -231,6 +232,25 @@ function updateBoardTip(hit) {
   boardTip.style.display = 'block';
 }
 
+// Hand-card reminder tooltip (same panel, card-flavored content)
+function showCardTip(tile) {
+  if (!tile) { boardTip.style.display = 'none'; return; }
+  const isRite = tile.kind === 'rite';
+  const kwHtml = isRite
+    ? `<div class="bt-kw"><b>✦ Rite</b> — ${RITE_INFO[tile.type]?.desc || 'Cast as your turn\'s action.'}<br>
+       <i>Casting consumes your placement for the turn.</i></div>`
+    : tile.keywords.length
+      ? `<div class="bt-kw">${tile.keywords.map(k =>
+          `<div><b>${KEYWORDS[k]?.name || k}</b> — ${KEYWORDS[k]?.desc || ''}</div>`).join('')}</div>`
+      : '<div class="bt-kw"><i>No keywords — pure influence.</i></div>';
+  boardTip.innerHTML = `
+    <div class="bt-title">${tile.type.replace(/_/g, ' ')}</div>
+    <div>${isRite ? 'rite' : `influence <span class="bt-inf">${tile.influence}</span>`} · ${tile.rarity}</div>
+    ${kwHtml}
+    ${!isRite ? '<div class="bt-stack"><i>Place next to your tiles — or on one of your own to Ascend.</i></div>' : ''}`;
+  boardTip.style.display = 'block';
+}
+
 function handleHover(hit) {
   const g = game;
   updateBoardTip(hit);
@@ -264,6 +284,9 @@ function startGame(opts) {
   if (mode === 'bot') hud.viewPlayer = 1;
   if (mode === 'mp') hud.viewPlayer = myPlayer;
   hud.bindSound(sound);
+  hud.bindMusic(music);
+  // your reality's theme: Umbral when you're P2 online, Verdant otherwise
+  music.play(mode === 'mp' && myPlayer === 2 ? 'umbral' : 'verdant');
 
   if (mode === 'mp') {
     net.onAction = applyRemoteAction;
@@ -275,6 +298,7 @@ function startGame(opts) {
 
   renderer.onCellClick = handleClick;
   renderer.onCellHover = handleHover;
+  hud.onCardHover = showCardTip;
   hud.onSelectTile = (i) => {
     hud.selectedIndex = i;
     const card = i !== null && game.hands[game.currentPlayer][i];
@@ -319,6 +343,11 @@ function startGame(opts) {
 }
 
 // ─── Menu wiring ────────────────────────────────────────────────────────
+
+// Menu theme starts on the first user gesture anywhere in the menu
+document.getElementById('menu').addEventListener('pointerdown', () => {
+  if (!game) music.play('menu');
+}, { once: false });
 
 document.getElementById('hotseatBtn').onclick = () => startGame({ mode: 'hotseat' });
 document.getElementById('botBtn').onclick = () => {

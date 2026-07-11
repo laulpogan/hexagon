@@ -49,4 +49,10 @@ export const CONFIG = {
   // tile to build upward. Captures peel one tier (attacker card bounces).
   TIER_MAX: 3,          // total height cap (base + 2)
   TIER_BONUS: 1,        // influence per buried tier
+
+  // Ruins (round 4): every destroyed tile scars its cell. Tiles standing on
+  // scarred ground lose 1 influence per ruin layer (capped) — recapture
+  // ping-pong decays naturally. ATTUNED feeds on scars and is immune.
+  RUIN_PENALTY: 1,
+  RUIN_CAP: 2,
 };

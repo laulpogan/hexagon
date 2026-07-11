@@ -135,6 +135,11 @@ export class Game {
     }
     const riftN = riftNeighborCount(this.board, col, row);
     total += riftN * CONFIG.RIFT_AURA * (this.hasKeyword(tile, 'ATTUNED') ? 1 : -1);
+    // Ruins: scarred ground drains its occupant; ATTUNED is immune.
+    const cell = this.cellAt(col, row);
+    if (cell.ruins > 0 && !this.hasKeyword(tile, 'ATTUNED')) {
+      total -= Math.min(cell.ruins, CONFIG.RUIN_CAP) * CONFIG.RUIN_PENALTY;
+    }
     return Math.max(0, total);
   }
 
@@ -299,17 +304,16 @@ export class Game {
       return result;
     }
 
-    // Peel (round 3): capturing a stack only removes its top tier. The
+    // Peel (round 3): capturing a tower only removes its top tier. The
     // attacker's tile bounces to hand — sieging a tower is a war of turns.
-    // Mixed stacks (round 3.5): the tile beneath resurfaces under its
-    // ORIGINAL owner — peeling a conqueror liberates the buried tile.
+    // The destroyed tier scars the cell (round 4: ruins).
     if (target && cell.stack.length > 0) {
       cell.tile = cell.stack.pop();
+      cell.ruins++;
       this.hands[player].push(tile);
       this.stats[player].captured++;
-      const freed = cell.tile.owner !== target.owner ? ` — ${cell.tile.type} is liberated` : '';
-      this._log(player, `peeled ${target.type} off the stack at (${col},${row})${freed}`);
-      const result = { ok: true, peeled: true, removed: target, liberated: cell.tile.owner === player };
+      this._log(player, `peeled ${target.type} off the tower at (${col},${row}) — the ground is scarred`);
+      const result = { ok: true, peeled: true, removed: target };
       this._afterAction();
       return result;
     }
@@ -327,18 +331,15 @@ export class Game {
     }
 
     const captured = target || null;
+    cell.tile = tile;
+    this.stats[player].placed++;
     if (captured) {
-      // Subjugation (round 3.5): the captured tile is BURIED under yours —
-      // a mixed stack. It feeds your tower (+1 tier) but lives on beneath;
-      // peeling your tower later liberates it back to its owner.
-      cell.stack.push(captured);
-      cell.tile = tile;
-      this.stats[player].placed++;
+      // Round 4: captures REPLACE the enemy tile — but the fallen tile scars
+      // the ground (ruins). Conquered land is weaker land.
+      cell.ruins++;
       this.stats[player].captured++;
-      this._log(player, `subjugated enemy ${captured.type} at (${col},${row}) — ${tile.type} stands atop it`);
+      this._log(player, `captured enemy ${captured.type} at (${col},${row}) — the ground is scarred`);
     } else {
-      cell.tile = tile;
-      this.stats[player].placed++;
       this._log(player, `placed ${tile.type} at (${col},${row})`);
     }
     fireOnPlacement(this, tile, col, row, captured); // ETB-class hooks (SUSTAIN/TRAMPLE)
@@ -464,6 +465,7 @@ export class Game {
       col: cell.col, row: cell.row, rift: cell.rift,
       tile: cell.tile ? { ...cell.tile, keywords: [...cell.tile.keywords] } : null,
       stack: cell.stack.map(t => ({ ...t, keywords: [...t.keywords] })),
+      ruins: cell.ruins,
     })));
     g.phase = this.phase;
     g.currentPlayer = this.currentPlayer;

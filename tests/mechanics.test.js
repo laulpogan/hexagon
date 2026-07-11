@@ -152,8 +152,8 @@ test('capitals cannot be stacked on', () => {
   assert.equal(g.canPlace(1, g.hands[1][0], 4, 0), false);
 });
 
-test('subjugation: captures bury the enemy tile under yours (mixed stack)', () => {
-  const g = playState('subjugate');
+test('ruins: captures replace the tile and scar the cell', () => {
+  const g = playState('ruins');
   g.board[5][0].tile = g._makeTile('SKIRMISHER', 1);   // P1 victim
   const ns = neighborCoords(5, 0).filter(([c, r]) => !g.board[c][r].rift);
   g.board[ns[0][0]][ns[0][1]].tile = g._makeTile('COLOSSUS', 2); // crusher
@@ -162,34 +162,41 @@ test('subjugation: captures bury the enemy tile under yours (mixed stack)', () =
   const res = g.placeFromHand(2, 0, 5, 0);
   assert.equal(res.captured.type, 'SKIRMISHER');
   const cell = g.board[5][0];
-  assert.equal(cell.tile.owner, 2, 'conqueror on top');
-  assert.equal(cell.stack.length, 1, 'victim buried beneath');
-  assert.equal(cell.stack[0].owner, 1, 'buried tile keeps its owner');
-  // tier bonus counts the subjugated foundation
-  assert.equal(g.relativeInfluence(5, 0) >= CONFIG.TIER_BONUS, true);
+  assert.equal(cell.tile.owner, 2, 'conqueror takes the cell');
+  assert.equal(cell.stack.length, 0, 'no mixed stacks');
+  assert.equal(cell.ruins, 1, 'the ground is scarred');
 });
 
-test('liberation: peeling a conqueror resurfaces the buried tile to its owner', () => {
-  const g = playState('liberate');
-  // Build the mixed stack directly: P1 tile buried under P2 tile
+test('ruins drain the occupant (capped), ATTUNED is immune', () => {
+  const g = playState('ruin-drain');
   const cell = g.board[5][0];
+  cell.ruins = 3; // above cap
+  cell.tile = g._makeTile('THICKET', 1);              // base 2
+  assert.equal(g.relativeInfluence(5, 0), Math.max(0, 2 - CONFIG.RUIN_CAP * CONFIG.RUIN_PENALTY));
+  cell.tile = g._makeTile('RIFTWALKER', 1);           // ATTUNED base 2
+  assert.equal(g.relativeInfluence(5, 0) >= 2, true, 'attuned immune to scars');
+});
+
+test('peel and SUNDER both scar the ground', () => {
+  const g = playState('scar-sources');
+  const cell = g.board[5][0];
+  // tower peel
   cell.stack.push(g._makeTile('SKIRMISHER', 1));
-  cell.tile = g._makeTile('THICKET', 2);
-  // P1 crushes the tower top and peels it
+  cell.tile = g._makeTile('THICKET', 1);
   const ns = neighborCoords(5, 0).filter(([c, r]) => !g.board[c][r].rift);
-  g.board[ns[0][0]][ns[0][1]].tile = g._makeTile('COLOSSUS', 1);
-  g.currentPlayer = 1; g.placementsLeft = 1;
-  if (g.isCapturable(5, 0, 1)) {
-    g.hands[1] = [g._makeTile('OUTCROP', 1)];
-    const res = g.placeFromHand(1, 0, 5, 0);
-    assert.equal(res.peeled, true);
-    assert.equal(res.liberated, true);
-    assert.equal(cell.tile.type, 'SKIRMISHER');
-    assert.equal(cell.tile.owner, 1, 'territory returns to its people');
-    assert.equal(g.hands[1].length, 1, 'attacker card bounced');
-  } else {
-    throw new Error('setup: tower top should be capturable');
-  }
+  g.board[ns[0][0]][ns[0][1]].tile = g._makeTile('COLOSSUS', 2);
+  if (g.isCapturable(5, 0, 2)) {
+    g.hands[2] = [g._makeTile('OUTCROP', 2)];
+    g.placeFromHand(2, 0, 5, 0);
+    assert.equal(cell.ruins, 1, 'peel scars');
+    assert.equal(cell.tile.type, 'SKIRMISHER', 'tower shrinks, owner keeps it');
+  } else { throw new Error('setup'); }
+  // sunder
+  const g2 = playState('scar-sunder');
+  g2.board[2][0].tile = g2._makeTile('LANTERN', 1);
+  g2.hands[2] = [g2._makeTile('SUNDER', 2)];
+  g2.castRite(2, 0, 2, 0);
+  assert.equal(g2.board[2][0].ruins, 1, 'sunder scars');
 });
 
 console.log('rites');

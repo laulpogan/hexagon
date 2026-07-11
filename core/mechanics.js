@@ -106,8 +106,9 @@ export const RITE_EFFECTS = {
     resolve(game, player, col, row) {
       const cell = game.board[col][row];
       const t = cell.tile;
-      // Towers lose their top tier; the tile beneath resurfaces (its owner rides with it).
+      // Towers lose their top tier; the destroyed tile scars the cell.
       cell.tile = cell.stack.length ? cell.stack.pop() : null;
+      cell.ruins++;
       game._log(player, `cast SUNDER — ${t.type} at (${col},${row}) is unmade`);
       return { destroyed: t };
     },

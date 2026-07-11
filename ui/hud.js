@@ -24,6 +24,7 @@ export class Hud {
       <div id="hudControls">
         <button id="passBtn" title="End turn without placing">Pass</button>
         <button id="soundBtn" title="Toggle sound">🔊</button>
+        <button id="musicBtn" title="Toggle music">🎵</button>
       </div>
       <div id="hintBar"></div>
       <div id="winOverlay" class="hidden"></div>
@@ -36,6 +37,12 @@ export class Hud {
     const btn = this.root.querySelector('#soundBtn');
     btn.textContent = sound.enabled ? '🔊' : '🔇';
     btn.onclick = () => { btn.textContent = sound.toggle() ? '🔊' : '🔇'; };
+  }
+
+  bindMusic(music) {
+    const btn = this.root.querySelector('#musicBtn');
+    btn.style.opacity = music.enabled ? '1' : '0.4';
+    btn.onclick = () => { btn.style.opacity = music.toggle() ? '1' : '0.4'; };
   }
 
   playerLabel(p) {
@@ -99,6 +106,8 @@ export class Hud {
       if (isRite) card.title = RITE_INFO[tile.type]?.desc || 'A rite — cast it as your turn\'s action.';
       card.onclick = () => this.onSelectTile && this.onSelectTile(i === this.selectedIndex ? null : i);
       card.oncontextmenu = (e) => { e.preventDefault(); this.onDiscard && this.onDiscard(i); };
+      card.onmouseenter = () => this.onCardHover && this.onCardHover(tile);
+      card.onmouseleave = () => this.onCardHover && this.onCardHover(null);
       strip.appendChild(card);
     });
   }
