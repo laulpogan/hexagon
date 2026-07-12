@@ -15,7 +15,7 @@ re-sweep vs RULES-7 baseline AND prior phase. Determinism: NO Math.random/Date.n
 |---|---|---|---|
 | **P0** instrument | Fun Index + baseline | computes from log, A/B stable ±1.0, baseline recorded | ✅ DONE (38.1) |
 | **P1** dead opening | Seam Advances + frontier-anchored road legality (connectivity only, NO chain-slide) | first-cap median ≤6 · zero-cap ≤5% · ply 25-45 · P1 48-52% | ⚠️ BUILT, GATE FAILED → ships OFF. Seed-paired n=300 + arena n=120×3: seam+frontier crush comeback (19→8% greedy, 33→13% policy), firstCap unmoved/worse, Fun 38.2→34.3. Squeeze helps the leader; comeback lever (severance) is P2. Machinery+tests+UI live behind knobs (SEAM_MAX_RINGS:0, FRONTIER_ANCHOR:false); RE-EVALUATE INSIDE P2 with severance present. Retrained (18-feat, fitness .688). OFF-parity proven (38.1 = baseline). |
-| **P2** roads full | chain-slide + loop-closure×2 + severance + road-rush bot arm | road-rush bot 42-58% · captures ≥ RULES-7 · Killer+Permanence up · ply held | ▫ |
+| **P2** roads full | chain-slide + loop-closure×2 + severance + road-rush bot arm | road-rush bot 42-58% · captures ≥ RULES-7 · Killer+Permanence up · ply held | ⚠️ BUILT, GATE FAILED → ships OFF (ROAD_PRESSURE_ON:false). w10 road-rush 68.8%/72.5% vs tuned greedy/policy, 67-70% even at weakest knobs — momentum-as-blob-count structurally rewards pure expansion (risk #3). Mirror = 0.5-capture turtle-farm; K down every pairing. BUT severance lifted comeback 23.3→27.5% (lever works). Machinery/tests/UI live behind knob. Fix target for a future round: shape-sensitive momentum (frontline-only or longest-path). Seam re-test WITH severance: comeback still crushed (16.3%/11.3%) — seam stays OFF. |
 | **P3** action stages | Cascade + Vanguard (multi-placement) | median placements/turn >1 · SkillDepth into 65-85% · ply/balance held | ▫ (draft plan: RULES8_PHASE1_CASCADE.md — RENAME, it's P3 not P1) |
 | **P4** traps & telegraphs | Wards (face-down capture-trap) + Sagas/On-Reveal | Fun Index ↑ vs P3 · comeback ↑ · balance 48-52% · flag hidden-info ranked blocker | ▫ |
 | **P5** interaction & climax | Threshold beat (capture-only FAST window) + escalating collapse + sudden-death | MP relay replay-identical · silent-ending share ≪70% · U-late ↑ · ply held | ▫ |
@@ -73,3 +73,18 @@ nodes (unscheduled).
   capital exemption, tally pressure-free, uniform refresh rule, exact-BFS features.
   Baseline pinned (seed 'p2base' n=300): fun 39.1 · K .541 · P .880 · capt 5.5.
   Round 2 fold-verification in flight. Build NOT started.
+- 2026-07-11 (P2 round CLOSED): gate #1 cleared rev 3 (3 rounds) → built (core/roads.js,
+  102/102 tests, f[18]/f[19] retrain, roadrush arm, sweep_p2/arena_p2, knob-gated UI,
+  browser-verified both states) → measured → GATE FAILED structurally (see P2 row) →
+  ships OFF, retrained at defaults (.625), OFF-parity byte-exact (39.1). Committed
+  89131c3 (build) + 9c84030 (flip) → pushed limen-design (operator go). Learnings
+  carried: severance = real comeback lever; momentum formula must be shape-sensitive;
+  greedy mirrors are road-blind (tuned-agent arena is the real instrument).
+  NEXT: P3 Cascade + Vanguard — the multi-placement round (median placements/turn >1),
+  the operator's felt-experience ask (2026-07-11: "tight multi-tile combat").
+- 2026-07-11 (P2 gate #2 CLOSED): both reviewers back — OFF-parity PASS zero findings
+  (byte-identical RULES-7, n=300 exact baseline reproduce); ON-wiring CLEAR 0 BLOCKERs,
+  verdict upheld (knob confirmed ON at measurement commit via git history). 1 MAJOR
+  fixed: arena_p2/sweep_p2 ON arms now patch ROAD_PRESSURE_ON:true explicitly (were
+  ambient-default → inert from HEAD; landmine for the future shape-sensitive-momentum
+  round). 2 MINORs fixed (doc arg-shape, looped% label). 102/102. P2 fully closed.

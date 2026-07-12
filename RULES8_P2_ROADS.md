@@ -57,7 +57,8 @@ arms inside this round; R4/R5/R6 as committed metrics.
   revisit then. Roads still enable capital capture the honest way (pressure the escorts).
 - **A7 ⟲ NEW — Pressure stays OUT of the influence-victory tally** (red-team M5: passive
   score deflation double-dip; Riftlight precedent in reverse). `relativeInfluence` gains
-  an options arg `{roadPressure:true}`; `boardSummary()` passes false. Combat feels
+  a positional boolean `withRoadPressure = true` (as-built; plan said options arg —
+  gate #2 MINOR); `boardSummary()` passes false. Combat feels
   pressure; the ~70%-of-games silent tally does not. Consequence (noted, accepted): K/P
   read severance only through the captures it enables, not through roadPower swings —
   the gate measures outcomes, not intermediates.
@@ -109,7 +110,7 @@ ONCE per real board mutation (~1/ply). `clone()` **copies** `cell.linked`,
 (determinism M5/M8: clone is the hot path; flags are correct by invariant).
 
 ### 2. Chain-slide pressure (the surge) ⟲
-In `relativeInfluence(col,row,{roadPressure=true})` for defender d, enemy e:
+In `relativeInfluence(col,row,withRoadPressure=true)` for defender d, enemy e:
 ```
 contact  = max over e-owned linked cells n adjacent to (col,row) of
            ( n.roadPower × (n.loopNear ? LOOP_CLOSURE_MULT : 1) ), else 0
@@ -294,3 +295,39 @@ SILENT at OFF. ⟲ T16 capital exempt from pressure as defender. Existing 85 sta
   the seam" hypothesis NOT confirmed in road-blind mirrors. R4: 98–100% pre-pass-leader
   wins everywhere (lead is sticky at baseline too). Decisive gate = tuned/adversarial
   arena n=120 (in flight): roadrush band + policy/search ON-vs-OFF.
+- 2026-07-11 (GATE VERDICT — FAILED, ships OFF): arena n=120 — roadrush w2 35-36%,
+  w5 46-54% ✓, **w10 68.8% vs greedy / 72.5% vs policy** (band broken); probe at
+  weakest knobs (DIV 4/CAP 2) still 67-70% → STRUCTURAL: momentum-as-blob-count
+  rewards pure expansion; no swept knob fixes it. Roadrush mirror = 0.5 capt/game
+  turtle-farm (the red-team's mirror-farm prediction). K regressed every ON-vs-OFF
+  pairing (.597→.561 policy, .753→.667 search2). Positives: captures up (4.9→6.0
+  policy mirror), P up, **severance lifted comeback 23.3→27.5%** — the lever works,
+  the momentum formula fails. ROAD_PRESSURE_ON:false, retrained at defaults (.625),
+  OFF-parity byte-exact, 102/102. Commits 89131c3 + 9c84030 pushed (operator go).
+  UI layer browser-verified both knob states by build agent (in-situ, zero JS errors,
+  zero copy leak at OFF). Gate #2 built-thing review: two scoped reviewers dispatched.
+  Fix target logged for a future round: shape-sensitive momentum.
+- 2026-07-11 (GATE #2, reviewer 1/2 — OFF-parity regression): **PASS, zero findings.**
+  All 8 hunt items clean: every consumer of derived road fields knob-gated
+  (roadPressure→0, SEVERANCE log gated, scene/hud/tooltip/sound gated); f[18]/f[19]
+  gated + weights file name-and-order aligned; no raw-state deserialize path exists
+  (MP = action replay); boardSummary sole 3-arg relativeInfluence call; funIndex/
+  dramaIndex read none of the new tracker fields; P1 seam machinery a true no-op at
+  SEAM_MAX_RINGS:0; _SEV_OFF absent from default CONFIG; campaign snapshotConfig
+  identity op. Empirical: 102/102 tests; n=300 'p2base' reproduces baseline EXACT
+  (fun 39.1 / capt 5.5 / turns 32.1). No instruction-like text in diff. Reviewer 2
+  (ON-wiring + instrument validity) still in flight.
+- 2026-07-11 (GATE #2, reviewer 2/2 — ON-wiring + instrument validity): **CLEAR,
+  0 BLOCKERs; verdict explicitly upheld** ("would any finding overturn 68.8/72.5%?"
+  → No; git history confirms ROAD_PRESSURE_ON was true at measurement commit 89131c3).
+  Clean: plan-vs-built (all rev-3 points as specced), seed-pair seat-flip correct,
+  roadrush clone-scoring leak-free (deep clone, symmetric with policy), refreshRoads
+  reset-once + severance/enclosure hand-traced, _SEV_OFF no cross-player contamination,
+  17 tests match names, 102/102 re-run independently. **1 MAJOR (FIXED)**: arena_p2/
+  sweep_p2 ON-labeled arms relied on CONFIG's ambient default — inert from HEAD after
+  the OFF flip (reviewer re-ran empirically: press 0%, w10 46.7%/90.0% garbage numbers).
+  Fixed: every ON arm now patches {ROAD_PRESSURE_ON:true} explicitly; verified from
+  HEAD (press 35-56% on ON arms, 0% on OFF). 2 MINOR (FIXED): A7 doc said options arg,
+  code is positional withRoadPressure boolean (doc corrected); looped%/press% are
+  per-ply-sample rates (comment added). **P2 ROUND CLOSED — both gate #2 reviewers
+  PASS/CLEAR, findings folded.**

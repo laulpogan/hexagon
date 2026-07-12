@@ -22,6 +22,7 @@ function diag(trackers) {
   const capWins = decided.filter(t => t.winReason === 'capital');
   const capPlies = capWins.map(t => t.turns).sort((x, y) => x - y);
   const med = a => a.length ? a[Math.floor(a.length / 2)] : '—';
+  // looped%/press% are per-ply-sample rates, not per-game "ever happened" rates
   let looped = 0, pressured = 0, samples = 0;
   const timeToCap = [];
   for (const t of trackers) {
@@ -59,17 +60,21 @@ const greedy = makeGreedy();
 const policy = loadTrainedPolicy();
 const search2 = makeSearch({ depth: 2 });
 
+// Every ON-labeled arm patches the knob explicitly — CONFIG's ambient default
+// ships false since 9c84030, so relying on it silently runs a pressure-inert
+// experiment (gate #2 reviewer finding).
 console.log('-- tuned agents, roads ON vs OFF (same agent, knob flipped between arms) --');
-pair('policy mirror ON', policy, policy);
+pair('policy mirror ON', policy, policy, { ROAD_PRESSURE_ON: true });
 pair('policy mirror OFF', policy, policy, { ROAD_PRESSURE_ON: false });
-pair('search2 mirror ON', search2, search2);
+pair('search2 mirror ON', search2, search2, { ROAD_PRESSURE_ON: true });
 pair('search2 mirror OFF', search2, search2, { ROAD_PRESSURE_ON: false });
 
 console.log('-- THE GATE: roadrush 42–58% vs tuned greedy AND policy --');
 for (const w of [2, 5, 10]) {
   const rr = makeRoadRush({ w });
-  pair(`roadrush(w${w}) vs greedy`, rr, greedy);
-  pair(`roadrush(w${w}) vs policy`, rr, policy);
+  pair(`roadrush(w${w}) vs greedy`, rr, greedy, { ROAD_PRESSURE_ON: true });
+  pair(`roadrush(w${w}) vs policy`, rr, policy, { ROAD_PRESSURE_ON: true });
 }
 console.log('-- degenerate-strategy check: roadrush mirror --');
-pair('roadrush(w5) mirror', makeRoadRush({ w: 5 }), makeRoadRush({ w: 5, name: 'roadrush-b' }));
+pair('roadrush(w5) mirror', makeRoadRush({ w: 5 }), makeRoadRush({ w: 5, name: 'roadrush-b' }),
+  { ROAD_PRESSURE_ON: true });

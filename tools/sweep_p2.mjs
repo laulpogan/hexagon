@@ -74,23 +74,27 @@ function row(name, patch) {
 }
 
 console.log(`n=${n} per arm, seed-paired ('p2base')  baseline: fun 39.1 K .541 P .880 capt 5.5 comeback 22.7%`);
+// ON-labeled arms patch the knob explicitly — CONFIG's ambient default ships
+// false since 9c84030; relying on it silently runs a pressure-inert experiment
+// (gate #2 reviewer finding).
+const ON = { ROAD_PRESSURE_ON: true };
 console.log('-- 6 arms --');
 row('OFF (parity)', { ROAD_PRESSURE_ON: false });
-row('ROADS', {});
-row('ROADS sev-off', { _SEV_OFF: true });
-row('ROADS+SEAM', { SEAM_MAX_RINGS: 2 });
-row('ROADS+SEAM+FRONTIER', { SEAM_MAX_RINGS: 2, FRONTIER_ANCHOR: true });
-row('ROADS+FRONTIER', { FRONTIER_ANCHOR: true });
+row('ROADS', { ...ON });
+row('ROADS sev-off', { ...ON, _SEV_OFF: true });
+row('ROADS+SEAM', { ...ON, SEAM_MAX_RINGS: 2 });
+row('ROADS+SEAM+FRONTIER', { ...ON, SEAM_MAX_RINGS: 2, FRONTIER_ANCHOR: true });
+row('ROADS+FRONTIER', { ...ON, FRONTIER_ANCHOR: true });
 
 if (runGrid) {
   console.log('-- knob grid (CAP=3 MULT=2): REACH × DIV --');
   for (const reach of [2, 3, 4]) {
     for (const div of [2, 3, 4]) {
-      row(`R${reach} D${div}`, { ROAD_CHAINSLIDE_REACH: reach, ROAD_MOMENTUM_DIV: div });
+      row(`R${reach} D${div}`, { ...ON, ROAD_CHAINSLIDE_REACH: reach, ROAD_MOMENTUM_DIV: div });
     }
   }
   console.log('-- CAP + MULT probes at defaults --');
-  row('CAP 2', { ROAD_PRESSURE_CAP: 2 });
-  row('CAP 4', { ROAD_PRESSURE_CAP: 4 });
-  row('MULT 1', { LOOP_CLOSURE_MULT: 1 });
+  row('CAP 2', { ...ON, ROAD_PRESSURE_CAP: 2 });
+  row('CAP 4', { ...ON, ROAD_PRESSURE_CAP: 4 });
+  row('MULT 1', { ...ON, LOOP_CLOSURE_MULT: 1 });
 }
