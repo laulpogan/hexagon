@@ -65,6 +65,8 @@
   }
   #turnBanner.turn-p1 { border-color: #3fae6a; box-shadow: 0 0 14px rgba(63,174,106,0.35); }
   #turnBanner.turn-p2 { border-color: #7c4dcc; box-shadow: 0 0 14px rgba(124,77,204,0.35); }
+  /* R8/P3: Vanguard holder marker inside #turnBanner (ui/hud.js, knob-gated) */
+  .bt-vanguard { color: #f2c14e; font-weight: bold; }
 
   /* R8/P2: momentum HUD — small persistent per-player readout, top-left
      (mirrors #hudLog's top-right placement). Knob-gated in ui/hud.js. */
@@ -88,6 +90,15 @@
     position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
     display: flex; gap: 10px;
   }
+  /* R8/P3: Cascade placements-left pips, just above the hand — visible only
+     while a cascade turn is live (ui/hud.js gates it, knob-gated). */
+  #cascadePips {
+    position: absolute; bottom: 154px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px;
+  }
+  #cascadePips .pip { width: 10px; height: 10px; border-radius: 50%; background: #3a4152; }
+  #cascadePips .pip-spent { background: #6b7488; }
+  #cascadePips .pip-active { background: #f2c14e; box-shadow: 0 0 8px rgba(242,193,78,0.8); }
   .card {
     width: 108px; min-height: 130px; padding: 9px 8px; border-radius: 10px;
     background: linear-gradient(180deg, #232836, #171b26);
@@ -454,13 +465,14 @@
         <li>Capture the enemy <b>capital ♛</b> — or, when both sides run out of cards, hold more <b>total influence</b> on the board (including <span style="color:#e879f9">Riftlight</span>, below).</li>
       </ul>
 
-      <h3>YOUR TURN — one action</h3>
+      <h3 id="helpTurnTitle">YOUR TURN — one action</h3>
       <ul>
         <li><b>Place</b> a card on an empty hex touching one of your tiles (<i>Scout</i> cards ignore this).</li>
         <li><b>Capture:</b> an enemy tile showing <b style="color:#ff6b6b">0</b> (red ring) is in revolt — but you can only take it if you already have a tile <b>next to it</b>. Your card lands <b>on top</b>: the old tile is buried beneath it, forever, and your card is spent.</li>
         <li><b>Ascend:</b> place onto your <i>own</i> tile to build height. Height is position, not power — see HIGH GROUND.</li>
         <li><b>Cast a rite ✦:</b> select the rite card, then click a highlighted target.</li>
         <li>Extras: right-click a card once per turn to discard + redraw. Pass is allowed only when you have no legal move.</li>
+        <li id="helpCascadeNote" class="hidden"><b>Cascade:</b> a card with this keyword grants +1 placement the instant it lands — chain drops up to <b>3 actions</b> in one turn before it passes.</li>
       </ul>
 
       <h3>INFLUENCE — the number on every tile</h3>
@@ -483,6 +495,15 @@
         <li><b>Riftlight:</b> at the final count, every cell you hold on or beside the rift adds <b>+2</b> to your influence total (up to +8). The ground nearest the wound decides which world is true.</li>
         <li><b>The rift stirs</b> every 12 turns — telegraphed two turns ahead in the phase strip. While it rages, rift-adjacent tiles take an extra hit (Attuned feed on it instead).</li>
       </ul>
+
+      <div id="helpVanguardSection" class="hidden">
+        <h3>⚑ VANGUARD BOUNTY</h3>
+        <ul>
+          <li>Each <b>round</b> (a Verdant turn + an Umbral turn) one side holds the <b>Vanguard</b> — it alternates every round, Verdant first.</li>
+          <li>The holder's <b>own first capture</b> of the round draws an extra card — a reward for striking first, not a lock on captures. It changes nothing about what you're allowed to capture.</li>
+          <li>Watch the <span class="bt-vanguard">⚑</span> in the turn banner to see who holds it this round.</li>
+        </ul>
+      </div>
 
       <h3>KEYWORDS</h3>
       <div id="helpKeywords"></div>

@@ -213,7 +213,9 @@ function handleClick({ col, row }) {
   if (isRite) sound.rift();
   hud.selectedIndex = null;
   renderer.setPreviewTile(null);
-  hud.hint('');
+  // R8/P3: cascade toast — reuses the existing hint bar (no new UI surface);
+  // '' is the exact pre-P3 clear when the knob is off or nothing fired.
+  hud.hint(CONFIG.CASCADE_ON && g.cascadeFiredThisPly ? '⚡ +1 placement' : '');
   if (res.wardBlocked) sound.ward();
   else if (res.won) { /* handled below */ }
   else if (res.captured) sound.capture();
@@ -472,7 +474,16 @@ function startGame(opts) {
   renderer.onWow = () => sound.perfectCapture();
   renderer.onSeverance = () => sound.sever(); // R8/P2
   renderer.onLoopClosure = () => sound.loop(); // R8/P2
-  hud.onCardHover = showCardTip;
+  renderer.onCascade = () => sound.chain();         // R8/P3
+  renderer.onVanguardBounty = () => sound.bounty(); // R8/P3
+  hud.onCardHover = (tile) => {
+    showCardTip(tile);
+    // R8/P3: cascade hover hint — reuses the existing hint bar (the kw badge
+    // tooltip already shows the card-design reminder text on its own).
+    if (CONFIG.CASCADE_ON && tile?.keywords?.includes('CASCADE')) {
+      hud.hint('⟳ Cascade: place 1 more this turn');
+    }
+  };
   hud.onSelectTile = (i) => {
     hud.selectedIndex = i;
     const card = i !== null && game.hands[game.currentPlayer][i];
@@ -600,6 +611,16 @@ bootAuth(async (user) => {
 document.getElementById('helpKeywords').innerHTML =
   Object.values(KEYWORDS).map(k => `<div class="help-kw"><b>${k.name}</b> — ${k.desc}</div>`).join('') +
   Object.values(RITE_INFO).map(r => `<div class="help-kw"><b>${r.name} ✦</b> (rite) — ${r.desc}</div>`).join('');
+
+// R8/P3: how-to-play knob-gated rewrites — the pre-P3 copy ships byte-exact
+// when both knobs are off; rewritten once at boot, not per-render.
+if (CONFIG.CASCADE_ON) {
+  document.getElementById('helpTurnTitle').textContent = 'YOUR TURN — up to 3 actions';
+  document.getElementById('helpCascadeNote').classList.remove('hidden');
+}
+if (CONFIG.VANGUARD_ON) {
+  document.getElementById('helpVanguardSection').classList.remove('hidden');
+}
 
 // Multiplayer modal
 const mpOverlay = document.getElementById('mpOverlay');

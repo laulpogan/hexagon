@@ -64,6 +64,13 @@ class SoundSystem {
   // R8/P2: severance — a network cut, falling sawtooth (seam()'s style, one
   // stage shorter since it marks a local cut, not a board-wide tick).
   sever()      { this.tone(330, 0.12, 'sawtooth', 0.05); setTimeout(() => this.tone(180, 0.3, 'sawtooth', 0.06), 90); }
+  // R8/P3: Cascade — quick rising 3-note sine run, the "one more" cue.
+  // Same rising-sines family as loop() but lighter/faster since a chain can
+  // fire 2-3x in a single turn.
+  chain()      { this.tone(587.33, 0.09, 'sine', 0.05); setTimeout(() => this.tone(880, 0.1, 'sine', 0.05), 60); setTimeout(() => this.tone(1174.66, 0.14, 'sine', 0.06), 120); }
+  // R8/P3: Vanguard bounty claim — a bright confident stab (draws a card),
+  // shorter than unlock()'s 4-note arpeggio since this fires mid-combat.
+  bounty()     { this.chord([784, 1174.66, 1567.98], 0.28, 0.07); }
   unlock()     { this.chord([659.25, 830.61, 987.77, 1318.51], 0.4, 0.06); }
   victory()    {
     [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => this.tone(f, 0.4, 'sine', 0.08), i * 150));

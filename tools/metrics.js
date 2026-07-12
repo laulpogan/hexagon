@@ -26,6 +26,9 @@ export function createTracker() {
     roadSamples: [],                // R8/P2: [{turn, m1, m2, loop1, loop2, pressureActive}]
     placementRows: [],              // R8/P2: [{player, row, turn}] — R5 lateral-share input
     actionRows: [],                 // R8/P3: [{player, turn, kind}] place+rite — actions/turn
+    captureRows: [],                // R8/P3: [{player, turn, n}] — nova burst distribution
+    maxHand: 0,                     // R8/P3: peak hand size (bounty growth check)
+    bountyDraws: { 1: 0, 2: 0 },    // R8/P3: per-player claim share (from game.stats)
     endTrigger: null,               // R8/P2: 'double-pass' | 'exhaustion' — R4 slice key
     recaptureCounts: new Map(),     // "col,row" -> capture count on that cell
     maxTrophy: 0,                   // A11: highest trophyValue() observed on any placement
@@ -94,7 +97,11 @@ export function recordPly(tracker, game, player, action, capturedBefore, turnBef
     if (capturedNow > 0) {
       tracker.totalCaptures += capturedNow;
       if (tracker.firstCaptureTurn === null) tracker.firstCaptureTurn = turnBefore;
+      tracker.captureRows.push({ player, turn: turnBefore, n: capturedNow }); // R8/P3
     }
+  }
+  if (game.hands) {
+    tracker.maxHand = Math.max(tracker.maxHand, game.hands[1].length, game.hands[2].length);
   }
   if (game.boardSummary) {
     const s = game.boardSummary();
@@ -122,17 +129,27 @@ function dedupeByTurn(samples) {
   return out;
 }
 
-// R8/P3 gate arm 1: median actions per real turn across a batch.
-export function actionsPerTurnMedian(trackers) {
+// R8/P3 gate arm 1: actions per real turn across a batch — median (the
+// charter's letter), mean, and multi-action-turn share (the felt measure;
+// at 3-4 cascade copies per 20-card deck the median cannot cross 1).
+export function actionsPerTurn(trackers) {
   const counts = [];
   for (const t of trackers) {
     const byTurn = new Map();
     for (const a of t.actionRows || []) byTurn.set(a.turn, (byTurn.get(a.turn) || 0) + 1);
     counts.push(...byTurn.values());
   }
-  if (!counts.length) return 0;
+  if (!counts.length) return { median: 0, mean: 0, multiShare: 0 };
   counts.sort((a, b) => a - b);
-  return counts[Math.floor(counts.length / 2)];
+  return {
+    median: counts[Math.floor(counts.length / 2)],
+    mean: +(counts.reduce((a, b) => a + b, 0) / counts.length).toFixed(2),
+    multiShare: +(counts.filter(c => c >= 2).length / counts.length).toFixed(3),
+  };
+}
+
+export function actionsPerTurnMedian(trackers) {
+  return actionsPerTurn(trackers).median;
 }
 
 // Call once the game loop ends (game.phase === 'over' or the ply cap hit).
@@ -140,6 +157,9 @@ export function finishTracker(tracker, game) {
   tracker.winner = game.winner;
   tracker.winReason = game.winReason;
   tracker.endTrigger = game.endTrigger || null; // R8/P2: R4 bank-the-lead slice
+  if (game.stats?.[1]?.bountyDraws !== undefined) { // R8/P3
+    tracker.bountyDraws = { 1: game.stats[1].bountyDraws, 2: game.stats[2].bountyDraws };
+  }
   tracker.turns = game.turn;
   tracker.stalled = game.phase !== 'over';
   tracker.mutualTurtle = !tracker.riftTouched[1] && !tracker.riftTouched[2];

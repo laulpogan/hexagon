@@ -35,6 +35,7 @@ export class Hud {
       <div id="momentumHud" class="hidden"></div>
       <div id="hudLog"></div>
       <div id="handStrip"></div>
+      <div id="cascadePips" class="hidden"></div>
       <div id="hudControls">
         <button id="passBtn" title="End turn without placing">Pass</button>
         <button id="soundBtn" title="Toggle sound">🔊</button>
@@ -72,6 +73,7 @@ export class Hud {
     this._renderBanner();
     this._renderMomentum();
     this._renderHand();
+    this._renderCascadePips();
     this._renderLog();
   }
 
@@ -85,6 +87,27 @@ export class Hud {
     el.classList.remove('hidden');
     const m = this.game.roads.momentum;
     el.innerHTML = `<span class="p1name">⚡ ${m[1]}</span><span class="p2name">⚡ ${m[2]}</span>`;
+  }
+
+  // R8/P3: placements-left pips near the hand — visible only while a
+  // cascade has actually fired this turn (base 1-placement turns show
+  // nothing, same as pre-P3). Spent pips mark placementsThisTurn; a live
+  // pending grant (placementsLeft>0) lights the last one gold.
+  _renderCascadePips() {
+    const el = this.root.querySelector('#cascadePips');
+    const g = this.game;
+    if (!CONFIG.CASCADE_ON || g.phase !== 'play' || !g.cascadeFiredThisPly) {
+      el.classList.add('hidden');
+      el.innerHTML = '';
+      return;
+    }
+    el.classList.remove('hidden');
+    const total = g.placementsThisTurn + g.placementsLeft;
+    let pips = '';
+    for (let i = 1; i <= total; i++) {
+      pips += `<span class="pip ${i <= g.placementsThisTurn ? 'pip-spent' : 'pip-active'}"></span>`;
+    }
+    el.innerHTML = pips;
   }
 
   _renderBanner() {
@@ -102,9 +125,22 @@ export class Hud {
         : rs?.upcoming
           ? ` · <span class="bt-rift">the rift stirs soon…</span>`
           : '';
+      // R8/P3: Cascade — "place 1" is the exact pre-P3 copy, unchanged off
+      // or idle. placementsLeft never exceeds 1 by design (each grant is
+      // immediately re-armed 0→1 the same action it's spent, see
+      // RULES8_P3_CASCADE.md) — placementsThisTurn + placementsLeft is the
+      // only honest "how many placements this turn" running total.
+      const placeText = (CONFIG.CASCADE_ON && g.cascadeFiredThisPly)
+        ? `place ×${g.placementsThisTurn + g.placementsLeft}`
+        : 'place 1';
+      // R8/P3: Vanguard — small holder marker, relative to whoever's turn it is.
+      const holder = CONFIG.VANGUARD_ON ? g.vanguardHolder() : 0;
+      const vanguardTag = holder
+        ? ` · <span class="bt-vanguard">⚑ ${holder === g.currentPlayer ? 'you strike first' : 'they strike first'}</span>`
+        : '';
       el.innerHTML = (this.botMode && g.currentPlayer === 2
         ? `Turn ${g.turn} — ${this.playerLabel(2)} is thinking…`
-        : `Turn ${g.turn} — ${this.playerLabel(g.currentPlayer)} · draw 1, place 1 · right-click a card to discard (1×)`) + stirs;
+        : `Turn ${g.turn} — ${this.playerLabel(g.currentPlayer)} · draw 1, ${placeText} · right-click a card to discard (1×)`) + stirs + vanguardTag;
       el.className = `turn-p${g.currentPlayer}`;
     } else {
       el.innerHTML = `Game over`;

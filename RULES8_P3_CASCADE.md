@@ -229,3 +229,33 @@ pushing gameplay changes live.
   (⟲⟲⟲): turn-end discard clause needs `|| hands[player].length === 0` (hand emptied
   mid-cascade would reopen the double-pass bug); assigned to _afterAction with the
   hand-exhausted test case named. BUILD starts.
+- 2026-07-11 (BUILT + MEASURED — verdict to operator): core+agents+instruments+tests
+  (115/115, OFF-parity byte-exact 39.1/5.5/32.1 re-verified after every layer) +
+  retrain at full-ON (22 weights, fitness .719 — ladder restored: policy* 56.3% vs
+  greedy) + knob-gated UI browser-verified both states (UI agent also caught+fixed a
+  post-action-turn-read staleness bug in the chain trail — same class as C2).
+  MEASUREMENTS (sim n=300 'p2base' + arena n=120):
+  • CASCADE only: fun 41.9 (+2.8, best R8 result), K .541→.633, capt 5.8, turns 27.5,
+    P1 49.3%, comeback 22.3%, multi-action turns 14% (mean 1.16), burst 11%. Density 4:
+    fun 42.7, multi 18%. FULL ON: 42.2, comeback 24.3%, claims 285/292 symmetric,
+    maxHand 9. VANGUARD only (n=600): fun 38.4, comeback 20% (≥18% floor ✓), firstCap
+    unmoved. Start-holder probe: no asymmetry either way.
+  • Arena: policy mirror FULL capt 5.0 vs 4.5 OFF (real agents fight MORE);
+    comeback 35%; search2 mirror FULL comeback 32.5%; no nova dominance (burst 9-12%).
+  GATE LETTERS FAILED (all four look mis-specified rather than mechanic failures —
+  operator ruling required, NOT self-graded):
+  1. median actions/turn = 1 (structural: can't cross 1 below ~50% deck density;
+     mean 1.16-1.22, multi 14-18% is the honest distribution).
+  2. SkillDepth: search2 vs greedy 97.1%→95.8% (CASCADE)→93.8% (FULL) — direction
+     right, nowhere near 65-85% (14% multi-turns ≠ enough branching to blunt depth-2).
+  3. cascrush band 42-58%: reads 25-32.5% at every w — the exploit strategy LOSES
+     (band was designed to catch dominance; red-team predicted exactly this tail).
+     Mirror capt 1.8 < 5.5 letter-fails but is an artifact of the weak bot — real-agent
+     mirrors show captures UP.
+  4. firstCap T9 vs ≤6 hard — unmoved by any mechanic ever measured (standing charter
+     debt; P1's dedicated round also failed it; T10 at baseline).
+  RECOMMENDATION: ship CASCADE_ON:true + VANGUARD_ON:true (density 3 shipped; 4 as
+  operator taste — fun 42.7 vs 41.9, multi 18% vs 14%). Every metric with a real
+  baseline improved or held; adversarial arm shows no exploit; UI verified. Weights
+  file already trained at full-ON (held out of commit until decision). Gate #2
+  built-thing review dispatched. AWAITING OPERATOR: ship-ON go / gate-letter rulings.

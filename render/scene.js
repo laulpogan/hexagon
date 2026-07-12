@@ -127,6 +127,27 @@ function makeDeltaSprite(delta) {
   return sprite;
 }
 
+// R8/P3: Vanguard banner glyph — small owner-tinted flag icon floating above
+// the round's holder's capital. Cached per owner (only 2 colors ever asked
+// for), same build-once-canvas-then-reuse pattern as discTexture() below.
+const _vanguardTex = new Map();
+function vanguardBannerTexture(ownerHex) {
+  if (_vanguardTex.has(ownerHex)) return _vanguardTex.get(ownerHex);
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 128;
+  const ctx = c.getContext('2d');
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = 'bold 88px Arial';
+  ctx.fillStyle = '#' + ownerHex.toString(16).padStart(6, '0');
+  ctx.shadowColor = 'rgba(0,0,0,0.85)';
+  ctx.shadowBlur = 12;
+  ctx.fillText('⚑', 64, 68);
+  const tex = new THREE.CanvasTexture(c);
+  _vanguardTex.set(ownerHex, tex);
+  return tex;
+}
+
 // Shared radial-gradient disc for contact shadows + owner/riftlight glow rings.
 let _discTex = null;
 function discTexture() {
@@ -251,6 +272,8 @@ export class BoardRenderer {
     this.onWow = null; // V8 hookup spec: (kind) => void, fired on first-blood / multi-flip captures — shell wires a chime
     this.onSeverance = null;   // R8/P2: () => void, fired when syncBoard diffs a tile newly cut from its network
     this.onLoopClosure = null; // R8/P2: () => void, fired when a player's loop flag flips false→true
+    this.onCascade = null;         // R8/P3: () => void, fired when a CASCADE grant lands (chain trail hop)
+    this.onVanguardBounty = null;  // R8/P3: () => void, fired when the round's holder claims their bounty
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x101218);
@@ -297,6 +320,15 @@ export class BoardRenderer {
     this._loopFlashAnims = [];  // R8/P2: white flash on ring cells at loop closure
     this._severFlashAnims = []; // R8/P2: grey flash on newly orphaned tiles
     this._lastSurgeRef = null;  // R8/P2: object-identity guard — fire once per surge event
+    // R8/P3: Cascade chain trail — OWN state, never reads/writes V4's
+    // _cascadeAnims/_lastOrigin (the unrelated badge-tick "resolution cascade").
+    this._chainTrailAnims = [];  // traveling glow sprites between cascade drops
+    this._chainOrigin = null;    // {x,y,z,player} of the pending drop awaiting its trail
+    this._lastCascadeRef = null; // object-identity guard on game.cascadeFiredThisPly
+    // R8/P3: Vanguard — persistent holder banner + one-shot bounty flash.
+    this._vanguardBanner = null;
+    this._vanguardFlashAnims = [];
+    this._vanguardBountyLatched = false; // null-edge latch (vanguardBountyThisPly is a primitive, not a fresh object)
     this._camKick = new THREE.Vector3();
     this._cellOwners = new Map(); // "c,r" → tileId|null from last sync (capture detection)
     this._lastOrigin = null;      // V4: cell of the most recent placement (cascade epicenter)
@@ -704,6 +736,36 @@ export class BoardRenderer {
     this._burstAnims.push({ pts, vels, ox: x, oy: y, oz: z, start: performance.now() });
   }
 
+  // R8/P3: locate a player's capital tile group. Capitals never move once
+  // placed, but this is the same cheap full-board scan every other
+  // per-syncBoard pass above (seam/severance/surge) already does, rather
+  // than caching a reference that could go stale across a game restart.
+  _findCapitalGroup(player) {
+    for (let c = 0; c < CONFIG.GRID_W; c++) {
+      for (let r = 0; r < CONFIG.GRID_H; r++) {
+        const t = this.game.board[c][r].tile;
+        if (t?.capital && t.owner === player) return this.tileMeshes.get(t.id) || null;
+      }
+    }
+    return null;
+  }
+
+  // R8/P3: the cascade chain trail itself — a soft additive sprite lerped
+  // between two cell centers over ~400ms then faded (see _animate). No
+  // existing primitive did this: P2's surge/loop/sever flashes are
+  // simultaneous emissive pulses, never staggered point-to-point travel.
+  _makeChainTrail(from, to) {
+    const mat = new THREE.SpriteMaterial({
+      map: discTexture(), color: 0xf2c14e, transparent: true, opacity: 0,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(1.1, 1.1, 1);
+    sprite.position.set(from.x, from.y, from.z);
+    this.scene.add(sprite);
+    return { sprite, from, to, start: performance.now() };
+  }
+
   // V6: deterministic dark faceted shard scatter on cells that have taken a
   // capture (cell.rubble > 0). Rebuilds (rare — only on new captures) when
   // the tier bucket changes. Uses assets/models/env/manifest.json's `rubble`
@@ -858,6 +920,12 @@ export class BoardRenderer {
     const seen = new Set();
     this._flipCount = 0;
     const toUpdate = [];
+    // R8/P3: own tracker for "the cell that was just placed" — deliberately
+    // NOT reusing _lastOrigin (V4's badge-tick epicenter) so the two features
+    // stay decoupled. Same loop, same reasoning: a fresh group appearing IS
+    // a real placement/capture this call; a non-mutating re-sync (hover,
+    // card select) creates no groups and leaves this null.
+    let placedThisSync = null;
     for (let c = 0; c < CONFIG.GRID_W; c++) {
       for (let r = 0; r < CONFIG.GRID_H; r++) {
         const cell = this.game.board[c][r];
@@ -870,6 +938,7 @@ export class BoardRenderer {
           this.scene.add(group);
           this.tileMeshes.set(tile.id, group);
           this._lastOrigin = { col: c, row: r }; // V4 cascade epicenter
+          if (CONFIG.CASCADE_ON) placedThisSync = { col: c, row: r };
           // drop-in animation (skipped when tab hidden — rAF is suspended there)
           if (!document.hidden) {
             // V1: only the TOP prism falls — buried tiers/badge/billboard/
@@ -1010,6 +1079,93 @@ export class BoardRenderer {
           }
           this.onLoopClosure && this.onLoopClosure();
         }
+      }
+    }
+    // R8/P3: Cascade chain trail — NEW traveling primitive (the P2 surge
+    // flash above is simultaneous across a whole network, never staggered
+    // point-to-point — there was nothing to reuse). Own state only
+    // (_chainTrailAnims/_chainOrigin/_lastCascadeRef); never reads or writes
+    // V4's _cascadeAnims/_lastOrigin. Same object-identity guard as
+    // roadSurgeThisTurn above: game.cascadeFiredThisPly is a fresh {player}
+    // object on every CASCADE fire, reset to null once per real turn
+    // (onTurnStart — never mid-turn, so it stays true for the whole chain).
+    if (CONFIG.CASCADE_ON) {
+      const fired = this.game.cascadeFiredThisPly;
+      const cascadeJustFired = !!fired && fired !== this._lastCascadeRef;
+      if (cascadeJustFired) this._lastCascadeRef = fired;
+      if (placedThisSync) {
+        const placedTile = this.game.board[placedThisSync.col][placedThisSync.row].tile;
+        // A pending grant can only ever be spent by the SAME player who fired
+        // it. game.turn/currentPlayer are NOT safe staleness signals here: the
+        // placement that spends the last grant routinely ends the turn itself
+        // (placementsLeft hits 0 → _afterAction → _endTurn → onTurnStart, all
+        // synchronous, INSIDE that same placeFromHand call) — so by the time
+        // this syncBoard() runs, game.turn may have ALREADY rolled to the next
+        // turn even though this placement is the chain's own last hop (the
+        // identical pre-action-vs-post-action trap RULES8_P3_CASCADE.md's
+        // placementRows keying pin calls out for the metrics harness). Tile
+        // ownership is immutable once placed, so it's the reliable check: a
+        // different owner placing means the grant sat unspent — abandoned.
+        if (this._chainOrigin && placedTile?.owner !== this._chainOrigin.player) {
+          this._chainOrigin = null;
+        }
+        if (cascadeJustFired || this._chainOrigin) {
+          const { x, z } = worldPos(placedThisSync.col, placedThisSync.row);
+          // Key off the placed tile's actual baseH (stack height included) so
+          // the pulse/trail floats above tall towers, not inside them.
+          const y = (this.tileMeshes.get(placedTile?.id)?.userData.baseH ?? TILE_H) + 0.5;
+          if (this._chainOrigin) {
+            // the grant from the previous drop just got spent on this cell —
+            // draw the hop that connects them.
+            this._chainTrailAnims.push(this._makeChainTrail(this._chainOrigin, { x, y, z }));
+          }
+          if (cascadeJustFired) {
+            this._spawnBurst(x, z, y, 0xf2c14e, 18, 1.6); // rising gold pulse
+            this._chainOrigin = { x, y, z, player: placedTile.owner };
+            this.onCascade && this.onCascade();
+          } else {
+            this._chainOrigin = null; // grant spent, no further cascade — chain link consumed
+          }
+        }
+      }
+    }
+    // R8/P3: Vanguard — persistent small banner above the round holder's
+    // capital + a one-shot gold flash on bounty claim. Both fully absent
+    // when the knob is off (banner sprite is never even constructed).
+    if (CONFIG.VANGUARD_ON) {
+      const holder = this.game.vanguardHolder();
+      const holderGroup = holder ? this._findCapitalGroup(holder) : null;
+      if (holderGroup) {
+        if (!this._vanguardBanner) {
+          this._vanguardBanner = new THREE.Sprite(new THREE.SpriteMaterial({
+            transparent: true, depthWrite: false, opacity: 0.92, blending: THREE.AdditiveBlending,
+          }));
+          this._vanguardBanner.scale.set(0.85, 0.85, 1);
+          this.scene.add(this._vanguardBanner);
+        }
+        this._vanguardBanner.material.map = vanguardBannerTexture(holder === 1 ? COLORS.p1Capital : COLORS.p2Capital);
+        this._vanguardBanner.material.needsUpdate = true;
+        this._vanguardBanner.position.set(holderGroup.position.x, holderGroup.userData.baseH + 1.3, holderGroup.position.z);
+        this._vanguardBanner.visible = true;
+      } else if (this._vanguardBanner) {
+        this._vanguardBanner.visible = false;
+      }
+      // Bounty flash: vanguardBountyThisPly is a plain player number (unlike
+      // roadSurgeThisTurn/cascadeFiredThisPly, it's not a fresh object each
+      // time), so the identity guard becomes a null-edge latch instead — it
+      // still resets to null every turn (onTurnStart), so "just became
+      // truthy" is a real new event even when the same player claims it
+      // again several rounds later.
+      const bounty = this.game.vanguardBountyThisPly;
+      if (bounty && !this._vanguardBountyLatched) {
+        this._vanguardBountyLatched = true;
+        const capGroup = this._findCapitalGroup(bounty);
+        if (capGroup) {
+          this._vanguardFlashAnims.push({ mat: capGroup.userData.mat, base: capGroup.userData.baseColor, start: performance.now() });
+        }
+        this.onVanguardBounty && this.onVanguardBounty();
+      } else if (!bounty) {
+        this._vanguardBountyLatched = false;
       }
     }
     // Sprite updates run AFTER every group this pass has been created, so
@@ -1463,6 +1619,15 @@ export class BoardRenderer {
       if (p >= 1) { a.mat.emissive.setHex(a.base); a.mat.emissiveIntensity = 0.08; a.done = true; }
     }
     this._severFlashAnims = this._severFlashAnims.filter(a => !a.done);
+    // R8/P3: Vanguard bounty claim — same one-shot emissive-decay pattern as
+    // the surge/loop/sever flashes above, on the claiming player's capital.
+    for (const a of this._vanguardFlashAnims) {
+      const p = Math.min(1, (now - a.start) / 500);
+      a.mat.emissive.setHex(0xf2c14e);
+      a.mat.emissiveIntensity = 1.1 * (1 - p);
+      if (p >= 1) { a.mat.emissive.setHex(a.base); a.mat.emissiveIntensity = 0.08; a.done = true; }
+    }
+    this._vanguardFlashAnims = this._vanguardFlashAnims.filter(a => !a.done);
     for (const a of this._popAnims) {
       const p = Math.min(1, (now - a.start) / 220);
       const over = 1.15 + (1.9 - 1.15) * (1 - p) * Math.cos(p * 5);
@@ -1484,6 +1649,23 @@ export class BoardRenderer {
       if (p >= 1) a.done = true;
     }
     this._cascadeAnims = this._cascadeAnims.filter(a => !a.done);
+    // R8/P3: chain trail — separate from V4's badge-tick cascade above. Lerp
+    // position over ~400ms (ease-out); sine-hump opacity so it fades in
+    // reaching full brightness mid-flight and fades out again on arrival.
+    for (const a of this._chainTrailAnims) {
+      const p = Math.min(1, (now - a.start) / 400);
+      const e = 1 - Math.pow(1 - p, 2);
+      a.sprite.position.x = a.from.x + (a.to.x - a.from.x) * e;
+      a.sprite.position.y = a.from.y + (a.to.y - a.from.y) * e;
+      a.sprite.position.z = a.from.z + (a.to.z - a.from.z) * e;
+      a.sprite.material.opacity = Math.sin(p * Math.PI) * 0.95;
+      if (p >= 1) {
+        this.scene.remove(a.sprite);
+        a.sprite.material.dispose();
+        a.done = true;
+      }
+    }
+    this._chainTrailAnims = this._chainTrailAnims.filter(a => !a.done);
     // V1: tall-tower ember idle — embers rise in a loose ring and loop.
     for (const emberSys of this._towerEmbers.values()) {
       emberSys.pts.position.copy(emberSys.group.position);

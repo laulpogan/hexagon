@@ -34,8 +34,8 @@ export class Game {
     this.decks = { 1: [], 2: [] };
     this.hands = { 1: [], 2: [] };
     this.stats = {
-      1: { placed: 0, captured: 0, discarded: 0 },
-      2: { placed: 0, captured: 0, discarded: 0 },
+      1: { placed: 0, captured: 0, discarded: 0, bountyDraws: 0 },
+      2: { placed: 0, captured: 0, discarded: 0, bountyDraws: 0 },
     };
     this.log = [];
     this._tileId = 1;
@@ -508,6 +508,7 @@ export class Game {
     if (this.bountyClaimedThisRound || this.vanguardHolder() !== player) return;
     this.bountyClaimedThisRound = true;
     const drawn = this._draw(player); // no play-time hand cap exists; deck-limited
+    if (drawn) this.stats[player].bountyDraws++; // durable telemetry (claim share)
     this.vanguardBountyThisPly = player; // per-ply UI cue (reset onTurnStart)
     this._log(player, `Vanguard bounty — first strike this round${drawn ? ' draws a card' : ' (deck empty)'}`);
   }
