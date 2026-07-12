@@ -28,8 +28,9 @@ export function runMatch(seed) {
   while (game.phase === 'play' && plies < PLY_CAP) {
     const p = game.currentPlayer;
     const before = game.stats[p].captured;
+    const turnBefore = game.turn; // R8/P3: pre-action id (turn++ is synchronous)
     const action = botTakeTurn(game, p, rand);
-    recordPly(tracker, game, p, action, before);
+    recordPly(tracker, game, p, action, before, turnBefore);
     plies++;
   }
   finishTracker(tracker, game);

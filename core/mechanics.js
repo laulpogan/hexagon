@@ -68,6 +68,20 @@ export const KEYWORD_HOOKS = {
       }
     },
   },
+  // R8/P3: extra placement on place. Knob check FIRST (complete no-op when
+  // off — the named OFF-leak bug class). branch-scoped: never fires on
+  // self-ascend (one-turn SUMMIT tower) and never on WARD-bounce (that
+  // branch returns before fireOnPlacement — deliberate counterplay).
+  CASCADE: {
+    onPlacement({ game, branch }) {
+      if (!CONFIG.CASCADE_ON) return;
+      if (branch !== 'place') return;
+      if (game.placementsThisTurn >= CONFIG.MAX_PLACEMENTS_PER_TURN) return;
+      game.placementsLeft++;
+      game.cascadeFiredThisPly = { player: game.currentPlayer };
+      game._log(game.currentPlayer, 'the Cascade surges — place 1 more tile this turn');
+    },
+  },
 };
 
 // captureGate aggregation across the attacker's board (called from isCapturable)
@@ -97,9 +111,13 @@ export function modifyIncoming(defTile, attackerTile, amount) {
   return amount;
 }
 
-export function fireOnPlacement(game, tile, col, row, captured) {
+// R8/P3: branch distinguishes the two call sites ('place' = generic
+// placement/capture at game.js:452-class site; 'ascend' = self-ascend) —
+// `captured` is null at BOTH, so it can't do this job. Existing hooks
+// destructure only the fields they use; the new field is inert to them.
+export function fireOnPlacement(game, tile, col, row, captured, branch = 'place') {
   for (const kw of tile.keywords) {
-    KEYWORD_HOOKS[kw]?.onPlacement?.({ game, tile, col, row, captured });
+    KEYWORD_HOOKS[kw]?.onPlacement?.({ game, tile, col, row, captured, branch });
   }
 }
 
@@ -121,6 +139,8 @@ export function onTurnStart(game) {
   game.riftStirs = riftStirsState(game.turn);
   game.seamAdvancedThisTurn = 0; // R8/P1: per-ply render/metrics cue, reset each ply
   game.roadSurgeThisTurn = null; // R8/P2: per-ply render/metrics cue, never cloned
+  game.cascadeFiredThisPly = null;   // R8/P3: per-ply render cue, never cloned
+  game.vanguardBountyThisPly = null; // R8/P3: per-ply render cue, never cloned
   seamAdvance(game); // R8/P1: THE SEAM ADVANCES — same per-turn hook pattern
 }
 

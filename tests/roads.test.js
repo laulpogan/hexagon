@@ -271,9 +271,9 @@ const { moveFeatures, FEATURE_NAMES, DEFAULT_WEIGHTS } = await import('../core/a
 const { makeRoadRush } = await import('../core/agents/roadrush.js');
 const { mulberry32, hashSeed } = await import('../core/rng.js');
 
-test('T9 policy road features: 20 aligned entries, knob-gated, zero on non-resolving branches', () => {
-  assert.equal(FEATURE_NAMES.length, 20);
-  assert.equal(DEFAULT_WEIGHTS.length, 20);
+test('T9 policy road features: aligned entries, knob-gated, zero on non-resolving branches', () => {
+  assert.equal(FEATURE_NAMES.length, DEFAULT_WEIGHTS.length); // R8/P3: registry grew to 22
+  assert.equal(DEFAULT_WEIGHTS.length, 22);
   assert.equal(FEATURE_NAMES[18], 'momentumGain');
   assert.equal(FEATURE_NAMES[19], 'severDamage');
   const g = freshGame();

@@ -27,6 +27,9 @@ export class Game {
     this.consecutivePasses = 0;
     this.placementsLeft = 0;
     this.discardsLeft = 0;
+    // R8/P3: initialized HERE (search clones during the capital phase).
+    this.placementsThisTurn = 0;       // total actions this turn (cascade cap)
+    this.bountyClaimedThisRound = false; // Vanguard bounty — reset each round
     this.capitalsPlaced = { 1: false, 2: false };
     this.decks = { 1: [], 2: [] };
     this.hands = { 1: [], 2: [] };
@@ -56,6 +59,15 @@ export class Game {
     for (const tpl of TILE_POOL) {
       const count = composition[tpl.type] || 0;
       for (let i = 0; i < count; i++) deck.push(this._makeTile(tpl.type, owner));
+    }
+    // R8/P3: trim CASCADE copies to the density knob — deterministic (canonical
+    // pool order, pre-shuffle), keyword-only (stat bodies/counts untouched, so
+    // deck composition is identical across knob values and OFF-parity holds).
+    let cascades = 0;
+    for (const t of deck) {
+      if (t.keywords.includes('CASCADE') && ++cascades > CONFIG.CASCADE_TILE_COUNT) {
+        t.keywords = t.keywords.filter(k => k !== 'CASCADE');
+      }
     }
     return shuffleInPlace(deck, this.rand);
   }
@@ -347,6 +359,10 @@ export class Game {
     onTurnStart(this); // R6/A7: THE RIFT STIRS state (active/upcoming/pulse)
     this.placementsLeft = CONFIG.PLACEMENTS_PER_TURN;
     this.discardsLeft = CONFIG.DISCARDS_PER_TURN;
+    this.placementsThisTurn = 0; // R8/P3: per-turn action counter (cascade cap)
+    // R8/P3: round boundary — turn is odd after ++ ⇒ a new round (P1+P2 pair)
+    // starts. Reset ONLY here, never per ply (P2's turn must not wipe it).
+    if (this.turn % 2 === 1) this.bountyClaimedThisRound = false;
     this._draw(this.currentPlayer);
     // All cards spent on both sides → resolve immediately, no pass theater.
     if (this.decks[1].length + this.decks[2].length +
@@ -375,6 +391,7 @@ export class Game {
     const target = cell.tile;
     this.hands[player].splice(handIndex, 1);
     this.placementsLeft--;
+    this.placementsThisTurn++; // R8/P3: one site, pre-branch — covers all 4 exits
     this.consecutivePasses = 0; // any card-spending action is a real action (incl. ward-blocked attacks)
 
     // Self-ascend: stacking onto your own tile. R4 — self-stacked tiers grant
@@ -394,7 +411,7 @@ export class Game {
         paidNote = ` (paid ${discarded.type})`;
       }
       this._log(player, `ascended at (${col},${row}) — ${tile.type} crowns a tier-${cell.stack.length + 1} stack${paidNote}`);
-      fireOnPlacement(this, tile, col, row, null);
+      fireOnPlacement(this, tile, col, row, null, 'ascend'); // R8/P3: CASCADE never fires here
       this._boardMutated(player); // R8/P2 (topology unchanged but uniform rule is the audit)
       const result = { ok: true, ascended: true, height: cell.stack.length + 1 };
       this._afterAction();
@@ -445,11 +462,12 @@ export class Game {
     this.stats[player].placed++;
     if (captured) {
       this.stats[player].captured++;
+      this._claimBounty(player); // R8/P3: Vanguard bounty (holder's own first capture)
       this._log(player, `captured enemy ${captured.type} at (${col},${row}) — it is buried beneath the ${tile.type}, tier-${cell.stack.length + 1}`);
     } else {
       this._log(player, `placed ${tile.type} at (${col},${row})`);
     }
-    fireOnPlacement(this, tile, col, row, captured); // ETB-class hooks (SUSTAIN/TRAMPLE)
+    fireOnPlacement(this, tile, col, row, captured, 'place'); // ETB-class hooks (SUSTAIN/TRAMPLE/CASCADE)
     this._boardMutated(player); // R8/P2: placement/capture is a topology change
     const result = { ok: true, captured, won: false };
     this._afterAction();
@@ -470,6 +488,28 @@ export class Game {
         closedLoop: !prevLoop[player] && this.roads.loop[player],
       };
     }
+  }
+
+  // ─── R8/P3: Vanguard bounty ──────────────────────────────────────────
+  // Holder alternates by round (round = ceil(turn/2), turn is a PLY counter).
+  // Trigger = the HOLDER's OWN first capture of the round — independent of
+  // anything the opponent does (a "round's first capture" race is won by
+  // whoever moves first; killed at gate #1). Capture = ownership transfer via
+  // placeFromHand only; SUNDER destroys (no transfer) and earns nothing.
+  vanguardHolder() {
+    if (!CONFIG.VANGUARD_ON) return 0;
+    const round = Math.ceil(this.turn / 2);
+    const start = CONFIG.VANGUARD_START_HOLDER;
+    return round % 2 === 1 ? start : (start === 1 ? 2 : 1);
+  }
+
+  _claimBounty(player) {
+    if (!CONFIG.VANGUARD_ON) return;
+    if (this.bountyClaimedThisRound || this.vanguardHolder() !== player) return;
+    this.bountyClaimedThisRound = true;
+    const drawn = this._draw(player); // no play-time hand cap exists; deck-limited
+    this.vanguardBountyThisPly = player; // per-ply UI cue (reset onTurnStart)
+    this._log(player, `Vanguard bounty — first strike this round${drawn ? ' draws a card' : ' (deck empty)'}`);
   }
 
   _weakestHandIndex(player) {
@@ -510,6 +550,7 @@ export class Game {
     }
     this.hands[player].splice(handIndex, 1);
     this.placementsLeft--;
+    this.placementsThisTurn++; // R8/P3: rites count toward the action cap
     this.consecutivePasses = 0;
     const detail = effect.resolve(this, player, col, row) || {};
     const result = { ok: true, rite: card.type, ...detail };
@@ -576,7 +617,28 @@ export class Game {
   }
 
   _afterAction() {
-    if (this.phase === 'play' && this.placementsLeft <= 0) this._endTurn();
+    if (this.phase !== 'play') return;
+    if (this.placementsLeft <= 0) { this._endTurn(); return; }
+    // R8/P3: cascade-granted placements that can't be spent expire — a turn
+    // that acted is not a pass (spurious double-pass guard). Unreachable at
+    // base config (placementsLeft>0 ⇒ placementsThisTurn===0), so OFF-parity
+    // holds structurally.
+    if (this.placementsThisTurn >= 1 && !this._anyLegalAction(this.currentPlayer)) {
+      this._endTurn();
+    }
+  }
+
+  // R8/P3: "no legal action" = no placement, no castable rite (legalMoves
+  // skips rite cards), and no usable discard (needs discardsLeft AND a hand
+  // tile — a hand emptied mid-cascade must not fall through to pass()).
+  _anyLegalAction(player) {
+    if (this.legalMoves(player).length > 0) return true;
+    if (this.discardsLeft > 0 && this.hands[player].length > 0) return true;
+    for (let i = 0; i < this.hands[player].length; i++) {
+      if (this.hands[player][i].kind === 'rite' &&
+          this.legalRiteTargets(player, i).length > 0) return true;
+    }
+    return false;
   }
 
   _endTurn() {
@@ -618,6 +680,8 @@ export class Game {
     g.consecutivePasses = this.consecutivePasses;
     g.placementsLeft = this.placementsLeft;
     g.discardsLeft = this.discardsLeft;
+    g.placementsThisTurn = this.placementsThisTurn;         // R8/P3 scalar copy
+    g.bountyClaimedThisRound = this.bountyClaimedThisRound; // R8/P3 scalar copy
     g.capitalsPlaced = { ...this.capitalsPlaced };
     g.decks = {
       1: this.decks[1].map(t => ({ ...t, keywords: [...t.keywords] })),

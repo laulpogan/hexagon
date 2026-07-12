@@ -88,3 +88,15 @@ nodes (unscheduled).
   fixed: arena_p2/sweep_p2 ON arms now patch ROAD_PRESSURE_ON:true explicitly (were
   ambient-default → inert from HEAD; landmine for the future shape-sensitive-momentum
   round). 2 MINORs fixed (doc arg-shape, looped% label). 102/102. P2 fully closed.
+- 2026-07-11 (P3 round OPEN, gate #1 CLEAR after 3 rounds): rev 1 (Cascade +
+  restriction-Vanguard) → 4-persona panel ~10 BLOCKERs (turn=ply not round; restriction-
+  Vanguard structurally unfair + gates win condition + two legality choke points +
+  SUNDER/TRAMPLE mislabeled as captures; search bestReply cascade-blind; funIndex
+  sample-indexing corrupt under multi-placement; SkillDepth ladder broken at HEAD —
+  policy* 40% vs greedy live-measured; comeback arm unfalsifiable; deck OFF-parity
+  confound). Rev 2 folded all; Vanguard REDESIGNED restriction→bounty (holder's own
+  first capture of round draws 1 card — no legality gating). Round-2 verifier NOT CLEAR
+  (branch-scoping mechanismless; metrics keyed post-action; bounty had P1-spoiler race)
+  → rev 3 fixed (fireOnPlacement branch param; pre-action turnBefore keying; holder-own-
+  capture semantics). Round-3 scoped verifier CLEAR + 1 MAJOR folded (hand-exhausted
+  turn-end clause). Plan: RULES8_P3_CASCADE.md rev 3. BUILD IN PROGRESS.

@@ -39,8 +39,9 @@ export function playGame(agentA, agentB, seed, decks = null) {
   while (game.phase !== 'over' && plies < PLY_CAP) {
     const p = game.currentPlayer;
     const before = game.stats[p].captured;
+    const turnBefore = game.turn; // R8/P3: pre-action id (turn++ is synchronous)
     const action = byPlayer[p].takeTurn(game, p, rand);
-    recordPly(tracker, game, p, action, before);
+    recordPly(tracker, game, p, action, before, turnBefore);
     plies++;
   }
   finishTracker(tracker, game);

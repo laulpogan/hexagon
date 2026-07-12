@@ -21,6 +21,8 @@ export const KEYWORDS = {
   TIDEBOUND:   { name: 'Tidebound',    desc: 'Each capture made on or beside the rift permanently raises its base influence by 1.' },
   SUMMIT:      { name: 'Summit',       desc: '+2 influence while its cell stands 3 tiers tall or higher.' },
   SEAMBOUND:   { name: 'Seambound',    desc: '+3 influence while standing directly on a rift hex.' },
+  // R8/P3 (inert while CONFIG.CASCADE_ON is false)
+  CASCADE:     { name: 'Cascade',      desc: 'On place: place 1 more tile this turn (turn capped at 3 actions). Does not trigger on self-ascend.' },
 };
 
 export const RITE_INFO = {
@@ -44,7 +46,14 @@ export const RITE_INFO = {
 // slots (THICKET/ECHO/RIFT-WALL/PETRIFIED-ROSE), not a different design.
 export const TILE_POOL = [
   // ─── COMMON ─────────────────────────────────────────────────────────
-  { type: 'THICKET',     influence: 2, rarity: 'common',   count: 1, keywords: [] },
+  // R8/P3: CASCADE promotions — keyword-only diff, stat bodies + counts
+  // untouched (OFF-parity: deck composition identical, keyword inert when
+  // CONFIG.CASCADE_ON is false). Carriers are non-snowball bodies only
+  // (vanilla/WING/WARD — documented deviation from the plan's flat "no other
+  // keyword" pin: the in-deck keyword-less pool is 2 copies, too thin for
+  // the 2-4 density sweep). _buildDeck trims CASCADE copies to
+  // CONFIG.CASCADE_TILE_COUNT deterministically.
+  { type: 'THICKET',     influence: 2, rarity: 'common',   count: 1, keywords: ['CASCADE'] },
   { type: 'OUTCROP',     influence: 2, rarity: 'common',   count: 0, keywords: [] },
   { type: 'LANTERN',     influence: 1, rarity: 'common',   count: 0, keywords: ['SCOUT'] },
   { type: 'PALISADE',    influence: 1, rarity: 'common',   count: 0, keywords: ['FORTIFIED'] },
@@ -84,9 +93,9 @@ export const TILE_POOL = [
   { type: 'RIFT-WALL',      influence: 2, rarity: 'common',   count: 1, keywords: ['FORTIFIED'], season: 1 },
   { type: 'FLAME-LURKER',   influence: 2, rarity: 'common',   count: 0, keywords: ['ATTUNED'], season: 1 },
   { type: 'BANEBERRY',      influence: 1, rarity: 'common',   count: 2, keywords: ['SIEGE'], season: 1 },
-  { type: 'PETRIFIED-ROSE', influence: 1, rarity: 'common',   count: 1, keywords: ['WARD'], season: 1 },
+  { type: 'PETRIFIED-ROSE', influence: 1, rarity: 'common',   count: 1, keywords: ['WARD', 'CASCADE'], season: 1 },
   { type: "WILL-O'-WISP",   influence: 1, rarity: 'common',   count: 2, keywords: ['FLANK'], season: 1 },
-  { type: 'POLLENCLOUD',    influence: 1, rarity: 'common',   count: 2, keywords: ['WING'], season: 1 },
+  { type: 'POLLENCLOUD',    influence: 1, rarity: 'common',   count: 2, keywords: ['WING', 'CASCADE'], season: 1 },
   { type: 'FOXGLOVE',       influence: 3, rarity: 'uncommon', count: 0, keywords: ['DOUBLESTRIKE'], season: 1 },
   { type: 'VEILWALKER',     influence: 3, rarity: 'uncommon', count: 0, keywords: ['UNTOUCHABLE'], season: 1 },
   { type: 'SOUL-ENGINE',    influence: 3, rarity: 'uncommon', count: 0, keywords: ['SUSTAIN'], season: 1 },

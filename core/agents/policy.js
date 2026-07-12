@@ -37,10 +37,13 @@ export const FEATURE_NAMES = [
   // severDamage there is an unlearnable signal for a linear policy).
   'momentumGain',        // R8/P2: own linked-network growth incl. reconnected orphans
   'severDamage',         // R8/P2: enemy tiles this capture cuts from their capital
+  // R8/P3 (knob-gated, zero when off)
+  'cascadeFires',        // R8/P3: this placement grants an extra placement
+  'bountyAvailable',     // R8/P3: this capture claims the Vanguard bounty
 ];
 
 // Default weights approximate the greedy heuristic — a sane untrained start.
-export const DEFAULT_WEIGHTS = [0, 1, -8, 8, 1000, 9, 1, 0.5, 1, 4, -12, 0.3, 1.5, -0.5, 2, 1.5, 0.5, 0.5, 0.5, 2];
+export const DEFAULT_WEIGHTS = [0, 1, -8, 8, 1000, 9, 1, 0.5, 1, 4, -12, 0.3, 1.5, -0.5, 2, 1.5, 0.5, 0.5, 0.5, 2, 1, 1.5];
 
 function findCapital(game, owner) {
   for (let c = 0; c < CONFIG.GRID_W; c++) {
@@ -201,6 +204,18 @@ export function moveFeatures(game, player, move) {
   }
   cell.tile = prev;
   cell.stack.length = prevStackLen;
+  // R8/P3 (knob-gated; only in this resolving branch — capital/ward/ascend
+  // paths returned above, mirroring the R8/P2 zero-on-non-resolving rule).
+  // Grant math mirrors the hook: placementsThisTurn increments before it
+  // fires, so the grant lands iff (current + 1) < MAX_PLACEMENTS_PER_TURN.
+  if (CONFIG.CASCADE_ON && tile.keywords.includes('CASCADE') &&
+      game.placementsThisTurn + 1 < CONFIG.MAX_PLACEMENTS_PER_TURN) {
+    f[20] = 1;
+  }
+  if (CONFIG.VANGUARD_ON && target && !game.bountyClaimedThisRound &&
+      game.vanguardHolder() === player) {
+    f[21] = 1;
+  }
   return f;
 }
 

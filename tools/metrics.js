@@ -24,7 +24,8 @@ export function createTracker() {
     riftTouched: { 1: false, 2: false }, // A11 mutual-turtle: ever placed rift-adjacent
     seamAdvanceTurns: [],           // R8/P1: plies where a seam tick fired (A/B narrative)
     roadSamples: [],                // R8/P2: [{turn, m1, m2, loop1, loop2, pressureActive}]
-    placementRows: [],              // R8/P2: [{player, row}] — R5 lateral-share input
+    placementRows: [],              // R8/P2: [{player, row, turn}] — R5 lateral-share input
+    actionRows: [],                 // R8/P3: [{player, turn, kind}] place+rite — actions/turn
     endTrigger: null,               // R8/P2: 'double-pass' | 'exhaustion' — R4 slice key
     recaptureCounts: new Map(),     // "col,row" -> capture count on that cell
     maxTrophy: 0,                   // A11: highest trophyValue() observed on any placement
@@ -36,12 +37,17 @@ export function createTracker() {
 // Call right after game.currentPlayer took their turn (player = who just
 // moved, action = what takeTurn()/botTakeTurn() returned, capturedBefore =
 // game.stats[player].captured read BEFORE the turn was taken).
-export function recordPly(tracker, game, player, action, capturedBefore) {
+// R8/P3: turnBefore = game.turn read by the HARNESS before dispatching the
+// action. A turn-ending action runs _endTurn→_beginTurn→turn++ synchronously,
+// so a post-action read tags the ply with the NEXT turn's id — under Cascade
+// that would split one multi-placement turn across two ids and the per-turn
+// dedupe would keep an incomplete mid-cascade state (gate-#1 round-2 C2).
+export function recordPly(tracker, game, player, action, capturedBefore, turnBefore = game.turn) {
   tracker.turns = game.turn;
   // R8/P1: seamAdvance sets this transient cue when its tick fires
   if (game.seamAdvancedThisTurn > 0 &&
-      tracker.seamAdvanceTurns[tracker.seamAdvanceTurns.length - 1] !== game.turn) {
-    tracker.seamAdvanceTurns.push(game.turn);
+      tracker.seamAdvanceTurns[tracker.seamAdvanceTurns.length - 1] !== turnBefore) {
+    tracker.seamAdvanceTurns.push(turnBefore);
   }
   // R8/P2: road telemetry for the sweep's committed metrics (loop-first-ply,
   // %-looped, %-plies-with-pressure). Zero-cost when the knob is off.
@@ -60,15 +66,19 @@ export function recordPly(tracker, game, player, action, capturedBefore) {
       }
     }
     tracker.roadSamples.push({
-      turn: game.turn,
+      turn: turnBefore,
       m1: game.roads.momentum[1], m2: game.roads.momentum[2],
       loop1: game.roads.loop[1], loop2: game.roads.loop[2],
       pressureActive,
     });
   }
+  // R8/P3: rites consume placementsLeft too — charter #4 counts ACTIONS/turn
+  if (action?.kind === 'place' || action?.kind === 'rite') {
+    tracker.actionRows.push({ player, turn: turnBefore, kind: action.kind });
+  }
   if (action?.kind === 'place') {
     tracker.placements++;
-    if (action.row != null) tracker.placementRows.push({ player, row: action.row }); // R8/P2 R5
+    if (action.row != null) tracker.placementRows.push({ player, row: action.row, turn: turnBefore }); // R8/P2 R5
     if (action.ascend) tracker.ascends++;
     const capturedNow = game.stats[player].captured - capturedBefore;
     if (action.col != null) {
@@ -83,7 +93,7 @@ export function recordPly(tracker, game, player, action, capturedBefore) {
     }
     if (capturedNow > 0) {
       tracker.totalCaptures += capturedNow;
-      if (tracker.firstCaptureTurn === null) tracker.firstCaptureTurn = game.turn;
+      if (tracker.firstCaptureTurn === null) tracker.firstCaptureTurn = turnBefore;
     }
   }
   if (game.boardSummary) {
@@ -94,8 +104,35 @@ export function recordPly(tracker, game, player, action, capturedBefore) {
       if (tracker.lastLeadSign !== 0 && sign !== tracker.lastLeadSign) tracker.leadChanges++;
       tracker.lastLeadSign = sign;
     }
-    tracker.influenceSamples.push({ turn: game.turn, player, p1: s[1].influence, p2: s[2].influence });
+    tracker.influenceSamples.push({ turn: turnBefore, player, p1: s[1].influence, p2: s[2].influence });
   }
+}
+
+// R8/P3: collapse to the LAST sample per turn id — one sample per REAL turn.
+// U/K/P/lcRate assume consecutive samples are consecutive player turns; a
+// cascade turn otherwise injects same-player samples that inflate K/P and
+// dilute lead-change rate mechanically. Samples are chronological, so same-
+// turn runs are adjacent. Identity at 1 action/turn (OFF-parity).
+function dedupeByTurn(samples) {
+  const out = [];
+  for (const smp of samples) {
+    if (out.length && out[out.length - 1].turn === smp.turn) out[out.length - 1] = smp;
+    else out.push(smp);
+  }
+  return out;
+}
+
+// R8/P3 gate arm 1: median actions per real turn across a batch.
+export function actionsPerTurnMedian(trackers) {
+  const counts = [];
+  for (const t of trackers) {
+    const byTurn = new Map();
+    for (const a of t.actionRows || []) byTurn.set(a.turn, (byTurn.get(a.turn) || 0) + 1);
+    counts.push(...byTurn.values());
+  }
+  if (!counts.length) return 0;
+  counts.sort((a, b) => a - b);
+  return counts[Math.floor(counts.length / 2)];
 }
 
 // Call once the game loop ends (game.phase === 'over' or the ply cap hit).
@@ -114,8 +151,11 @@ export function finishTracker(tracker, game) {
     tracker.riftlightMarginShare = margin !== 0 ? Math.min(1, Math.abs(riftlightMargin) / Math.abs(margin)) : 0;
   }
   if (tracker.winner && tracker.influenceSamples.length) {
-    const idx = Math.min(Math.floor(tracker.influenceSamples.length * 0.75), tracker.influenceSamples.length - 1);
-    const sample = tracker.influenceSamples[idx];
+    // R8/P3: percentile over REAL turns, not raw samples (cascade injects
+    // multiple samples per turn and would shift the 75% cut point).
+    const ded = dedupeByTurn(tracker.influenceSamples);
+    const idx = Math.min(Math.floor(ded.length * 0.75), ded.length - 1);
+    const sample = ded[idx];
     tracker.comeback = tracker.winner === 1 ? sample.p1 < sample.p2 : sample.p2 < sample.p1;
   }
   let cycles = 0;
@@ -211,7 +251,7 @@ const M_PREF = 35;               // midpoint of the 25-45 ply target band (durat
 
 // Per-game quality terms from one tracker's influenceSamples. Returns null if too short.
 function perGameFun(t) {
-  const s = t.influenceSamples;
+  const s = dedupeByTurn(t.influenceSamples); // R8/P3: one sample per real turn
   const M = s.length;
   if (M < 2) return null;
   const lead = s.map(x => x.p1 - x.p2);      // signed P1-perspective lead per ply

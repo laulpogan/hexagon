@@ -72,6 +72,15 @@ export const CONFIG = {
   ROAD_PRESSURE_CAP: 3,       // max surge pressure per defender
   LOOP_CLOSURE_MULT: 2,       // roadPower multiplier near a true enclosure
 
+  // ─── R8/P3: Cascade + Vanguard Bounty (action stages) ─────────────────
+  // Plan + gate: RULES8_P3_CASCADE.md rev 3 (gate #1 CLEAR after 3 rounds).
+  // Both knobs false = byte-identical RULES-7 behavior (OFF-parity gated).
+  CASCADE_ON: false,           // CASCADE keyword grants +1 placement on place
+  MAX_PLACEMENTS_PER_TURN: 3,  // total actions/turn cap, cascades included
+  CASCADE_TILE_COUNT: 3,       // CASCADE copies kept per deck at build (max 4)
+  VANGUARD_ON: false,          // holder's own first capture each round draws 1
+  VANGUARD_START_HOLDER: 1,    // round-1 holder (P2 already has last-mover edge)
+
   // Keyword magnitudes
   FORTIFIED_BONUS: 2,
   RALLY_BONUS: 1,

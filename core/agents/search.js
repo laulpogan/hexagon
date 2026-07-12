@@ -52,6 +52,19 @@ function bestReply(game, rand) {
   game.placeFromHand(p, best.handIndex, best.col, best.row);
 }
 
+// R8/P3: complete the CURRENT player's whole turn. Under Cascade a single
+// placement can leave the turn open (placementsLeft > 0) — evaluating there
+// scores a half-finished turn, and worse, the old depth loop would spend the
+// SEARCHER's own granted placement as if it were the opponent's ply. The
+// guard is belt-and-suspenders: MAX_PLACEMENTS_PER_TURN already bounds it.
+function completeTurn(game, rand) {
+  const mover = game.currentPlayer;
+  let guard = 0;
+  while (game.phase === 'play' && game.currentPlayer === mover && guard++ < 8) {
+    bestReply(game, rand);
+  }
+}
+
 function evaluate(game, player) {
   if (game.phase === 'over') {
     if (game.winner === player) return 10000;
@@ -85,6 +98,11 @@ function evaluate(game, player) {
     lead += 0.2 * (Math.min(game.roads.momentum[player], capM) -
                    Math.min(game.roads.momentum[enemy], capM));
   }
+  // R8/P3: cascade-awareness — a CASCADE card in hand is stored tempo.
+  if (CONFIG.CASCADE_ON) {
+    const inHand = p2 => game.hands[p2].filter(t => t.keywords.includes('CASCADE')).length;
+    lead += 0.3 * (inHand(player) - inHand(enemy));
+  }
   return lead;
 }
 
@@ -100,8 +118,10 @@ export function makeSearch({ depth = 2 } = {}) {
       for (const a of actions) {
         const sim = game.clone();
         applyAction(sim, a);
-        // opponent best reply, then (depth-2) my policy reply, then eval
-        for (let d = 1; d < depth && sim.phase === 'play'; d++) bestReply(sim, rand);
+        // R8/P3: finish my own turn if a cascade grant left it open (no-op
+        // otherwise), then each depth step models one FULL opponent turn.
+        completeTurn(sim, rand);
+        for (let d = 1; d < depth && sim.phase === 'play'; d++) completeTurn(sim, rand);
         const score = evaluate(sim, player) + rand() * 0.01;
         if (score > bestScore) { bestScore = score; best = a; }
       }
