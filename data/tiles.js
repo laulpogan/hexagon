@@ -25,6 +25,14 @@ export const KEYWORDS = {
   CASCADE:     { name: 'Cascade',      desc: 'On place: place 1 more tile this turn (turn capped at 3 actions). Does not trigger on self-ascend.' },
 };
 
+// R8/P3: keywords whose mechanic is knob-gated must not render while inert
+// (gate-#2 MAJOR: CASCADE badge/tooltip leaked at OFF in deckbuilder/
+// collection/hand tooltips/help glossary). UI surfaces filter through this.
+export function visibleKeywords(keywords, config) {
+  if (config?.CASCADE_ON) return keywords;
+  return keywords.filter(k => k !== 'CASCADE');
+}
+
 export const RITE_INFO = {
   SUNDER:       { name: 'Sunder',       desc: 'Destroy a non-capital enemy tile at 2 influence or less — its whole stack with it. The target must be adjacent to one of your tiles.' },
   FORESIGHT:    { name: 'Foresight',    desc: 'Cycle your two weakest hand tiles for fresh draws.' },

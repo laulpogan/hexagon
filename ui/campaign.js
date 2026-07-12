@@ -9,7 +9,7 @@
 //                                            onResolve(didWin) is called on end.
 //   getStartDeck()                        — the player's saved deck comp, or null.
 //   onRunState(run)                       — debug/state hook (window.__limen.campaign).
-import { TILE_POOL, tileTemplate, KEYWORDS, RITE_INFO } from '../data/tiles.js';
+import { TILE_POOL, tileTemplate, KEYWORDS, RITE_INFO, visibleKeywords } from '../data/tiles.js';
 import { CONFIG } from '../core/config.js';
 import {
   createRun, availableNodes, completeFight, completeNonFight, applyReward, NODE_TYPE,
@@ -46,7 +46,7 @@ function cardFace(type) {
   const isRite = (tpl.kind || 'tile') === 'rite';
   const kws = isRite
     ? `<span class="kw" title="${esc(RITE_INFO[type]?.desc || '')}">Rite</span>`
-    : (tpl.keywords || []).map(k => `<span class="kw" title="${esc(KEYWORDS[k]?.desc || '')}">${esc(KEYWORDS[k]?.name || k)}</span>`).join('');
+    : visibleKeywords(tpl.keywords || [], CONFIG).map(k => `<span class="kw" title="${esc(KEYWORDS[k]?.desc || '')}">${esc(KEYWORDS[k]?.name || k)}</span>`).join('');
   return `
     <div class="card-art" style="background-image:url('./assets/tiles/${encodeURIComponent(type)}.jpg')"></div>
     <div class="db-name">${esc(type.replace(/_/g, ' '))}</div>

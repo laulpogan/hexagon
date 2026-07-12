@@ -1,6 +1,6 @@
 // HTML overlay UI: hand strip, turn banner, log, win screen, menu.
 // Talks to main.js through callbacks; renders from game state.
-import { KEYWORDS, RITE_INFO } from '../data/tiles.js';
+import { KEYWORDS, RITE_INFO, visibleKeywords } from '../data/tiles.js';
 import { CONFIG } from '../core/config.js';
 import { getLocalCollection, computeMotePrices, nextUnlock } from '../net/progress.js';
 
@@ -167,7 +167,7 @@ export class Hud {
       const card = document.createElement('div');
       card.className = 'card' + (i === this.selectedIndex ? ' selected' : '') + ` owner-p${viewP}`;
       card.style.borderColor = RARITY_COLOR[tile.rarity];
-      const kws = tile.keywords.map(k =>
+      const kws = visibleKeywords(tile.keywords, CONFIG).map(k =>
         `<span class="kw" title="${(KEYWORDS[k]?.desc || '').replace(/"/g, '&quot;')}">${KEYWORDS[k]?.name || k}</span>`).join('');
       const isRite = tile.kind === 'rite';
       card.innerHTML = `

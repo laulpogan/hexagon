@@ -1,7 +1,8 @@
 // Collection gallery — every TILE_POOL type as a card, owned vs locked,
 // click-to-unlock with a single-card flip reveal (C3v: no multi-pack
 // ceremony). SHELL_SPEC.md §7.3, Mote economy per DESIGN_ROUND_7.md B4/B5.
-import { TILE_POOL, KEYWORDS, RITE_INFO } from '../data/tiles.js';
+import { TILE_POOL, KEYWORDS, RITE_INFO, visibleKeywords } from '../data/tiles.js';
+import { CONFIG } from '../core/config.js';
 import { getLocalCollection, getLocalProgress, computeMotePrices, unlockCard } from '../net/progress.js';
 import { sound } from './sound.js';
 
@@ -47,7 +48,7 @@ export function initCollection(overlayEl) {
     const price = prices[tpl.type] || 0;
     const kwHtml = isRite
       ? `<span class="kw" title="${(RITE_INFO[tpl.type]?.desc || '').replace(/"/g, '&quot;')}">Rite</span>`
-      : tpl.keywords.map(k =>
+      : visibleKeywords(tpl.keywords, CONFIG).map(k =>
           `<span class="kw" title="${(KEYWORDS[k]?.desc || '').replace(/"/g, '&quot;')}">${KEYWORDS[k]?.name || k}</span>`).join('');
     return `
       <div class="db-card col-card ${isOwned ? 'picked owned' : 'locked'}" style="border-color:${RARITY_COLOR[tpl.rarity]}">

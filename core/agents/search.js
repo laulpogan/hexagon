@@ -118,9 +118,12 @@ export function makeSearch({ depth = 2 } = {}) {
       for (const a of actions) {
         const sim = game.clone();
         applyAction(sim, a);
-        // R8/P3: finish my own turn if a cascade grant left it open (no-op
-        // otherwise), then each depth step models one FULL opponent turn.
-        completeTurn(sim, rand);
+        // R8/P3: finish MY turn only if a cascade grant left it open — the
+        // guard is load-bearing (gate-#2 BLOCKER: an unconditional call here
+        // consumed the opponent's reply and the depth loop then modeled a
+        // phantom extra own-ply, changing search2's play even at OFF). Then
+        // each depth step models one FULL turn of whoever moves next.
+        if (sim.phase === 'play' && sim.currentPlayer === player) completeTurn(sim, rand);
         for (let d = 1; d < depth && sim.phase === 'play'; d++) completeTurn(sim, rand);
         const score = evaluate(sim, player) + rand() * 0.01;
         if (score > bestScore) { bestScore = score; best = a; }

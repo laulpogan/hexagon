@@ -213,6 +213,21 @@ test('C12 search2 under CASCADE_ON: full games run, deterministic', async () => 
   assert.ok(r1.turns > 0);
 });
 
+test('C14 search at OFF: no phantom extra ply — search2 keeps its 100% strong-vs-weak baseline', async () => {
+  // gate-#2 BLOCKER regression pin: an unconditional completeTurn after
+  // applyAction consumed the opponent's reply and modeled a phantom own-ply,
+  // degrading search2 even at OFF (read 97.1% vs the 100% pre-P3 baseline).
+  CONFIG.CASCADE_ON = false;
+  CONFIG.VANGUARD_ON = false;
+  const { playPairing } = await import('../tools/arena.js');
+  const { makeSearch } = await import('../core/agents/search.js');
+  const { makeGreedy } = await import('../core/agents/greedy.js');
+  const r = playPairing(makeSearch({ depth: 2 }), makeGreedy(), 5, 'arena-0v1');
+  assert.equal(`${r.aWins}-${r.bWins}`, '10-0');
+  CONFIG.CASCADE_ON = true;
+  CONFIG.VANGUARD_ON = true;
+});
+
 test('C13 metrics: actionRows keyed on pre-action turn; median actions/turn computes', async () => {
   const { playGame } = await import('../tools/arena.js');
   const { makeGreedy } = await import('../core/agents/greedy.js');

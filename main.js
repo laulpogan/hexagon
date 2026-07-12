@@ -15,7 +15,7 @@ import { music } from './ui/music.js';
 import { initDeckbuilder, loadSavedDeck } from './ui/deckbuilder.js';
 import { initAccount } from './ui/account.js';
 import { initCollection } from './ui/collection.js';
-import { KEYWORDS, RITE_INFO } from './data/tiles.js';
+import { KEYWORDS, RITE_INFO, visibleKeywords } from './data/tiles.js';
 import { riftNeighborCount, neighborCoords } from './core/board.js';
 import { roadPressure } from './core/roads.js';
 import { NetSession, generateRoomCode } from './net/supabase.js';
@@ -343,8 +343,9 @@ function updateBoardTip(hit) {
   const capturable = g.isCapturable(hit.col, hit.row, enemy);
   const tiers = cell.stack.length;
   const riftN = riftNeighborCount(g.board, hit.col, hit.row);
-  const kwHtml = tile.keywords.length
-    ? `<div class="bt-kw">${tile.keywords.map(k =>
+  const _vk1 = visibleKeywords(tile.keywords, CONFIG);
+  const kwHtml = _vk1.length
+    ? `<div class="bt-kw">${_vk1.map(k =>
         `<div><b>${KEYWORDS[k]?.name || k}</b> — ${KEYWORDS[k]?.desc || ''}</div>`).join('')}</div>`
     : '';
   const trophies = g.trophyValue(hit.col, hit.row);
@@ -387,8 +388,8 @@ function showCardTip(tile) {
   const kwHtml = isRite
     ? `<div class="bt-kw"><b>✦ Rite</b> — ${RITE_INFO[tile.type]?.desc || 'Cast as your turn\'s action.'}<br>
        <i>Casting consumes your placement for the turn.</i></div>`
-    : tile.keywords.length
-      ? `<div class="bt-kw">${tile.keywords.map(k =>
+    : visibleKeywords(tile.keywords, CONFIG).length
+      ? `<div class="bt-kw">${visibleKeywords(tile.keywords, CONFIG).map(k =>
           `<div><b>${KEYWORDS[k]?.name || k}</b> — ${KEYWORDS[k]?.desc || ''}</div>`).join('')}</div>`
       : '<div class="bt-kw"><i>No keywords — pure influence.</i></div>';
   boardTip.innerHTML = `
@@ -608,8 +609,11 @@ bootAuth(async (user) => {
 }).then(renderPlayerStrip);
 
 // Cheat sheet keyword list generated from the data — can't go stale.
+// R8/P3: knob-gated keywords hidden while their mechanic is inert.
 document.getElementById('helpKeywords').innerHTML =
-  Object.values(KEYWORDS).map(k => `<div class="help-kw"><b>${k.name}</b> — ${k.desc}</div>`).join('') +
+  Object.entries(KEYWORDS)
+    .filter(([key]) => visibleKeywords([key], CONFIG).length)
+    .map(([, k]) => `<div class="help-kw"><b>${k.name}</b> — ${k.desc}</div>`).join('') +
   Object.values(RITE_INFO).map(r => `<div class="help-kw"><b>${r.name} ✦</b> (rite) — ${r.desc}</div>`).join('');
 
 // R8/P3: how-to-play knob-gated rewrites — the pre-P3 copy ships byte-exact

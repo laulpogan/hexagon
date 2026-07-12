@@ -20,7 +20,10 @@ export function loadTrainedPolicy() {
       throw new Error('stale weights file (feature count changed — retrain)');
     }
     return makePolicy({ weights: w.weights, name: 'policy*' });
-  } catch {
+  } catch (err) {
+    // R8/P3 gate-#2 MINOR: silent fallback made a lost/stale weights file
+    // indistinguishable from a trained one in results — warn loudly.
+    console.warn(`loadTrainedPolicy: falling back to untrained defaults (${err.message})`);
     return makePolicy({ name: 'policy0' }); // untrained defaults
   }
 }

@@ -31,8 +31,12 @@ Base 1 placement/turn unchanged (`PLACEMENTS_PER_TURN: 1` untouched). A tile wit
   log, no state read/write (P1/P2 named OFF-leak bug class).
 - ⟲ CASCADE tiles = **promote 2–4 existing filler tiles IN PLACE**: identical stat body,
   identical count, keyword-only diff (OFF-parity else breaks — deck is fixed at 20 and
-  additions displace tiles in BOTH arms). CASCADE tiles carry NO other keyword (no
-  SIEGE/FLANK/TRAMPLE/RALLY/SUSTAIN/SCOUT stacking; red-team combo findings).
+  additions displace tiles in BOTH arms). CASCADE never stacks with a COMPOUNDING/
+  OFFENSIVE keyword (SIEGE/FLANK/TRAMPLE/RALLY/SUSTAIN/SCOUT — each strengthens the
+  next drop in the same chain; red-team combo findings). Defensive carriers (WARD/
+  WING) are permitted — as-built deviation red-teamed post-hoc (gate #2): keyword-
+  isolation probe at matched density showed identical chain fuel, captures SUPPRESSED
+  (5.8 vs 6.9 all-vanilla), balance closer to 50%; no exploit window at any density.
 - ⟲⟲ Turn end with unused grants: if `placementsThisTurn ≥ 1` and no legal action remains,
   the turn ends WITHOUT `consecutivePasses++` (a turn that acted is not a pass; prevents
   cascade-induced spurious double-pass game-end). Rev-3 pin: "no legal action" =
@@ -259,3 +263,28 @@ pushing gameplay changes live.
   baseline improved or held; adversarial arm shows no exploit; UI verified. Weights
   file already trained at full-ON (held out of commit until decision). Gate #2
   built-thing review dispatched. AWAITING OPERATOR: ship-ON go / gate-letter rulings.
+- 2026-07-11 (GATE #2 CLOSED — ship-ON recommendation UPHELD by both reviewers +
+  scoped red-team): Reviewer 1 (OFF-parity) found 1 BLOCKER + 1 MAJOR, both FIXED:
+  (a) search.js completeTurn refactor modeled a phantom extra ply at OFF — campaign
+  bosses played differently than pre-P3 (instrumented: 2 bestReply calls where 1
+  intended; live-reachable via campaign) → fixed with a currentPlayer guard; C14
+  regression test pins the 100% strong-vs-weak OFF baseline (10-0, passing); post-fix
+  re-measure: SkillDepth OFF 98.8 / CASCADE 96.7 / FULL 99.2 (n=240 each — gate
+  letter 2 still decisively unmet, cleaner data, same conclusion; ship-basis arms
+  never used search). (b) CASCADE keyword badge/tooltip leaked at OFF in deckbuilder/
+  collection/campaign-draft/hand-HUD/board-tooltips/help-glossary → visibleKeywords()
+  helper in data/tiles.js wired through all six surfaces; repo swept, no unguarded
+  .keywords render remains. MINOR: medianFirstCapture diagnostic shifted 11→10 by the
+  pre-action keying (semantically more correct; re-pin baselines against new keying).
+  Reviewer 2 (ON-wiring/evidence) independently REPRODUCED every headline number
+  byte-exact (sweep to the decimal; own cascrush harness 22.9-30% confirms exploit
+  loses; bounty telemetry pipeline traced end-to-end — 285/292 symmetry is real,
+  ~1.9 claims/game plausible; deck trim deterministic+symmetric, keeps THICKET+
+  PETRIFIED-ROSE+1 POLLENCLOUD). Verdict: no finding overturns fun +2.8 / no-exploit
+  / claim symmetry / OFF-parity. Its open MAJOR (WARD/WING carrier deviation skipped
+  review) sent to a scoped red-team → CLEAR with keyword-isolation evidence (chain
+  fuel identical; defensive carriers suppress captures 5.8 vs 6.9, sit closer to 50%;
+  cascrush loses at every density) — pin wording narrowed to compounding/offensive
+  keywords. MINORs: loadTrainedPolicy now warns loudly on fallback; chain-trail
+  pass-edge cosmetic staleness documented, not fixed (visual only). 116/116 tests.
+  STILL AWAITING OPERATOR: ship-ON (density 3 or 4) / ship-OFF / gate-letter rulings.

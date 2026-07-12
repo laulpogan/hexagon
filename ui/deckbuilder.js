@@ -3,7 +3,7 @@
 // the Game constructor. v2 (SHELL_SPEC.md §7.6): ownership-gated by the
 // player's collection, single cloud-synced deck for signed-in users (B6 cut
 // multi-deck management — one row, no picker).
-import { TILE_POOL, KEYWORDS, defaultDeckComposition } from '../data/tiles.js';
+import { TILE_POOL, KEYWORDS, defaultDeckComposition, visibleKeywords } from '../data/tiles.js';
 import { CONFIG } from '../core/config.js';
 import { validateDeck } from '../core/game.js';
 import { getLocalCollection } from '../net/progress.js';
@@ -103,7 +103,7 @@ export function initDeckbuilder(overlayEl, onClose) {
             const n = working[tpl.type] || 0;
             const ownedN = owned[tpl.type] || 0;
             const locked = ownedN === 0;
-            const kws = tpl.keywords.map(k =>
+            const kws = visibleKeywords(tpl.keywords, CONFIG).map(k =>
               `<span class="kw" title="${(KEYWORDS[k]?.desc || '').replace(/"/g, '&quot;')}">${KEYWORDS[k]?.name || k}</span>`).join('');
             return `
               <div class="db-card ${n > 0 ? 'picked' : ''} ${locked ? 'db-locked' : ''}" data-type="${tpl.type}"
