@@ -54,7 +54,19 @@ export const CONFIG = {
   // the Riftlight discipline in reverse). Capitals exempt as defenders until
   // P5's response window exists. Severance is structural: tiles cut from their
   // capital stop counting (comeback lever). Gate verdict: RULES8_P2_ROADS.md.
-  ROAD_PRESSURE_ON: true,     // master A/B knob (false = byte-identical RULES-7)
+  //
+  // SHIPPED OFF (2026-07-11 P2 gate result): the dedicated road-rush arm broke
+  // the 42-58% band structurally — a w10 momentum-maximizer beats tuned greedy
+  // 68.8% and the retrained policy 72.5%, and still reads 67-70% at the WEAKEST
+  // pressure knobs (DIV 4 / CAP 2), so no swept knob fixes it. Roadrush mirror
+  // degenerates to a 0.5-captures/game turtle-farm; K (killer moves) regresses
+  // in every ON-vs-OFF pairing. The exploit is momentum-as-connected-tile-count
+  // rewarding pure expansion (design risk #3, momentum snowball) — not pressure
+  // magnitude. Positive carried forward: severance DID lift comeback (23.3→
+  // 27.5% policy mirror) — the lever works; the momentum formula is what fails.
+  // Machinery + tests + UI stay live behind the knob (future rounds' A/B arms;
+  // candidate fix: shape-sensitive momentum — frontline-only or longest-path).
+  ROAD_PRESSURE_ON: false,    // master A/B knob (false = byte-identical RULES-7)
   ROAD_CHAINSLIDE_REACH: 3,   // hops the surge travels through the network
   ROAD_MOMENTUM_DIV: 3,       // local roadPower per pressure point
   ROAD_PRESSURE_CAP: 3,       // max surge pressure per defender
